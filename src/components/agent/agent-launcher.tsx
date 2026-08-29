@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { AgentApprovalApplyResult } from "@/application/agent-runtime";
 import type { AgentApprovalView, AgentToolTrace, AgentTurn } from "@/domain/agent";
@@ -101,7 +102,7 @@ export function AgentLauncher() {
         <span className="hidden sm:inline">Ask agent</span>
       </button>
 
-      {open && (
+      {open && createPortal(
         <div className="fixed inset-0 z-50 bg-[#132019]/35 backdrop-blur-[2px]" role="presentation">
           <aside role="dialog" aria-modal="true" aria-labelledby="agent-title" className="absolute inset-y-0 right-0 flex w-full max-w-[640px] flex-col bg-[#f5f6f3] shadow-[-20px_0_60px_rgba(20,35,27,.2)]">
             <header className="border-b border-[#dfe3dc] bg-white px-5 py-5 md:px-7">
@@ -138,7 +139,8 @@ export function AgentLauncher() {
               <p className="mt-2 text-center text-[9px] text-[#9aa29d]">The agent never calculates procurement quantities or writes state by itself.</p>
             </footer>
           </aside>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
