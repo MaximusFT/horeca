@@ -6,6 +6,11 @@ const config = defineConfig([
   ...nextVitals,
   ...nextTypeScript,
   globalIgnores(["node_modules/**", ".next/**", "coverage/**"]),
+  {
+    rules: {
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+    },
+  },
 ]);
 
 export default config;
