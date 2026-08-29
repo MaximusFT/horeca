@@ -4,6 +4,8 @@ import { useState } from 'react';
 import type { PlannedProcurementLine } from '@/domain/procurement';
 import type { ProcurementLineExplanation } from '@/application/explain-procurement';
 import { formatQuantity } from '@/engine/units';
+import { getDictionary } from '@/i18n/get-dictionary';
+import type { Dictionary, Locale } from '@/i18n';
 
 export interface ProcurementBatchLineView {
   line: PlannedProcurementLine;
@@ -11,7 +13,8 @@ export interface ProcurementBatchLineView {
   explanation: ProcurementLineExplanation;
 }
 
-export function ProcurementBatchTable({ lines }: { lines: ProcurementBatchLineView[] }) {
+export function ProcurementBatchTable({ lines, locale }: { lines: ProcurementBatchLineView[]; locale: Locale }) {
+  const dictionary = getDictionary(locale);
   const [selected, setSelected] = useState<ProcurementBatchLineView>();
   return (
     <>
@@ -20,12 +23,12 @@ export function ProcurementBatchTable({ lines }: { lines: ProcurementBatchLineVi
           <table className="w-full min-w-[860px] border-collapse text-left">
             <thead className="bg-[#f8f9f7] text-[10px] font-semibold uppercase tracking-wide text-[#89948d]">
               <tr>
-                <th className="px-5 py-3.5">Ingredient</th>
-                <th className="px-5 py-3.5 text-right">Covered demand</th>
-                <th className="px-5 py-3.5 text-right">Stock / incoming used</th>
-                <th className="px-5 py-3.5 text-right">Purchase</th>
-                <th className="px-5 py-3.5 text-right">Status</th>
-                <th className="px-5 py-3.5 text-right">Explanation</th>
+                <th className="px-5 py-3.5">{dictionary.procurementBatch.columnIngredient}</th>
+                <th className="px-5 py-3.5 text-right">{dictionary.procurementBatch.columnCoveredDemand}</th>
+                <th className="px-5 py-3.5 text-right">{dictionary.procurementBatch.columnStockIncoming}</th>
+                <th className="px-5 py-3.5 text-right">{dictionary.procurementBatch.columnPurchase}</th>
+                <th className="px-5 py-3.5 text-right">{dictionary.procurementBatch.columnStatus}</th>
+                <th className="px-5 py-3.5 text-right">{dictionary.procurementBatch.columnExplanation}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#edf0ec]">
@@ -34,7 +37,7 @@ export function ProcurementBatchTable({ lines }: { lines: ProcurementBatchLineVi
                   <td className="px-5 py-4">
                     <p className="text-sm font-semibold text-[#334037]">{item.ingredientName}</p>
                     <p className="mt-1 text-[10px] text-[#919a94]">
-                      {item.explanation.coveredRequirementCount} upcoming requirements
+                      {dictionary.procurementBatch.upcomingRequirements(item.explanation.coveredRequirementCount)}
                     </p>
                   </td>
                   <td className="px-5 py-4 text-right text-sm tabular-nums text-[#526058]">
@@ -48,7 +51,7 @@ export function ProcurementBatchTable({ lines }: { lines: ProcurementBatchLineVi
                   </td>
                   <td className="px-5 py-4 text-right">
                     <span className="rounded-full bg-[#e9f3ec] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-[#477258]">
-                      Planned
+                      {dictionary.procurementBatch.plannedStatus}
                     </span>
                   </td>
                   <td className="px-5 py-4 text-right">
@@ -57,7 +60,7 @@ export function ProcurementBatchTable({ lines }: { lines: ProcurementBatchLineVi
                       onClick={() => setSelected(item)}
                       className="rounded-lg border border-[#d7ddd7] px-3 py-1.5 text-[10px] font-semibold text-[#4d7059]"
                     >
-                      Why?
+                      {dictionary.procurementBatch.whyButton}
                     </button>
                   </td>
                 </tr>
@@ -79,12 +82,12 @@ export function ProcurementBatchTable({ lines }: { lines: ProcurementBatchLineVi
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6c7b71]">
-                    Why this quantity?
+                    {dictionary.procurementBatch.why.title}
                   </p>
                   <h2 id="why-title" className="mt-2 text-xl font-semibold text-[#223028]">
                     {selected.ingredientName}
                   </h2>
-                  <p className="mt-1 text-xs text-[#7d8981]">Demand, available coverage and purchase timing.</p>
+                  <p className="mt-1 text-xs text-[#7d8981]">{dictionary.procurementBatch.why.subtitle}</p>
                 </div>
                 <button
                   type="button"
@@ -98,7 +101,7 @@ export function ProcurementBatchTable({ lines }: { lines: ProcurementBatchLineVi
             <div className="flex-1 overflow-y-auto p-6">
               <section className="rounded-2xl border border-[#dfe3dc] bg-white">
                 <header className="border-b border-[#e8ebe7] px-4 py-3">
-                  <h3 className="text-xs font-semibold text-[#344138]">Demand sources</h3>
+                  <h3 className="text-xs font-semibold text-[#344138]">{dictionary.procurementBatch.why.demandSources}</h3>
                 </header>
                 <div className="divide-y divide-[#edf0ec]">
                   {selected.explanation.demandSources.map((source) => (
@@ -116,74 +119,73 @@ export function ProcurementBatchTable({ lines }: { lines: ProcurementBatchLineVi
                   ))}
                 </div>
                 <div className="flex items-center justify-between border-t border-[#dfe3dc] bg-[#fafbf9] px-4 py-3">
-                  <span className="text-xs font-semibold text-[#536158]">Gross covered demand</span>
+                  <span className="text-xs font-semibold text-[#536158]">{dictionary.procurementBatch.why.grossCoveredDemand}</span>
                   <span className="text-sm font-semibold text-[#2d3a31]">
                     {formatQuantity(selected.explanation.grossDemand, selected.line.unit)}
                   </span>
                 </div>
               </section>
               <section className="mt-4 rounded-2xl border border-[#dfe3dc] bg-white p-4">
-                <h3 className="text-xs font-semibold text-[#344138]">Coverage and target</h3>
+                <h3 className="text-xs font-semibold text-[#344138]">{dictionary.procurementBatch.why.coverageAndTarget}</h3>
                 <div className="mt-4 space-y-3">
                   <BreakdownRow
-                    label="Balance before triggering need"
+                    label={dictionary.procurementBatch.why.balanceBeforeTrigger}
                     value={formatQuantity(selected.explanation.balanceBeforeTrigger, selected.line.unit)}
                   />
                   <BreakdownRow
-                    label="Current inventory consumed"
+                    label={dictionary.procurementBatch.why.inventoryConsumed}
                     value={`− ${formatQuantity(selected.explanation.inventoryUsed, selected.line.unit)}`}
                   />
                   <BreakdownRow
-                    label="Confirmed incoming consumed"
+                    label={dictionary.procurementBatch.why.incomingConsumed}
                     value={`− ${formatQuantity(selected.explanation.incomingUsed, selected.line.unit)}`}
                   />
                   <BreakdownRow
-                    label="Safety stock target"
+                    label={dictionary.procurementBatch.why.safetyTarget}
                     value={formatQuantity(selected.explanation.safetyTarget, selected.line.unit)}
                     accent
                   />
                   {selected.explanation.expiredExcluded > 0 && (
                     <BreakdownRow
-                      label="Expired stock excluded"
+                      label={dictionary.procurementBatch.why.expiredExcluded}
                       value={formatQuantity(selected.explanation.expiredExcluded, selected.line.unit)}
                       warning
                     />
                   )}
                 </div>
                 <div className="mt-4 flex items-center justify-between rounded-xl bg-[#e9f3ec] px-4 py-3">
-                  <span className="text-sm font-semibold text-[#355b42]">Purchase requirement</span>
+                  <span className="text-sm font-semibold text-[#355b42]">{dictionary.procurementBatch.why.purchaseRequirement}</span>
                   <span className="text-lg font-semibold text-[#28593b]">
                     {formatQuantity(selected.explanation.purchaseQuantity, selected.line.unit)}
                   </span>
                 </div>
               </section>
               <section className="mt-4 rounded-2xl border border-[#dfe3dc] bg-white p-4">
-                <h3 className="text-xs font-semibold text-[#344138]">Timing</h3>
+                <h3 className="text-xs font-semibold text-[#344138]">{dictionary.procurementBatch.why.timing}</h3>
                 <div className="mt-4 space-y-3">
-                  <BreakdownRow label="Delivery scheduled" value={formatDateTime(selected.explanation.deliveryAt)} />
-                  <BreakdownRow label="First requirement" value={formatDateTime(selected.explanation.requiredAt)} />
+                  <BreakdownRow label={dictionary.procurementBatch.why.deliveryScheduled} value={formatDateTime(selected.explanation.deliveryAt, dictionary.locale)} />
+                  <BreakdownRow label={dictionary.procurementBatch.why.firstRequirement} value={formatDateTime(selected.explanation.requiredAt, dictionary.locale)} />
                   <BreakdownRow
-                    label="Requirements covered"
+                    label={dictionary.procurementBatch.why.requirementsCovered}
                     value={String(selected.explanation.coveredRequirementCount)}
                   />
                   <BreakdownRow
-                    label="Planned stock usable until"
-                    value={formatDateTime(selected.explanation.expiresAt)}
+                    label={dictionary.procurementBatch.why.usableUntil}
+                    value={formatDateTime(selected.explanation.expiresAt, dictionary.locale)}
                   />
                 </div>
                 <p className="mt-4 rounded-lg bg-[#f3f6f3] px-3 py-2 text-[10px] leading-4 text-[#6b786f]">
-                  {timingReason(selected.explanation.shelfLifeDays)}
+                  {timingReason(selected.explanation.shelfLifeDays, dictionary)}
                 </p>
               </section>
               <section className="mt-4 rounded-2xl border border-dashed border-[#d6ddd7] bg-[#f6f8f5] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-[#78857c]">Supplier</p>
+                <p className="text-[10px] font-bold uppercase tracking-wide text-[#78857c]">{dictionary.procurementBatch.why.supplierLabel}</p>
                 <p className="mt-2 text-xs text-[#68756d]">
-                  Product, package, surplus and price appear after supplier matching.
+                  {dictionary.procurementBatch.why.supplierPending}
                 </p>
               </section>
               <p className="mt-4 text-[11px] leading-5 text-[#7e8982]">
-                This purchase may cover several compatible future requirements. Planned supply is counted again in later
-                projections to prevent duplicate buying.
+                {dictionary.procurementBatch.why.footnote}
               </p>
             </div>
           </aside>
@@ -216,8 +218,8 @@ function BreakdownRow({
   );
 }
 
-function formatDateTime(value: string): string {
-  return new Intl.DateTimeFormat('en', {
+function formatDateTime(value: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale === 'uk' ? 'uk-UA' : 'en', {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -227,8 +229,8 @@ function formatDateTime(value: string): string {
   }).format(new Date(value));
 }
 
-function timingReason(shelfLifeDays: number): string {
-  if (shelfLifeDays <= 3) return `Short ${shelfLifeDays}-day shelf life keeps this delivery close to the requirement.`;
-  if (shelfLifeDays <= 7) return `${shelfLifeDays}-day shelf life allows nearby requirements to share this delivery.`;
-  return `${shelfLifeDays}-day shelf life allows safe consolidation across a wider delivery window.`;
+function timingReason(shelfLifeDays: number, dictionary: Dictionary): string {
+  if (shelfLifeDays <= 3) return dictionary.procurementBatch.why.timingReasonShort(shelfLifeDays);
+  if (shelfLifeDays <= 7) return dictionary.procurementBatch.why.timingReasonMedium(shelfLifeDays);
+  return dictionary.procurementBatch.why.timingReasonLong(shelfLifeDays);
 }

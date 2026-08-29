@@ -7,6 +7,8 @@ import type { AgentApprovalApplyResult } from '@/application/agent-runtime';
 import type { AgentApprovalView, AgentToolTrace, AgentTurn } from '@/domain/agent';
 import { demoIngredients } from '@/data/demo/ingredients';
 import { formatQuantity } from '@/engine/units';
+import { getDictionary } from '@/i18n/get-dictionary';
+import type { Dictionary, Locale } from '@/i18n';
 
 interface ChatMessage {
   id: string;
@@ -20,10 +22,11 @@ interface ChatMessage {
 
 const ingredientNames = new Map(demoIngredients.map((ingredient) => [ingredient.id, ingredient.name]));
 
-export function AgentLauncher() {
+export function AgentLauncher({ locale }: { locale: Locale }) {
+  const dictionary = getDictionary(locale);
   const router = useRouter();
   const pathname = usePathname();
-  const pageContext = getPageContext(pathname);
+  const pageContext = getPageContext(pathname, dictionary);
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -32,7 +35,7 @@ export function AgentLauncher() {
     {
       id: 'welcome',
       role: 'assistant',
-      text: 'I can explain deterministic procurement facts or prepare protected changes for your approval.',
+      text: dictionary.agent.welcome,
     },
   ]);
 
@@ -106,7 +109,7 @@ export function AgentLauncher() {
         onClick={() => setOpen(true)}
       >
         <SparkIcon />
-        <span className="hidden sm:inline">Procurement agent</span>
+        <span className="hidden sm:inline">{dictionary.agent.trigger}</span>
       </button>
 
       {open &&
@@ -126,19 +129,19 @@ export function AgentLauncher() {
                     </div>
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#64806d]">
-                        Single procurement agent
+                        {dictionary.agent.eyebrow}
                       </p>
                       <h2 id="agent-title" className="mt-1 text-xl font-semibold text-[#223028]">
-                        Ask Misto
+                        {dictionary.agent.title}
                       </h2>
                       <p className="mt-1 text-xs text-[#7d8981]">
-                        Context · {pageContext.label}. Tools read and preview; only you approve changes.
+                        {dictionary.agent.contextPrefix} {pageContext.label}. {dictionary.agent.contextSuffix}
                       </p>
                     </div>
                   </div>
                   <button
                     type="button"
-                    aria-label="Close agent"
+                    aria-label={dictionary.agent.closeAria}
                     onClick={() => setOpen(false)}
                     className="grid size-9 place-items-center rounded-full border border-[#dde2dc] text-lg text-[#65736a]"
                   >
@@ -165,19 +168,19 @@ export function AgentLauncher() {
                       </div>
                       {message.mode && (
                         <p className="mt-1.5 px-1 text-[9px] font-semibold uppercase tracking-wide text-[#929b95]">
-                          {message.mode === 'local' ? 'Local safe mode · no API cost' : `OpenAI · ${message.model}`}
+                          {message.mode === 'local' ? dictionary.agent.localMode : dictionary.agent.openaiMode(message.model ?? '')}
                         </p>
                       )}
                       {message.approval && (
-                        <EventApprovalCard approval={message.approval} busy={busy} onApply={applyApproval} />
+                        <EventApprovalCard dictionary={dictionary} approval={message.approval} busy={busy} onApply={applyApproval} />
                       )}
-                      {message.trace && message.trace.length > 0 && <AgentTrace trace={message.trace} />}
+                      {message.trace && message.trace.length > 0 && <AgentTrace dictionary={dictionary} trace={message.trace} />}
                     </article>
                   ))}
                   {busy && (
                     <div className="flex items-center gap-2 text-xs text-[#77837b]">
                       <span className="size-4 animate-spin rounded-full border-2 border-[#bdc9c0] border-t-[#3b7950]" />
-                      Using protected application tools…
+                      {dictionary.agent.usingTools}
                     </div>
                   )}
                   {error && (
@@ -206,7 +209,7 @@ export function AgentLauncher() {
                   className="flex items-end gap-2 rounded-2xl border border-[#ccd4cd] bg-[#fafbf9] p-2 focus-within:border-[#72a281]"
                 >
                   <textarea
-                    aria-label="Message the procurement agent"
+                    aria-label={dictionary.agent.messageAria}
                     value={input}
                     onChange={(event) => setInput(event.target.value)}
                     onKeyDown={(event) => {
@@ -216,21 +219,19 @@ export function AgentLauncher() {
                       }
                     }}
                     rows={1}
-                    placeholder="Ask about events or procurement…"
+                    placeholder={dictionary.agent.placeholder}
                     className="max-h-28 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-sm text-[#344138] outline-none placeholder:text-[#9ca49f]"
                   />
                   <button
                     type="submit"
                     disabled={busy || !input.trim()}
-                    aria-label="Send message"
+                    aria-label={dictionary.agent.sendAria}
                     className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#1d5d38] text-white disabled:opacity-40"
                   >
                     →
                   </button>
                 </form>
-                <p className="mt-2 text-center text-[9px] text-[#9aa29d]">
-                  The agent never calculates procurement quantities or writes state by itself.
-                </p>
+                <p className="mt-2 text-center text-[9px] text-[#9aa29d]">{dictionary.agent.disclaimer}</p>
               </footer>
             </aside>
           </div>,
@@ -241,10 +242,12 @@ export function AgentLauncher() {
 }
 
 function EventApprovalCard({
+  dictionary,
   approval,
   busy,
   onApply,
 }: {
+  dictionary: Dictionary;
   approval: AgentApprovalView;
   busy: boolean;
   onApply: (id: string) => void;
@@ -254,20 +257,20 @@ function EventApprovalCard({
     <section className="mt-3 overflow-hidden rounded-2xl border border-[#e2c49b] bg-white">
       <header className="bg-[#fff7e9] px-4 py-3">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-[9px] font-bold uppercase tracking-wide text-[#976326]">Human approval required</p>
+          <p className="text-[9px] font-bold uppercase tracking-wide text-[#976326]">{dictionary.agent.approvalRequired}</p>
           <span
             className={`rounded-full px-2 py-1 text-[9px] font-bold uppercase ${approval.status === 'applied' ? 'bg-[#dff0e4] text-[#3e714d]' : 'bg-white text-[#976326]'}`}
           >
-            {approval.status}
+            {approval.status === 'applied' ? dictionary.agent.approvalStatusApplied : dictionary.agent.approvalStatusPending}
           </span>
         </div>
         <p className="mt-2 text-sm font-semibold text-[#4b4132]">
-          Wedding · {preview.beforeGuestCount} → {preview.afterGuestCount} guests
+          {dictionary.agent.pageContext.wedding} · {preview.beforeGuestCount} → {preview.afterGuestCount} {dictionary.agent.guestsSuffix}
         </p>
         <p className="mt-1 text-xs text-[#80715b]">
           {approval.status === 'applied'
-            ? `Plan v${preview.candidatePlanVersion} is active; Plan v${preview.basePlanVersion} remains in history.`
-            : `Candidate Plan v${preview.candidatePlanVersion}; active plan remains v${preview.basePlanVersion} until approval.`}
+            ? dictionary.agent.approvalActiveSummary(preview.candidatePlanVersion, preview.basePlanVersion)
+            : dictionary.agent.approvalPendingSummary(preview.candidatePlanVersion, preview.basePlanVersion)}
         </p>
       </header>
       <div className="divide-y divide-[#edf0ec]">
@@ -284,7 +287,7 @@ function EventApprovalCard({
       </div>
       {preview.diff.ingredientDeltas.length > 5 && (
         <p className="border-t border-[#edf0ec] px-4 py-2 text-[10px] text-[#89938c]">
-          + {preview.diff.ingredientDeltas.length - 5} more ingredient changes in the structured preview
+          {dictionary.agent.moreIngredientChanges(preview.diff.ingredientDeltas.length - 5)}
         </p>
       )}
       <div className="border-t border-[#e4e8e3] p-3">
@@ -295,11 +298,11 @@ function EventApprovalCard({
             onClick={() => onApply(approval.id)}
             className="w-full rounded-xl bg-[#1d5d38] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
           >
-            Approve and apply Plan v{preview.candidatePlanVersion}
+            {dictionary.agent.approveButton(preview.candidatePlanVersion)}
           </button>
         ) : (
           <div className="rounded-xl bg-[#edf7f0] px-4 py-3 text-center text-xs font-semibold text-[#3b6e49]">
-            ✓ Approved change applied
+            {dictionary.agent.approvedChangeApplied}
           </div>
         )}
       </div>
@@ -307,11 +310,11 @@ function EventApprovalCard({
   );
 }
 
-function AgentTrace({ trace }: { trace: AgentToolTrace[] }) {
+function AgentTrace({ dictionary, trace }: { dictionary: Dictionary; trace: AgentToolTrace[] }) {
   return (
     <details className="mt-2 rounded-xl border border-[#dfe3dc] bg-white">
       <summary className="cursor-pointer px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-[#748178]">
-        Activity trace · {trace.length} {trace.length === 1 ? 'tool' : 'tools'}
+        {dictionary.agent.activityTrace(trace.length)}
       </summary>
       <div className="border-t border-[#edf0ec] px-3 py-2">
         {trace.map((item) => (
@@ -344,29 +347,22 @@ function Suggestion({ children, onClick }: { children: string; onClick: (value: 
   );
 }
 
-function getPageContext(pathname: string): { label: string; suggestions: string[] } {
+function getPageContext(pathname: string, dictionary: Dictionary): { label: string; suggestions: string[] } {
+  const s = dictionary.agent.suggestions;
+  const p = dictionary.agent.pageContext;
   if (pathname === '/events/wedding') {
-    return { label: 'Wedding', suggestions: ['Increase Wedding to 220 guests', 'Why do we need so much chicken?'] };
+    return { label: p.wedding, suggestions: [s.increaseWedding, s.whyChicken] };
   }
   if (pathname.startsWith('/events')) {
-    return {
-      label: 'Events & catering',
-      suggestions: ['Increase Wedding to 220 guests', 'Read the active procurement plan'],
-    };
+    return { label: p.events, suggestions: [s.increaseWedding, s.readPlan] };
   }
   if (pathname.startsWith('/procurement')) {
-    return {
-      label: 'Procurement',
-      suggestions: ['Why do we need so much chicken?', 'Read the active procurement plan'],
-    };
+    return { label: p.procurement, suggestions: [s.whyChicken, s.readPlan] };
   }
   if (pathname.startsWith('/inventory')) {
-    return {
-      label: 'Inventory coverage',
-      suggestions: ['Why do we need so much chicken?', 'Read the active procurement plan'],
-    };
+    return { label: p.inventory, suggestions: [s.whyChicken, s.readPlan] };
   }
-  return { label: 'Overview', suggestions: ['Increase Wedding to 220 guests', 'Why do we need so much chicken?'] };
+  return { label: p.overview, suggestions: [s.increaseWedding, s.whyChicken] };
 }
 
 function SparkIcon() {

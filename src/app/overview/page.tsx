@@ -4,20 +4,23 @@ import { buildOverviewSummary, type DemandSourceSplit, type OverviewDay } from '
 import { getDemoPlanningRuntime } from '@/application/demo-runtime';
 import { demoDataset } from '@/data/demo/dataset';
 import { DEMO_PERIOD } from '@/lib/demo-clock';
+import { getDictionary, getServerLocale, type Dictionary } from '@/i18n';
 
 export const dynamic = 'force-dynamic';
 
-const loadStyle = {
-  quiet: { label: 'Quiet', bar: 'w-[38%] bg-[#b9c6bd]', text: 'text-[#718078]' },
-  normal: { label: 'Normal', bar: 'w-[58%] bg-[#67aa7d]', text: 'text-[#4f6d5a]' },
-  busy: { label: 'Busy', bar: 'w-[78%] bg-[#df9d44]', text: 'text-[#9b6826]' },
-  peak: { label: 'Peak', bar: 'w-full bg-[#d96b57]', text: 'text-[#a34738]' },
+const loadStyleClass = {
+  quiet: { bar: 'w-[38%] bg-[#b9c6bd]', text: 'text-[#718078]' },
+  normal: { bar: 'w-[58%] bg-[#67aa7d]', text: 'text-[#4f6d5a]' },
+  busy: { bar: 'w-[78%] bg-[#df9d44]', text: 'text-[#9b6826]' },
+  peak: { bar: 'w-full bg-[#d96b57]', text: 'text-[#a34738]' },
 } as const;
 
-export default function OverviewPage() {
+export default async function OverviewPage() {
+  const locale = await getServerLocale();
+  const dictionary = getDictionary(locale);
   const state = getDemoPlanningRuntime().repository.getState();
   const activeDataset = { ...demoDataset, events: state.events };
-  const summary = buildOverviewSummary(activeDataset, state.activePlan, state.recentChanges);
+  const summary = buildOverviewSummary(activeDataset, state.activePlan, state.recentChanges, locale);
 
   return (
     <AppShell>
@@ -33,64 +36,67 @@ export default function OverviewPage() {
                 </span>
               </div>
               <h1 className="mt-3 text-[30px] font-semibold tracking-[-0.035em] text-[#18251d] md:text-[36px]">
-                Good morning, Operations
+                {dictionary.overview.greeting}
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[#65736a]">
-                Restaurant demand, {summary.eventCount} events, stock and incoming supply are reconciled into one dated
-                procurement plan.
+                {dictionary.overview.subtitle(summary.eventCount)}
               </p>
             </div>
             <Link
               href="/procurement"
               className="flex h-11 items-center justify-center gap-2 self-start rounded-xl bg-[#1c5b37] px-4 text-sm font-semibold text-white shadow-[0_6px_18px_rgba(28,91,55,.18)] md:self-auto"
             >
-              Open procurement <Icon name="arrow" className="size-4" />
+              {dictionary.overview.openProcurement} <Icon name="arrow" className="size-4" />
             </Link>
           </div>
 
           <section className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Business planning summary">
             <BusinessMetricCard
-              eyebrow="Restaurant operations"
-              value={`${summary.operatingDayCount} operating days`}
-              detail="Regular daily demand active"
+              eyebrow={dictionary.overview.restaurantOperations.eyebrow}
+              value={dictionary.overview.restaurantOperations.value(summary.operatingDayCount)}
+              detail={dictionary.overview.restaurantOperations.detail}
               meta={
                 summary.nextPeakDay
-                  ? `Next peak · ${summary.nextPeakDay.weekday} Sep ${summary.nextPeakDay.dayNumber} · ×${summary.nextPeakDay.loadFactor.toFixed(2)}`
-                  : 'Normal service calendar active'
+                  ? dictionary.overview.restaurantOperations.metaWithPeak(
+                      summary.nextPeakDay.weekday,
+                      summary.nextPeakDay.dayNumber,
+                      summary.nextPeakDay.loadFactor.toFixed(2),
+                    )
+                  : dictionary.overview.restaurantOperations.metaNoPeak
               }
               accent="green"
             />
             <BusinessMetricCard
-              eyebrow="Events & catering"
-              value={`${summary.eventCount} confirmed events`}
-              detail={`${summary.guestTotal} guests`}
+              eyebrow={dictionary.overview.eventsCatering.eyebrow}
+              value={dictionary.overview.eventsCatering.value(summary.eventCount)}
+              detail={dictionary.overview.eventsCatering.detail(summary.guestTotal)}
               meta={
                 summary.largestEvent
-                  ? `Largest · ${summary.largestEvent.name} · ${summary.largestEvent.guestCount} guests`
-                  : 'No events scheduled'
+                  ? dictionary.overview.eventsCatering.metaLargest(summary.largestEvent.name, summary.largestEvent.guestCount)
+                  : dictionary.overview.eventsCatering.metaEmpty
               }
               accent="blue"
             />
             <BusinessMetricCard
-              eyebrow="Combined procurement"
-              value={`${summary.batchCount} planned deliveries`}
+              eyebrow={dictionary.overview.combinedProcurement.eyebrow}
+              value={dictionary.overview.combinedProcurement.value(summary.batchCount)}
               detail={
                 summary.upcomingBatches[0]
-                  ? `Next · Sep ${Number(summary.upcomingBatches[0].deliveryOn.slice(-2))}`
-                  : 'No delivery required'
+                  ? dictionary.overview.combinedProcurement.detailNext(Number(summary.upcomingBatches[0].deliveryOn.slice(-2)))
+                  : dictionary.overview.combinedProcurement.detailEmpty
               }
               meta={
                 summary.upcomingBatches[0]
-                  ? `${summary.upcomingBatches[0].lines.length} ingredients in next batch`
-                  : 'Demand currently covered'
+                  ? dictionary.overview.combinedProcurement.metaNext(summary.upcomingBatches[0].lines.length)
+                  : dictionary.overview.combinedProcurement.metaEmpty
               }
               accent="neutral"
             />
             <BusinessMetricCard
-              eyebrow="Attention"
-              value={`${summary.attention.filter((item) => item.actionable).length} actions`}
-              detail={`${summary.attention.filter((item) => !item.actionable).length} planning insight`}
-              meta="Review before the next delivery"
+              eyebrow={dictionary.overview.attention.eyebrow}
+              value={dictionary.overview.attention.value(summary.attention.filter((item) => item.actionable).length)}
+              detail={dictionary.overview.attention.detail(summary.attention.filter((item) => !item.actionable).length)}
+              meta={dictionary.overview.attention.meta}
               accent="amber"
             />
           </section>
@@ -102,33 +108,32 @@ export default function OverviewPage() {
             <div className="grid divide-y divide-[#e8ebe7] md:grid-cols-2 md:divide-x md:divide-y-0">
               <div className="px-5 py-5 md:px-6">
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#4c7c5b]">
-                  Restaurant operations
+                  {dictionary.overview.bridge.restaurantTitle}
                 </p>
-                <p className="mt-2 text-lg font-semibold text-[#26342b]">Regular daily demand</p>
+                <p className="mt-2 text-lg font-semibold text-[#26342b]">{dictionary.overview.bridge.restaurantHeadline}</p>
                 <p className="mt-1 text-xs leading-5 text-[#77837b]">
-                  A {summary.operatingDayCount}-day service calendar keeps the kitchen supplied even when no catering
-                  event is scheduled.
+                  {dictionary.overview.bridge.restaurantBody(summary.operatingDayCount)}
                 </p>
               </div>
               <div className="px-5 py-5 md:px-6">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#526bb2]">Events & catering</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#526bb2]">{dictionary.overview.bridge.eventsTitle}</p>
                 <p className="mt-2 text-lg font-semibold text-[#26342b]">
-                  {summary.eventCount} events · {summary.guestTotal} guests
+                  {dictionary.overview.bridge.eventsHeadline(summary.eventCount, summary.guestTotal)}
                 </p>
                 <p className="mt-1 text-xs leading-5 text-[#77837b]">
-                  Menus and guest counts add dated demand to the same kitchen and shared inventory.
+                  {dictionary.overview.bridge.eventsBody}
                 </p>
               </div>
             </div>
             <div className="flex flex-col justify-between gap-4 bg-[#1d3126] px-5 py-5 text-white md:flex-row md:items-center md:px-6">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a9daba]">Combined procurement</p>
-                <p className="mt-1 text-lg font-semibold">One plan for what to buy, how much and when</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a9daba]">{dictionary.overview.bridge.procurementTitle}</p>
+                <p className="mt-1 text-lg font-semibold">{dictionary.overview.bridge.procurementHeadline}</p>
               </div>
               <div className="flex items-center gap-3 text-xs text-white/65">
-                <span>Shared stock</span>
+                <span>{dictionary.overview.bridge.sharedStock}</span>
                 <span>+</span>
-                <span>Confirmed incoming</span>
+                <span>{dictionary.overview.bridge.confirmedIncoming}</span>
                 <Icon name="arrow" className="text-[#a9daba]" />
               </div>
             </div>
@@ -136,12 +141,12 @@ export default function OverviewPage() {
 
           <section className="mt-6 rounded-2xl border border-[#dfe3dc] bg-white shadow-[0_1px_2px_rgba(24,37,29,.03)]">
             <SectionHeader
-              title="Where demand comes from"
-              subtitle={`Regular restaurant operations and ${summary.eventCount} scheduled events · ${summary.guestTotal} guests`}
+              title={dictionary.overview.demandSources.title}
+              subtitle={dictionary.overview.demandSources.subtitle(summary.eventCount, summary.guestTotal)}
             />
             <div className="grid gap-5 p-5 md:grid-cols-3 md:p-6">
               {summary.demandSplit.map((split) => (
-                <DemandSplitCard key={split.unit} split={split} />
+                <DemandSplitCard key={split.unit} split={split} dictionary={dictionary} />
               ))}
             </div>
           </section>
@@ -149,19 +154,19 @@ export default function OverviewPage() {
           <section className="mt-6 overflow-hidden rounded-2xl border border-[#dfe3dc] bg-white shadow-[0_1px_2px_rgba(24,37,29,.03)]">
             <header className="flex flex-col justify-between gap-3 border-b border-[#e5e8e3] px-5 py-5 md:flex-row md:items-center md:px-6">
               <div>
-                <h2 className="text-[15px] font-semibold text-[#1c2921]">14-day operations timeline</h2>
-                <p className="mt-1 text-xs text-[#7a877f]">Three views of the same planning horizon</p>
+                <h2 className="text-[15px] font-semibold text-[#1c2921]">{dictionary.overview.timeline.title}</h2>
+                <p className="mt-1 text-xs text-[#7a877f]">{dictionary.overview.timeline.subtitle}</p>
               </div>
             </header>
-            <TimelineLanes days={summary.timeline} />
+            <TimelineLanes days={summary.timeline} dictionary={dictionary} />
           </section>
 
           <div className="mt-6 grid gap-6 xl:grid-cols-[1.45fr_.8fr]">
             <section className="rounded-2xl border border-[#dfe3dc] bg-white shadow-[0_1px_2px_rgba(24,37,29,.03)]">
               <SectionHeader
-                title="Upcoming procurement batches"
-                subtitle="Planned delivery timing from the chronological projection"
-                action="View all"
+                title={dictionary.overview.upcomingBatches.title}
+                subtitle={dictionary.overview.upcomingBatches.subtitle}
+                action={dictionary.overview.upcomingBatches.action}
               />
               <div className="divide-y divide-[#edf0ec]">
                 {summary.upcomingBatches.map((batch, index) => (
@@ -171,7 +176,7 @@ export default function OverviewPage() {
                   >
                     <div className="flex items-center gap-3 sm:block">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-[#839087]">
-                        {monthLabel(batch.deliveryOn)}
+                        {monthLabel(batch.deliveryOn, dictionary.locale)}
                       </p>
                       <p className="mt-0.5 text-xl font-semibold tracking-tight text-[#25332a]">
                         {Number(batch.deliveryOn.slice(-2))}
@@ -186,13 +191,13 @@ export default function OverviewPage() {
                         </p>
                       </div>
                       <p className="mt-1 pl-4 text-xs text-[#7c8981]">
-                        {batch.lines.length} ingredients · covers restaurant operations and upcoming events
+                        {dictionary.overview.upcomingBatches.lineDetail(batch.lines.length)}
                       </p>
                     </div>
                     <span
                       className={`w-fit rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${index === 0 ? 'bg-[#fff1d8] text-[#99671d]' : 'bg-[#e9f3ec] text-[#467255]'}`}
                     >
-                      {index === 0 ? 'Next' : 'Planned'}
+                      {index === 0 ? dictionary.overview.upcomingBatches.next : dictionary.overview.upcomingBatches.planned}
                     </span>
                   </div>
                 ))}
@@ -200,7 +205,7 @@ export default function OverviewPage() {
             </section>
 
             <section className="rounded-2xl border border-[#dfe3dc] bg-white shadow-[0_1px_2px_rgba(24,37,29,.03)]">
-              <SectionHeader title="Needs attention" subtitle="Exceptions and execution cues" />
+              <SectionHeader title={dictionary.overview.attentionSection.title} subtitle={dictionary.overview.attentionSection.subtitle} />
               <div className="space-y-3 p-4 md:p-5">
                 {summary.attention.map((item) => {
                   const tone = {
@@ -237,7 +242,7 @@ export default function OverviewPage() {
 
           <div className="mt-6">
             <section className="rounded-2xl border border-[#dfe3dc] bg-white shadow-[0_1px_2px_rgba(24,37,29,.03)]">
-              <SectionHeader title="Recent changes" subtitle="Approved business changes and plan versions" />
+              <SectionHeader title={dictionary.overview.recentChanges.title} subtitle={dictionary.overview.recentChanges.subtitle} />
               {summary.recentChanges.length > 0 ? (
                 <div className="divide-y divide-[#edf0ec]">
                   {summary.recentChanges.slice(0, 3).map((change) => (
@@ -248,7 +253,7 @@ export default function OverviewPage() {
                       <div>
                         <p className="text-sm font-semibold text-[#344238]">{change.summary}</p>
                         <p className="mt-1 text-xs text-[#7c8981]">
-                          Plan v{change.planVersion} activated · approved change
+                          {dictionary.overview.recentChanges.activated(change.planVersion)}
                         </p>
                       </div>
                     </div>
@@ -260,9 +265,9 @@ export default function OverviewPage() {
                     <div className="mx-auto grid size-10 place-items-center rounded-full bg-[#eef2ee] text-[#718078]">
                       <Icon name="calendar" />
                     </div>
-                    <p className="mt-3 text-sm font-semibold text-[#344238]">Plan v1 is the active baseline</p>
+                    <p className="mt-3 text-sm font-semibold text-[#344238]">{dictionary.overview.recentChanges.emptyTitle}</p>
                     <p className="mx-auto mt-1 max-w-xs text-xs leading-5 text-[#7c8981]">
-                      No approved event changes yet. Wedding is currently planned for 180 guests.
+                      {dictionary.overview.recentChanges.emptyBody}
                     </p>
                   </div>
                 </div>
@@ -304,7 +309,7 @@ function BusinessMetricCard({
   );
 }
 
-function TimelineLanes({ days }: { days: OverviewDay[] }) {
+function TimelineLanes({ days, dictionary }: { days: OverviewDay[]; dictionary: Dictionary }) {
   return (
     <div className="overflow-x-auto">
       <div className="grid min-w-[1320px] grid-cols-[156px_repeat(14,minmax(80px,1fr))] text-center">
@@ -315,18 +320,19 @@ function TimelineLanes({ days }: { days: OverviewDay[] }) {
             className={`border-r border-[#eef0ed] px-2 py-3 ${day.date === '2026-09-01' ? 'bg-[#f1f8f3]' : 'bg-[#f8f9f7]'}`}
           >
             <p className="text-[9px] font-bold uppercase tracking-wide text-[#929c95]">{day.weekday}</p>
-            <p className="mt-1 text-sm font-semibold text-[#344138]">Sep {day.dayNumber}</p>
+            <p className="mt-1 text-sm font-semibold text-[#344138]">{monthDay(day.date, dictionary.locale)}</p>
           </div>
         ))}
-        <TimelineLabel title="Restaurant" subtitle="Operations" />
+        <TimelineLabel title={dictionary.overview.timeline.restaurantLabel} subtitle={dictionary.overview.timeline.restaurantSubtitle} />
         {days.map((day) => {
-          const style = loadStyle[day.load];
+          const style = loadStyleClass[day.load];
+          const label = dictionary.restaurantLoad[day.load];
           return (
             <div
               key={`restaurant-${day.date}`}
               className={`border-r border-t border-[#eef0ed] px-2 py-4 ${day.date === '2026-09-01' ? 'bg-[#f5faf6]' : 'bg-white'}`}
             >
-              <p className={`text-[10px] font-bold uppercase ${style.text}`}>{style.label}</p>
+              <p className={`text-[10px] font-bold uppercase ${style.text}`}>{label}</p>
               <p className="mt-1 text-[9px] text-[#929c95]">×{day.loadFactor.toFixed(2)}</p>
               <div className="mx-auto mt-2 h-1.5 w-12 overflow-hidden rounded-full bg-[#edf0ed]">
                 <div className={`h-full rounded-full ${style.bar}`} />
@@ -334,7 +340,7 @@ function TimelineLanes({ days }: { days: OverviewDay[] }) {
             </div>
           );
         })}
-        <TimelineLabel title="Events" subtitle="& catering" />
+        <TimelineLabel title={dictionary.overview.timeline.eventsLabel} subtitle={dictionary.overview.timeline.eventsSubtitle} />
         {days.map((day) => (
           <div
             key={`events-${day.date}`}
@@ -347,12 +353,12 @@ function TimelineLanes({ days }: { days: OverviewDay[] }) {
                 className={`block rounded-lg px-2 py-2 text-left text-[9px] leading-3.5 ${event.id === 'wedding' ? 'bg-[#e7ecfb] text-[#3e579b] ring-1 ring-[#cfd8f3]' : 'bg-[#eef2fe] text-[#455f9e]'}`}
               >
                 <span className="block font-semibold">{event.name}</span>
-                <span className="opacity-70">{event.guestCount} guests</span>
+                <span className="opacity-70">{event.guestCount} {dictionary.overview.timeline.guestsSuffix}</span>
               </Link>
             ))}
           </div>
         ))}
-        <TimelineLabel title="Procurement" subtitle="Deliveries" />
+        <TimelineLabel title={dictionary.overview.timeline.procurementLabel} subtitle={dictionary.overview.timeline.procurementSubtitle} />
         {days.map((day) => (
           <div
             key={`procurement-${day.date}`}
@@ -365,12 +371,12 @@ function TimelineLanes({ days }: { days: OverviewDay[] }) {
               >
                 <span className="flex items-center gap-1.5 font-semibold">
                   <span className="size-1.5 rounded-full bg-[#708f79]" />
-                  Delivery
+                  {dictionary.overview.timeline.delivery}
                 </span>
-                <span className="mt-0.5 block opacity-75">{day.procurementLineCount} ingredients</span>
+                <span className="mt-0.5 block opacity-75">{day.procurementLineCount} {dictionary.overview.timeline.ingredientsSuffix}</span>
               </Link>
             ) : (
-              <span className="text-[9px] text-[#bdc4bf]">Covered</span>
+              <span className="text-[9px] text-[#bdc4bf]">{dictionary.overview.timeline.covered}</span>
             )}
           </div>
         ))}
@@ -388,8 +394,12 @@ function TimelineLabel({ title, subtitle }: { title: string; subtitle: string })
   );
 }
 
-function DemandSplitCard({ split }: { split: DemandSourceSplit }) {
-  const labels = { g: ['Mass demand', 'kg'], ml: ['Volume demand', 'L'], pcs: ['Unit demand', 'pcs'] } as const;
+function DemandSplitCard({ split, dictionary }: { split: DemandSourceSplit; dictionary: Dictionary }) {
+  const labels = {
+    g: [dictionary.overview.demandSources.mass, 'kg'],
+    ml: [dictionary.overview.demandSources.volume, 'L'],
+    pcs: [dictionary.overview.demandSources.units, 'pcs'],
+  } as const;
   const divisor = split.unit === 'pcs' ? 1 : 1_000;
   const [title, displayUnit] = labels[split.unit];
   return (
@@ -404,16 +414,16 @@ function DemandSplitCard({ split }: { split: DemandSourceSplit }) {
       </div>
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div>
-          <p className="text-[10px] text-[#89938d]">Restaurant</p>
+          <p className="text-[10px] text-[#89938d]">{dictionary.overview.demandSources.restaurant}</p>
           <p className="mt-1 text-sm font-semibold text-[#315f40]">
-            {formatCompact(split.restaurant / divisor)}{' '}
+            {formatCompact(split.restaurant / divisor, dictionary.locale)}{' '}
             <span className="text-[10px] font-medium text-[#9aa39d]">{displayUnit}</span>
           </p>
         </div>
         <div>
-          <p className="text-[10px] text-[#89938d]">Events</p>
+          <p className="text-[10px] text-[#89938d]">{dictionary.overview.demandSources.events}</p>
           <p className="mt-1 text-sm font-semibold text-[#4f65a4]">
-            {formatCompact(split.events / divisor)}{' '}
+            {formatCompact(split.events / divisor, dictionary.locale)}{' '}
             <span className="text-[10px] font-medium text-[#9aa39d]">{displayUnit}</span>
           </p>
         </div>
@@ -437,11 +447,18 @@ function SectionHeader({ title, subtitle, action }: { title: string; subtitle: s
     </header>
   );
 }
-function monthLabel(date: string): string {
-  return new Intl.DateTimeFormat('en', { month: 'short', timeZone: 'Europe/Kyiv' }).format(
+function monthLabel(date: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale === 'uk' ? 'uk-UA' : 'en', { month: 'short', timeZone: 'Europe/Kyiv' }).format(
     new Date(`${date}T12:00:00+03:00`),
   );
 }
-function formatCompact(value: number): string {
-  return new Intl.NumberFormat('en', { maximumFractionDigits: 1 }).format(value);
+function monthDay(date: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale === 'uk' ? 'uk-UA' : 'en', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'Europe/Kyiv',
+  }).format(new Date(`${date}T12:00:00+03:00`));
+}
+function formatCompact(value: number, locale: string): string {
+  return new Intl.NumberFormat(locale === 'uk' ? 'uk-UA' : 'en', { maximumFractionDigits: 1 }).format(value);
 }

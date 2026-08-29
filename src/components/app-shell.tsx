@@ -2,17 +2,23 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { AgentLauncher } from '@/components/agent/agent-launcher';
 import { ResetDemoButton } from '@/components/reset-demo-button';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { getDictionary, getServerLocale } from '@/i18n';
 
 type IconName = 'overview' | 'procurement' | 'events' | 'inventory' | 'spark' | 'calendar' | 'package' | 'arrow';
+export type ActiveNavKey = 'overview' | 'procurement' | 'events' | 'inventory';
 
-const navigation: Array<{ label: string; icon: IconName; href?: string }> = [
-  { label: 'Overview', icon: 'overview', href: '/overview' },
-  { label: 'Procurement', icon: 'procurement', href: '/procurement' },
-  { label: 'Events', icon: 'events', href: '/events' },
-  { label: 'Inventory', icon: 'inventory', href: '/inventory' },
-];
+export async function AppShell({ children, activeKey = 'overview' }: { children: ReactNode; activeKey?: ActiveNavKey }) {
+  const locale = await getServerLocale();
+  const dictionary = getDictionary(locale);
+  const navigation: Array<{ key: ActiveNavKey; label: string; icon: IconName; href?: string }> = [
+    { key: 'overview', label: dictionary.nav.overview, icon: 'overview', href: '/overview' },
+    { key: 'procurement', label: dictionary.nav.procurement, icon: 'procurement', href: '/procurement' },
+    { key: 'events', label: dictionary.nav.events, icon: 'events', href: '/events' },
+    { key: 'inventory', label: dictionary.nav.inventory, icon: 'inventory', href: '/inventory' },
+  ];
+  const activeLabel = navigation.find((item) => item.key === activeKey)?.label ?? dictionary.nav.overview;
 
-export function AppShell({ children, active = 'Overview' }: { children: ReactNode; active?: string }) {
   return (
     <div className="min-h-screen bg-[#f4f5f2] lg:grid lg:grid-cols-[236px_minmax(0,1fr)]">
       <aside className="hidden min-h-screen border-r border-[#dfe3dc] bg-[#17231c] text-white lg:flex lg:flex-col">
@@ -21,24 +27,24 @@ export function AppShell({ children, active = 'Overview' }: { children: ReactNod
             M
           </div>
           <div>
-            <p className="text-[15px] font-semibold tracking-tight">Misto Kitchen</p>
-            <p className="mt-0.5 text-[11px] text-white/50">Procurement OS</p>
+            <p className="text-[15px] font-semibold tracking-tight">{dictionary.nav.brand}</p>
+            <p className="mt-0.5 text-[11px] text-white/50">{dictionary.nav.tagline}</p>
           </div>
         </div>
 
         <nav className="flex-1 px-3 py-6" aria-label="Primary navigation">
-          <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">Workspace</p>
+          <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">{dictionary.nav.workspace}</p>
           <div className="mt-3 space-y-1">
             {navigation.map((item) => {
-              const selected = item.label === active;
+              const selected = item.key === activeKey;
               const className = `flex h-11 items-center gap-3 rounded-xl px-3 text-sm transition ${selected ? 'bg-white/10 font-semibold text-white' : 'text-white/55'}`;
               return item.href ? (
-                <Link key={item.label} href={item.href} className={className}>
+                <Link key={item.key} href={item.href} className={className}>
                   <Icon name={item.icon} className={selected ? 'text-[#a9e9bf]' : 'text-white/45'} />
                   {item.label}
                 </Link>
               ) : (
-                <div key={item.label} className={className} aria-disabled="true">
+                <div key={item.key} className={className} aria-disabled="true">
                   <Icon name={item.icon} className="text-white/35" />
                   {item.label}
                 </div>
@@ -50,10 +56,10 @@ export function AppShell({ children, active = 'Overview' }: { children: ReactNod
         <div className="m-3 rounded-2xl border border-white/10 bg-white/[0.055] p-4">
           <div className="flex items-center gap-2 text-xs font-semibold text-[#b8edca]">
             <span className="size-1.5 rounded-full bg-[#75db9a] shadow-[0_0_0_4px_rgba(117,219,154,.12)]" />
-            Demo plan active
+            {dictionary.nav.demoStatusTitle}
           </div>
-          <p className="mt-2 text-[11px] leading-5 text-white/45">Restaurant and event demand are up to date</p>
-          <ResetDemoButton />
+          <p className="mt-2 text-[11px] leading-5 text-white/45">{dictionary.nav.demoStatusSubtitle}</p>
+          <ResetDemoButton locale={locale} />
         </div>
       </aside>
 
@@ -64,16 +70,17 @@ export function AppShell({ children, active = 'Overview' }: { children: ReactNod
               M
             </div>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#708076]">Operations</p>
-              <p className="mt-0.5 text-sm font-semibold text-[#1b2820]">{active}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#708076]">{dictionary.nav.operationsEyebrow}</p>
+              <p className="mt-0.5 text-sm font-semibold text-[#1b2820]">{activeLabel}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden items-center gap-2 rounded-full border border-[#d9ded7] bg-white px-3 py-2 text-xs font-medium text-[#526159] sm:flex">
               <span className="size-1.5 rounded-full bg-[#34a863]" />
-              Demo · Sep 1, 08:00
+              {dictionary.nav.demoClock}
             </div>
-            <AgentLauncher />
+            <LanguageSwitcher locale={locale} />
+            <AgentLauncher locale={locale} />
             <div className="grid size-10 place-items-center rounded-full bg-[#dfe8e1] text-xs font-bold text-[#31503d]">
               MK
             </div>

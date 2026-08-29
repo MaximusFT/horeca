@@ -19,7 +19,7 @@ describe('Overview summary', () => {
     expect(summary.attention.filter((item) => item.actionable)).toHaveLength(2);
     expect(summary.attention.find((item) => item.id === 'supplier-ready')).toMatchObject({
       href: `/procurement/${plan.batches[0].id}`,
-      actionLabel: 'Prepare supplier order',
+      actionLabel: 'Підготувати замовлення постачальнику',
     });
     expect(summary.timeline).toHaveLength(14);
     expect(weddingDay).toMatchObject({ load: 'busy', loadFactor: 1.25 });

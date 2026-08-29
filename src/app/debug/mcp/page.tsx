@@ -30,9 +30,8 @@ export default async function McpDebugPage() {
       });
       tools = await client.listTools();
     } catch (error) {
-      toolsError = error instanceof McpProtocolError || error instanceof Error
-        ? error.message
-        : 'Unknown tools/list error';
+      toolsError =
+        error instanceof McpProtocolError || error instanceof Error ? error.message : 'Unknown tools/list error';
     }
   }
 
@@ -81,7 +80,9 @@ export default async function McpDebugPage() {
               <p className="text-sm font-semibold text-slate-800">{tools.length} tools returned</p>
               {tools.map((tool) => (
                 <details key={tool.name} className="rounded-xl border border-slate-200 bg-white p-4">
-                  <summary className="cursor-pointer font-mono text-sm font-semibold text-slate-800">{tool.name}</summary>
+                  <summary className="cursor-pointer font-mono text-sm font-semibold text-slate-800">
+                    {tool.name}
+                  </summary>
                   {tool.description && <p className="mt-2 text-sm text-slate-600">{tool.description}</p>}
                   {tool.inputSchema !== undefined && (
                     <pre className="mt-2 overflow-x-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100">

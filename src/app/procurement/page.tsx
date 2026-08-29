@@ -6,40 +6,43 @@ import { demoIngredients } from '@/data/demo/ingredients';
 import { demoDataset } from '@/data/demo/dataset';
 import type { ChronologicalProcurementPlan, ProcurementBatch } from '@/domain/procurement';
 import { DEMO_PERIOD } from '@/lib/demo-clock';
+import { getDictionary, getServerLocale, type Dictionary } from '@/i18n';
 
 export const dynamic = 'force-dynamic';
 
-export default function ProcurementPage() {
+export default async function ProcurementPage() {
+  const locale = await getServerLocale();
+  const dictionary = getDictionary(locale);
   const state = getDemoPlanningRuntime().repository.getState();
   const { activePlan } = state;
-  const summary = buildOverviewSummary({ ...demoDataset, events: state.events }, activePlan, state.recentChanges);
+  const summary = buildOverviewSummary({ ...demoDataset, events: state.events }, activePlan, state.recentChanges, locale);
   const ingredientNames = new Map(demoIngredients.map((item) => [item.id, item.name]));
 
   return (
-    <AppShell active="Procurement">
+    <AppShell activeKey="procurement">
       <main className="px-5 py-7 md:px-8 md:py-9 lg:px-10 xl:px-12">
         <div className="mx-auto max-w-[1320px]">
           <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#728078]">
-                Plan v{activePlan.version} · {DEMO_PERIOD.label}
+                {dictionary.procurement.planLabel(activePlan.version, DEMO_PERIOD.label)}
               </p>
-              <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-[#18251d]">Procurement plan</h1>
+              <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-[#18251d]">{dictionary.procurement.title}</h1>
               <p className="mt-2 text-sm text-[#6d7a72]">
-                What Misto Kitchen needs to buy, how much and when — across restaurant operations and catering.
+                {dictionary.procurement.subtitle}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-              <SummaryPill label="Planned deliveries" value={String(activePlan.batches.length)} />
+              <SummaryPill label={dictionary.procurement.plannedDeliveries} value={String(activePlan.batches.length)} />
               <SummaryPill
-                label="Next delivery"
-                value={activePlan.batches[0] ? `Sep ${Number(activePlan.batches[0].deliveryOn.slice(-2))}` : 'Covered'}
+                label={dictionary.procurement.nextDelivery}
+                value={activePlan.batches[0] ? monthDayValue(activePlan.batches[0].deliveryOn, dictionary.locale) : dictionary.procurement.covered}
               />
               <SummaryPill
-                label="Attention"
-                value={`${summary.attention.filter((item) => item.actionable).length} actions`}
+                label={dictionary.procurement.attention}
+                value={`${summary.attention.filter((item) => item.actionable).length} ${dictionary.procurement.actionsSuffix}`}
               />
-              <SummaryPill label="Supplier" value="Matching pending" />
+              <SummaryPill label={dictionary.procurement.supplier} value={dictionary.procurement.matchingPending} />
             </div>
           </div>
 
@@ -52,7 +55,7 @@ export default function ProcurementPage() {
               >
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8a958e]">
-                    {monthLabel(batch.deliveryOn)}
+                    {monthLabel(batch.deliveryOn, dictionary.locale)}
                   </p>
                   <p className="mt-1 text-2xl font-semibold tracking-tight text-[#28362d]">
                     {Number(batch.deliveryOn.slice(-2))}
@@ -62,11 +65,11 @@ export default function ProcurementPage() {
                   <div className="flex items-center gap-2">
                     <span className={`size-2 rounded-full ${index === 0 ? 'bg-[#df9f43]' : 'bg-[#65a87a]'}`} />
                     <h2 className="truncate text-sm font-semibold text-[#2c3930]">
-                      {batchDemandContext(activePlan, batch)}
+                      {batchDemandContext(activePlan, batch, dictionary)}
                     </h2>
                   </div>
                   <p className="mt-1 pl-4 text-[10px] font-semibold uppercase tracking-wide text-[#94a098]">
-                    {batch.lines.length} ingredients
+                    {batch.lines.length} {dictionary.procurement.ingredientsSuffix}
                   </p>
                   <p className="mt-1 truncate pl-4 text-xs text-[#7f8a83]">
                     {batch.lines
@@ -80,9 +83,9 @@ export default function ProcurementPage() {
                   <span
                     className={`rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide ${index === 0 ? 'bg-[#fff0d5] text-[#99671e]' : 'bg-[#e8f2eb] text-[#487158]'}`}
                   >
-                    {index === 0 ? 'Next' : 'Planned'}
+                    {index === 0 ? dictionary.procurement.next : dictionary.procurement.planned}
                   </span>
-                  <p className="mt-2 text-[10px] text-[#919a94]">{batch.deliveryAt.slice(11, 16)} target</p>
+                  <p className="mt-2 text-[10px] text-[#919a94]">{batch.deliveryAt.slice(11, 16)} {dictionary.procurement.target}</p>
                 </div>
                 <Icon name="arrow" className="ml-auto size-4 text-[#9ca69f]" />
               </Link>
@@ -103,7 +106,21 @@ function SummaryPill({ label, value }: { label: string; value: string }) {
   );
 }
 
-function batchDemandContext(plan: ChronologicalProcurementPlan, batch: ProcurementBatch): string {
+function monthLabel(date: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale === 'uk' ? 'uk-UA' : 'en', { month: 'short', timeZone: 'Europe/Kyiv' }).format(
+    new Date(`${date}T12:00:00+03:00`),
+  );
+}
+
+function monthDayValue(date: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale === 'uk' ? 'uk-UA' : 'en', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'Europe/Kyiv',
+  }).format(new Date(`${date}T12:00:00+03:00`));
+}
+
+function batchDemandContext(plan: ChronologicalProcurementPlan, batch: ProcurementBatch, dictionary: Dictionary): string {
   const eventNames = new Set<string>();
   let includesRestaurant = false;
   for (const line of batch.lines) {
@@ -116,12 +133,6 @@ function batchDemandContext(plan: ChronologicalProcurementPlan, batch: Procureme
       }
     }
   }
-  const sources = [...(includesRestaurant ? ['Restaurant operations'] : []), ...eventNames];
-  return sources.length > 0 ? sources.join(' + ') : 'Planned delivery';
-}
-
-function monthLabel(date: string): string {
-  return new Intl.DateTimeFormat('en', { month: 'short', timeZone: 'Europe/Kyiv' }).format(
-    new Date(`${date}T12:00:00+03:00`),
-  );
+  const sources = [...(includesRestaurant ? [dictionary.procurement.restaurantOperations] : []), ...eventNames];
+  return sources.length > 0 ? sources.join(' + ') : dictionary.procurement.plannedDelivery;
 }

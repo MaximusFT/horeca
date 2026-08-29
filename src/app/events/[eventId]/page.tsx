@@ -4,11 +4,13 @@ import { getDemoPlanningRuntime } from '@/application/demo-runtime';
 import { demoMenuItems } from '@/data/demo/menu-items';
 import { demoIngredients } from '@/data/demo/ingredients';
 import { WeddingEventClient } from '@/components/events/wedding-event-client';
+import { getServerLocale } from '@/i18n';
 
 export const dynamic = 'force-dynamic';
 
 export default async function EventDetailPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params;
+  const locale = await getServerLocale();
   const state = getDemoPlanningRuntime().repository.getState();
   const event = state.events.find((item) => item.id === eventId);
   if (!event) notFound();
@@ -50,8 +52,9 @@ export default async function EventDetailPage({ params }: { params: Promise<{ ev
   };
 
   return (
-    <AppShell active="Events">
+    <AppShell activeKey="events">
       <WeddingEventClient
+        locale={locale}
         event={event}
         activePlanVersion={state.activePlan.version}
         menuLines={menuLines}

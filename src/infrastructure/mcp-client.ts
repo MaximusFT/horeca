@@ -22,12 +22,12 @@ export class McpProtocolError extends Error {
     readonly data?: unknown,
   ) {
     super(message);
-    this.name = "McpProtocolError";
+    this.name = 'McpProtocolError';
   }
 }
 
 interface JsonRpcResponse<T> {
-  jsonrpc: "2.0";
+  jsonrpc: '2.0';
   id: number | string;
   result?: T;
   error?: { code: number; message: string; data?: unknown };
@@ -39,25 +39,25 @@ export class McpJsonRpcClient {
   constructor(private readonly config: McpClientConfig) {}
 
   async listTools(): Promise<McpToolDefinition[]> {
-    const result = await this.request<{ tools: McpToolDefinition[] }>("tools/list", {});
+    const result = await this.request<{ tools: McpToolDefinition[] }>('tools/list', {});
     return result.tools;
   }
 
   async callTool(name: string, args: Record<string, unknown>): Promise<unknown> {
-    return this.request("tools/call", { name, arguments: args });
+    return this.request('tools/call', { name, arguments: args });
   }
 
   private async request<T>(method: string, params: Record<string, unknown>): Promise<T> {
     const id = this.nextId++;
     const response = await fetch(this.config.endpoint, {
-      method: "POST",
+      method: 'POST',
       headers: {
         authorization: `Bearer ${this.config.accessToken}`,
-        "content-type": "application/json",
-        accept: "application/json",
-        "mcp-protocol-version": this.config.protocolVersion ?? "2025-03-26",
+        'content-type': 'application/json',
+        accept: 'application/json',
+        'mcp-protocol-version': this.config.protocolVersion ?? '2025-03-26',
       },
-      body: JSON.stringify({ jsonrpc: "2.0", id, method, params }),
+      body: JSON.stringify({ jsonrpc: '2.0', id, method, params }),
     });
     if (!response.ok) {
       const details = await response.text();

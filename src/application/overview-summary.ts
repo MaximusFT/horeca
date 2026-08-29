@@ -1,10 +1,10 @@
-import { formatInTimeZone } from 'date-fns-tz';
-import type { DemoDataset } from '@/data/demo/dataset';
-import type { Event } from '@/domain/event';
-import type { ChronologicalProcurementPlan } from '@/domain/procurement';
-import type { RestaurantLoad } from '@/domain/restaurant-demand';
-import type { BaseUnit } from '@/domain/units';
-import { BUSINESS_TIME_ZONE } from '@/lib/demo-clock';
+import type { DemoDataset } from "@/data/demo/dataset";
+import type { Event } from "@/domain/event";
+import type { ChronologicalProcurementPlan } from "@/domain/procurement";
+import type { RestaurantLoad } from "@/domain/restaurant-demand";
+import type { BaseUnit } from "@/domain/units";
+import { BUSINESS_TIME_ZONE } from "@/lib/demo-clock";
+import { getDictionary, intlTag, type Locale } from "@/i18n";
 import type { PlanningChange } from './planning-repository';
 
 export interface OverviewDay {
@@ -42,7 +42,10 @@ export function buildOverviewSummary(
   dataset: DemoDataset,
   plan: ChronologicalProcurementPlan,
   recentChanges: PlanningChange[] = [],
+  locale: Locale = "uk",
 ) {
+  const weekdayFormatter = new Intl.DateTimeFormat(intlTag(locale), { weekday: "short", timeZone: BUSINESS_TIME_ZONE });
+  const dictionary = getDictionary(locale);
   const ingredientNames = new Map(dataset.ingredients.map((ingredient) => [ingredient.id, ingredient.name]));
   const eventsByDate = new Map<string, Event[]>();
   for (const event of dataset.events) {
@@ -57,7 +60,7 @@ export function buildOverviewSummary(
     return {
       date: day.date,
       dayNumber: Number(day.date.slice(-2)),
-      weekday: formatInTimeZone(date, BUSINESS_TIME_ZONE, 'EEE'),
+      weekday: weekdayFormatter.format(date),
       load: day.load,
       loadFactor: { quiet: 0.75, normal: 1, busy: 1.25, peak: 1.55 }[day.load],
       events: eventsByDate.get(day.date) ?? [],
@@ -80,11 +83,11 @@ export function buildOverviewSummary(
       id: 'expiry-risk',
       tone: 'warning',
       actionable: true,
-      title: `${ingredientNames.get(expired.ingredientId) ?? expired.ingredientId} expiry risk`,
-      description: 'Projected stock expires before a later requirement and is excluded from coverage.',
-      meta: `${formatAmount(expired.quantity, expired.unit)} projected expiry`,
+      title: dictionary.overview.attentionItems.expiryRiskTitle(ingredientNames.get(expired.ingredientId) ?? expired.ingredientId),
+      description: dictionary.overview.attentionItems.expiryRiskDescription,
+      meta: dictionary.overview.attentionItems.expiryRiskMeta(formatAmount(expired.quantity, expired.unit)),
       href: '/procurement',
-      actionLabel: 'Review procurement',
+      actionLabel: dictionary.overview.attentionItems.expiryRiskAction,
     });
   }
   if (incomingCoverageCount > 0) {
@@ -92,9 +95,9 @@ export function buildOverviewSummary(
       id: 'incoming-coverage',
       tone: 'info',
       actionable: false,
-      title: 'Confirmed supply is already counted',
-      description: 'Incoming deliveries are applied only when they arrive before the requirement time.',
-      meta: `${incomingCoverageCount} requirements covered`,
+      title: dictionary.overview.attentionItems.incomingCoverageTitle,
+      description: dictionary.overview.attentionItems.incomingCoverageDescription,
+      meta: dictionary.overview.attentionItems.incomingCoverageMeta(incomingCoverageCount),
     });
   }
   if (nextBatch) {
@@ -102,11 +105,11 @@ export function buildOverviewSummary(
       id: 'supplier-ready',
       tone: 'ready',
       actionable: true,
-      title: 'Next batch is ready for supplier matching',
-      description: 'Quantities and delivery timing are calculated; supplier products are the next execution step.',
-      meta: `${nextBatch.deliveryOn} · ${nextBatch.lines.length} ingredients`,
+      title: dictionary.overview.attentionItems.supplierReadyTitle,
+      description: dictionary.overview.attentionItems.supplierReadyDescription,
+      meta: dictionary.overview.attentionItems.supplierReadyMeta(nextBatch.deliveryOn, nextBatch.lines.length),
       href: `/procurement/${nextBatch.id}`,
-      actionLabel: 'Prepare supplier order',
+      actionLabel: dictionary.overview.attentionItems.supplierReadyAction,
     });
   }
 
