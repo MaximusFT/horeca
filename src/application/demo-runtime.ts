@@ -46,3 +46,9 @@ export function getDemoPlanningRuntime(): DemoPlanningRuntime {
   }
   return globalThis.__mistoPlanningRuntime;
 }
+
+// Rebuilds the shared demo runtime from scratch so a public demo link can always return to Wedding 180 / Plan v1.
+export function resetDemoPlanningRuntime(): DemoPlanningRuntime {
+  globalThis.__mistoPlanningRuntime = createDemoRuntime();
+  return globalThis.__mistoPlanningRuntime;
+}

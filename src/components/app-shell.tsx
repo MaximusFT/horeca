@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { AgentLauncher } from "@/components/agent/agent-launcher";
+import { ResetDemoButton } from "@/components/reset-demo-button";
 
 type IconName = "overview" | "procurement" | "events" | "inventory" | "spark" | "calendar" | "package" | "arrow";
 
@@ -50,6 +51,7 @@ export function AppShell({ children, active = "Overview" }: { children: ReactNod
             Plan engine ready
           </div>
           <p className="mt-2 text-[11px] leading-5 text-white/45">Deterministic demand and procurement projection</p>
+          <ResetDemoButton />
         </div>
       </aside>
 
