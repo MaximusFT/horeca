@@ -24,6 +24,8 @@ Recommended Codex setting for Stage 9: **sol high**. The spike involves OAuth, d
 
 Stage 9 requires real Silpo MCP/OAuth access. If credentials or the MCP connection are unavailable, perform safe read-only diagnostics and report the concrete blocker. Do not pretend that live connectivity was proven.
 
+Preparation already in place: `SUPPLIER_MODE=mock` remains the default. Set `SUPPLIER_MODE=silpo` only after OAuth, together with `SILPO_MCP_URL` and `SILPO_MCP_ACCESS_TOKEN`. Until the live `tools/list` schemas are captured, this mode intentionally reports a configuration/implementation error rather than falling back to mock or pretending to contact Silpo.
+
 ## Completed implementation
 
 ### Stages 0–4 — deterministic domain and application core

@@ -44,6 +44,10 @@ The default `local` mode is deterministic, offline, and incurs no API cost. It e
 
 To opt into the OpenAI Responses API, copy `.env.example` to `.env.local`, set `AGENT_MODE=openai`, add a server-side `OPENAI_API_KEY`, and optionally select `OPENAI_MODEL`. The configured default is `gpt-5.4-mini` with low reasoning effort and a six-tool-step ceiling. The API key is never sent to the browser.
 
+## Supplier modes
+
+`SUPPLIER_MODE=mock` is the default and keeps the complete supplier flow offline. After Silpo OAuth is available, set `SUPPLIER_MODE=silpo` with server-side `SILPO_MCP_URL` and `SILPO_MCP_ACCESS_TOKEN`. Before the Stage 9 live schema spike is complete, Silpo mode intentionally fails explicitly; it never falls back to mock or impersonates live MCP connectivity.
+
 ## Development
 
 ```bash
