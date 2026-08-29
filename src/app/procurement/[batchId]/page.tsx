@@ -6,7 +6,8 @@ import { explainProcurementLine } from '@/application/explain-procurement';
 import { demoIngredients } from '@/data/demo/ingredients';
 import { ProcurementBatchTable } from '@/components/procurement/procurement-batch-table';
 import { MockSupplierFlow } from '@/components/procurement/mock-supplier-flow';
-import { getDictionary, getServerLocale } from '@/i18n';import { localizedIngredientName } from "@/i18n/demo-names";
+import { getDictionary, getServerLocale } from '@/i18n';
+import { localizedIngredientName } from '@/i18n/demo-names';
 export const dynamic = 'force-dynamic';
 
 export default async function ProcurementBatchPage({ params }: { params: Promise<{ batchId: string }> }) {

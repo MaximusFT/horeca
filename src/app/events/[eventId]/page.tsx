@@ -15,9 +15,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ ev
   const state = getDemoPlanningRuntime().repository.getState();
   const event = state.events.find((item) => item.id === eventId);
   if (!event) notFound();
-  const menuNames = new Map(
-    demoMenuItems.map((item) => [item.id, localizedMenuItemName(item.id, item.name, locale)]),
-  );
+  const menuNames = new Map(demoMenuItems.map((item) => [item.id, localizedMenuItemName(item.id, item.name, locale)]));
   const menuLines = event.menu.map((line) => ({
     menuItemId: line.menuItemId,
     name: menuNames.get(line.menuItemId) ?? line.menuItemId,
@@ -66,7 +64,10 @@ export default async function EventDetailPage({ params }: { params: Promise<{ ev
         menuLines={menuLines}
         impact={impact}
         ingredientNames={Object.fromEntries(
-          demoIngredients.map((ingredient) => [ingredient.id, localizedIngredientName(ingredient.id, ingredient.name, locale)]),
+          demoIngredients.map((ingredient) => [
+            ingredient.id,
+            localizedIngredientName(ingredient.id, ingredient.name, locale),
+          ]),
         )}
       />
     </AppShell>

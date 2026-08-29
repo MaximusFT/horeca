@@ -1,6 +1,6 @@
-import type { Event } from "@/domain/event";
-import type { ChronologicalProcurementPlan } from "@/domain/procurement";
-import type { ProcurementPlanDiff } from "./plan-diff";
+import type { Event } from '@/domain/event';
+import type { ChronologicalProcurementPlan } from '@/domain/procurement';
+import type { ProcurementPlanDiff } from './plan-diff';
 
 export interface PlanningState {
   events: Event[];
@@ -11,7 +11,7 @@ export interface PlanningState {
 
 export interface PlanningChange {
   id: string;
-  type: "EVENT_CHANGED";
+  type: 'EVENT_CHANGED';
   eventId: string;
   beforeGuestCount: number;
   afterGuestCount: number;
@@ -29,7 +29,7 @@ export interface EventChangePreview {
   diff: ProcurementPlanDiff;
   createdAt: string;
   expiresAt: string;
-  status: "pending" | "applied" | "rejected" | "expired" | "stale";
+  status: 'pending' | 'applied' | 'rejected' | 'expired' | 'stale';
 }
 
 export interface PlanningRepository {
@@ -37,5 +37,5 @@ export interface PlanningRepository {
   saveState(state: PlanningState): void;
   savePreview(preview: EventChangePreview): void;
   getPreview(id: string): EventChangePreview | undefined;
-  savePreviewStatus(id: string, status: EventChangePreview["status"]): void;
+  savePreviewStatus(id: string, status: EventChangePreview['status']): void;
 }

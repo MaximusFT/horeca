@@ -4,7 +4,9 @@ An AI-assisted procurement cockpit for a small restaurant and catering business.
 
 ## Current milestone
 
-Stage 8 complete: one procurement agent now orchestrates five guarded application tools for event reads, procurement reads, deterministic explanations, event-change previews, and approved mutations. The global Ask Misto drawer supports the Wedding 180→220 scenario and chicken provenance while keeping pending actions backend-side. Supplier execution from Stage 7 remains available offline.
+Stage 8 is complete and the first Stage 11 vertical slice is working: one procurement agent now orchestrates six guarded application tools, including `prepare_supplier_order`. Ask Misto supports Wedding 180→220, chicken provenance, and preparation of the next supplier order. The supplier action returns a structured order card, exposes unavailable salmon, keeps substitution and cart write behind separate human clicks, and rereads/verifies the cart after mutation.
+
+Stage 9 OAuth groundwork uses the official `@modelcontextprotocol/sdk` with Streamable HTTP, Dynamic Client Registration, PKCE, refresh-token support, and the fixed official endpoint `https://mcp.silpo.ua/mcp`. `/debug/mcp` starts OAuth only after an explicit click and can display the live `tools/list` schemas after authorization. Live Silpo connectivity has not yet been claimed or tested.
 
 Debug views:
 
@@ -46,7 +48,7 @@ To opt into the OpenAI Responses API, copy `.env.example` to `.env.local`, set `
 
 ## Supplier modes
 
-`SUPPLIER_MODE=mock` is the default and keeps the complete supplier flow offline. After Silpo OAuth is available, set `SUPPLIER_MODE=silpo` with server-side `SILPO_MCP_URL` and `SILPO_MCP_ACCESS_TOKEN`. Before the Stage 9 live schema spike is complete, Silpo mode intentionally fails explicitly; it never falls back to mock or impersonates live MCP connectivity.
+`SUPPLIER_MODE=mock` is the default and keeps the complete supplier flow offline. Start official Silpo OAuth explicitly from `/debug/mcp`; the MCP endpoint is fixed and tokens remain server-side. Before the Stage 9 live schema spike and gateway mapping are complete, `SUPPLIER_MODE=silpo` intentionally fails explicitly; it never falls back to mock or impersonates live MCP connectivity. The current OAuth credential store is process-memory for the isolated local spike and must be replaced with durable encrypted storage before relying on the flow in a serverless deployment.
 
 ## Development
 

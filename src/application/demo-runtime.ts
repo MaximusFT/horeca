@@ -25,6 +25,7 @@ function createDemoRuntime() {
     approvals,
     ingredients: demoIngredients,
     clock: planning.clock,
+    supplierOrders,
   });
   const agentModel =
     process.env.AGENT_MODE === 'openai' && process.env.OPENAI_API_KEY

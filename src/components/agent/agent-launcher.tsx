@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
 import type { AgentApprovalApplyResult } from '@/application/agent-runtime';
+import type { SupplierOrderSession } from '@/application/mock-supplier-order-service';
 import type { AgentApprovalView, AgentToolTrace, AgentTurn } from '@/domain/agent';
 import { demoIngredients } from '@/data/demo/ingredients';
 import { formatQuantity } from '@/engine/units';
@@ -19,10 +20,16 @@ interface ChatMessage {
   model?: string;
   trace?: AgentToolTrace[];
   approval?: AgentApprovalView;
+  supplierOrder?: SupplierOrderSession;
 }
 
 function buildIngredientNames(locale: Locale) {
-  return new Map(demoIngredients.map((ingredient) => [ingredient.id, localizedIngredientName(ingredient.id, ingredient.name, locale)]));
+  return new Map(
+    demoIngredients.map((ingredient) => [
+      ingredient.id,
+      localizedIngredientName(ingredient.id, ingredient.name, locale),
+    ]),
+  );
 }
 
 export function AgentLauncher({ locale }: { locale: Locale }) {
@@ -72,6 +79,7 @@ export function AgentLauncher({ locale }: { locale: Locale }) {
           model: result.model,
           trace: result.trace,
           approval: result.approval,
+          supplierOrder: result.supplierOrder,
         },
       ]);
     } catch (reason) {
@@ -186,6 +194,9 @@ export function AgentLauncher({ locale }: { locale: Locale }) {
                           ingredientNames={ingredientNames}
                         />
                       )}
+                      {message.supplierOrder && (
+                        <SupplierOrderCard dictionary={dictionary} initialSession={message.supplierOrder} />
+                      )}
                       {message.trace && message.trace.length > 0 && (
                         <AgentTrace dictionary={dictionary} trace={message.trace} />
                       )}
@@ -253,6 +264,163 @@ export function AgentLauncher({ locale }: { locale: Locale }) {
         )}
     </>
   );
+}
+
+function SupplierOrderCard({
+  dictionary,
+  initialSession,
+}: {
+  dictionary: Dictionary;
+  initialSession: SupplierOrderSession;
+}) {
+  const [session, setSession] = useState(initialSession);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+  const unresolved = session.lines.filter((line) => !line.selectedProduct);
+  const matched = session.lines.length - unresolved.length;
+
+  async function call(url: string, body?: object) {
+    setBusy(true);
+    setError(undefined);
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: body ? { 'content-type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const result = (await response.json()) as SupplierOrderSession | { error?: string };
+      if (!response.ok || !('status' in result)) {
+        throw new Error('error' in result && result.error ? result.error : 'Supplier workflow failed');
+      }
+      setSession(result);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Supplier workflow failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mt-3 overflow-hidden rounded-2xl border border-[#cadccf] bg-white">
+      <header className="bg-[#f1f7f3] px-4 py-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-wide text-[#4b7658]">
+              {dictionary.mockSupplier.badge} · {dictionary.mockSupplier.planLabel(session.planVersion)}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-[#304b38]">
+              {dictionary.mockSupplier.linesResolved(matched, session.lines.length)}
+            </p>
+            <p className="mt-1 text-[10px] text-[#6e8174]">{session.delivery.label}</p>
+          </div>
+          <span className={`rounded-full px-2 py-1 text-[9px] font-bold uppercase ${unresolved.length ? 'bg-[#fff0e7] text-[#a65e3f]' : 'bg-[#dff0e4] text-[#3e714d]'}`}>
+            {unresolved.length ? dictionary.mockSupplier.decisions(unresolved.length) : dictionary.mockSupplier.complete}
+          </span>
+        </div>
+      </header>
+
+      {unresolved.map((line) => (
+        <div key={line.lineId} className="border-t border-[#edf0ec] px-4 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold text-[#3b443e]">{line.ingredientName}</p>
+              <p className="mt-1 text-[10px] text-[#7f6b61]">
+                {dictionary.mockSupplier.need(formatQuantity(line.requiredQuantity, line.unit))}
+              </p>
+            </div>
+            <span className="rounded-full bg-[#fff0e7] px-2 py-1 text-[9px] font-bold uppercase text-[#a65e3f]">
+              {dictionary.mockSupplier.unavailable}
+            </span>
+          </div>
+          {line.replacements.map((replacement) => (
+            <div key={replacement.id} className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-[#dfe3dc] bg-[#fafbf9] p-3">
+              <div>
+                <p className="text-xs font-semibold text-[#36433a]">{replacement.name}</p>
+                <p className="mt-1 text-[10px] text-[#768279]">
+                  {formatQuantity(replacement.packageSize, line.unit)} · {dictionary.mockSupplier.syntheticPrice}{' '}
+                  {formatMoney(replacement.priceMinor, dictionary.locale)}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => call(`/api/suppliers/mock/orders/${session.id}/substitution`, {
+                  ingredientId: line.ingredientId,
+                  productId: replacement.id,
+                })}
+                className="shrink-0 rounded-lg bg-[#1d5d38] px-3 py-2 text-[10px] font-semibold text-white disabled:opacity-50"
+              >
+                {dictionary.mockSupplier.approveReplacement}
+              </button>
+            </div>
+          ))}
+        </div>
+      ))}
+
+      {session.status === 'ready_for_cart' && (
+        <div className="border-t border-[#edf0ec] p-3">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => call(`/api/suppliers/mock/orders/${session.id}/preview-cart`)}
+            className="w-full rounded-xl border border-[#2e6b43] px-4 py-2.5 text-xs font-semibold text-[#285f3b] disabled:opacity-50"
+          >
+            {dictionary.mockSupplier.reviewCartPreview}
+          </button>
+        </div>
+      )}
+
+      {session.status === 'cart_preview' && session.cartPreview && (
+        <div className="border-t border-[#edf0ec] p-3">
+          <div className="mb-3 flex items-center justify-between text-xs text-[#56665c]">
+            <span>{dictionary.mockSupplier.cartPreviewTitle}</span>
+            <strong>{formatMoney(session.cartPreview.totalMinor, dictionary.locale)}</strong>
+          </div>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => call(`/api/suppliers/mock/orders/${session.id}/apply-cart`)}
+            className="w-full rounded-xl bg-[#1d5d38] px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-50"
+          >
+            {dictionary.mockSupplier.approveAndApplyCart}
+          </button>
+          <p className="mt-2 text-center text-[9px] text-[#8b948e]">{dictionary.mockSupplier.onlyThisClickMutates}</p>
+        </div>
+      )}
+
+      {session.status === 'cart_applied' && session.cart && (
+        <div className="border-t border-[#cce0d1] bg-[#edf7f0] px-4 py-3 text-xs font-semibold text-[#3b6e49]">
+          {dictionary.mockSupplier.cartAppliedSummary(
+            session.cart.lines.length,
+            formatMoney(session.cart.totalMinor, dictionary.locale),
+          )}
+        </div>
+      )}
+
+      {error && <p role="alert" className="border-t border-[#efc9bb] bg-[#fff4ef] px-4 py-3 text-xs text-[#9c5138]">{error}</p>}
+
+      <details className="border-t border-[#edf0ec]">
+        <summary className="cursor-pointer px-4 py-2 text-[9px] font-semibold uppercase tracking-wide text-[#748178]">
+          {dictionary.mockSupplier.activityTrace}
+        </summary>
+        <div className="border-t border-[#edf0ec] px-4 py-2">
+          {session.activity.map((item) => (
+            <p key={item.id} className="py-1 text-[10px] leading-4 text-[#68776d]">
+              <strong>{item.type.replace('_', ' ')}</strong> · {item.message}
+            </p>
+          ))}
+        </div>
+      </details>
+    </section>
+  );
+}
+
+function formatMoney(minor: number, locale: Locale): string {
+  return new Intl.NumberFormat(locale === 'uk' ? 'uk-UA' : 'en-US', {
+    style: 'currency',
+    currency: 'UAH',
+    maximumFractionDigits: 0,
+  }).format(minor / 100);
 }
 
 function EventApprovalCard({
@@ -378,7 +546,7 @@ function getPageContext(pathname: string, dictionary: Dictionary): { label: stri
     return { label: p.events, suggestions: [s.increaseWedding, s.readPlan] };
   }
   if (pathname.startsWith('/procurement')) {
-    return { label: p.procurement, suggestions: [s.whyChicken, s.readPlan] };
+    return { label: p.procurement, suggestions: [s.prepareSupplierOrder, s.whyChicken] };
   }
   if (pathname.startsWith('/inventory')) {
     return { label: p.inventory, suggestions: [s.whyChicken, s.readPlan] };

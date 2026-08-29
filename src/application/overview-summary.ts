@@ -48,7 +48,10 @@ export function buildOverviewSummary(
   const weekdayFormatter = new Intl.DateTimeFormat(intlTag(locale), { weekday: 'short', timeZone: BUSINESS_TIME_ZONE });
   const dictionary = getDictionary(locale);
   const ingredientNames = new Map(
-    dataset.ingredients.map((ingredient) => [ingredient.id, localizedIngredientName(ingredient.id, ingredient.name, locale)]),
+    dataset.ingredients.map((ingredient) => [
+      ingredient.id,
+      localizedIngredientName(ingredient.id, ingredient.name, locale),
+    ]),
   );
   const eventsByDate = new Map<string, Event[]>();
   for (const event of dataset.events) {
@@ -142,7 +145,11 @@ export function buildOverviewSummary(
       return {
         id: change.id,
         planVersion: change.planVersion,
-        summary: dictionary.overview.recentChanges.guestChangeSummary(eventName, change.beforeGuestCount, change.afterGuestCount),
+        summary: dictionary.overview.recentChanges.guestChangeSummary(
+          eventName,
+          change.beforeGuestCount,
+          change.afterGuestCount,
+        ),
       };
     }),
   };

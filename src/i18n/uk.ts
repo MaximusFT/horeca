@@ -85,6 +85,7 @@ export const uk: Dictionary = {
       increaseWedding: 'Збільшити весілля до 220 гостей',
       whyChicken: 'Чому потрібно так багато курки?',
       readPlan: 'Прочитати активний план закупівель',
+      prepareSupplierOrder: 'Підготувати наступне замовлення постачальнику',
     },
   },
   overview: {
@@ -170,7 +171,8 @@ export const uk: Dictionary = {
     recentChanges: {
       title: 'Останні зміни',
       subtitle: 'Підтверджені бізнес-зміни та версії плану',
-      guestChangeSummary: (eventName, before, after) => `${eventName}: ${before} → ${after} ${pluralUk(after, 'гость', 'гості', 'гостей')}`,
+      guestChangeSummary: (eventName, before, after) =>
+        `${eventName}: ${before} → ${after} ${pluralUk(after, 'гость', 'гості', 'гостей')}`,
       activated: (version) => `План v${version} активовано · підтверджена зміна`,
       emptyTitle: 'План v1 — активна базова версія',
       emptyBody: 'Підтверджених змін подій ще немає. Весілля наразі заплановане на 180 гостей.',
@@ -390,9 +392,12 @@ export const uk: Dictionary = {
     readPlan: (version, batches) => `Прочитано активний план v${version}: ${deliveries(batches)} за датами.`,
     explained: (ingredient, batchId, sources) =>
       `Пояснено «${ingredient}» у партії ${batchId} на основі ${sources} ${pluralUk(sources, 'джерела', 'джерел', 'джерел')} попиту.`,
-    previewed: (before, after) => `Підготовлено попередній перегляд ${before} → ${after} ${pluralUk(after, 'гостя', 'гостей', 'гостей')}; потрібне підтвердження людини.`,
+    previewed: (before, after) =>
+      `Підготовлено попередній перегляд ${before} → ${after} ${pluralUk(after, 'гостя', 'гостей', 'гостей')}; потрібне підтвердження людини.`,
     applied: (eventName, guestCount, planVersion) =>
       `Застосовано «${eventName}» на ${guests(guestCount)}; активний план v${planVersion}.`,
+    supplierPrepared: (date, matched, total, unresolved) =>
+      `Замовлення постачальнику на ${date} підготовлено: підібрано ${matched} із ${total} товарів; ${decisionsWord(unresolved)} потребує підтвердження. Кошик ще не змінено.`,
   },
   localAgent: {
     alreadySet: (guestCount) => `«Весілля» вже налаштоване на ${guests(guestCount)}. Зміна не потрібна.`,
@@ -404,6 +409,7 @@ export const uk: Dictionary = {
       `Детермінований розрахунок використовує ${inventory} із запасів і ${incoming} вхідних поставок, зберігає страховий запас ${safety} і планує закупівлю ${purchase}.`,
     planSummary: (version, start, end, batches) =>
       `Активний план v${version} охоплює період з ${start} по ${end} із ${deliveries(batches)} за датами.`,
+    noSupplierBatch: 'У активному плані немає партії, для якої можна підготувати замовлення.',
     fallback:
       'Я можу безпечно підготувати попередній перегляд зміни гостей весілля, пояснити вимогу до закупівлі або прочитати активний план закупівель. Спробуйте «Збільшити весілля до 220 гостей» або «Чому нам потрібно так багато курки?».',
   },

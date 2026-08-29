@@ -1,9 +1,10 @@
-import { z } from "zod";
-import type { AgentApprovalView, AgentToolName, AgentToolTrace, AgentTurn } from "@/domain/agent";
-import type { AgentModelGateway } from "./agent-model";
-import { agentToolDefinitions, type AgentToolResult, AgentToolService } from "./agent-tools";
-import type { Locale } from "@/i18n/locale";
-import { DEFAULT_LOCALE } from "@/i18n/locale";
+import { z } from 'zod';
+import type { AgentApprovalView, AgentToolName, AgentToolTrace, AgentTurn } from '@/domain/agent';
+import type { AgentModelGateway } from './agent-model';
+import { agentToolDefinitions, type AgentToolResult, AgentToolService } from './agent-tools';
+import type { Locale } from '@/i18n/locale';
+import { DEFAULT_LOCALE } from '@/i18n/locale';
+import type { SupplierOrderSession } from './mock-supplier-order-service';
 
 export interface AgentApprovalApplyResult {
   approval: AgentApprovalView;
@@ -27,17 +28,19 @@ export class AgentRuntime {
     const message = messageSchema.parse(rawMessage);
     const trace: AgentToolTrace[] = [];
     let approval: AgentApprovalView | undefined;
+    let supplierOrder: SupplierOrderSession | undefined;
     const invoke = async (name: AgentToolName, args: unknown): Promise<AgentToolResult> => {
       const definition = agentToolDefinitions.find((tool) => tool.name === name)!;
       const startedAt = performance.now();
       try {
         const result = await this.tools.execute(name, args, locale);
         if (result.approval) approval = result.approval;
+        if (result.supplierOrder) supplierOrder = result.supplierOrder;
         trace.push({
           id: this.generateId(),
           name,
           group: definition.group,
-          status: "completed",
+          status: 'completed',
           summary: result.summary,
           durationMs: Math.max(0, Math.round(performance.now() - startedAt)),
         });
@@ -47,8 +50,8 @@ export class AgentRuntime {
           id: this.generateId(),
           name,
           group: definition.group,
-          status: definition.group === "MUTATE" ? "blocked" : "failed",
-          summary: error instanceof Error ? error.message : "Tool execution failed",
+          status: definition.group === 'MUTATE' ? 'blocked' : 'failed',
+          summary: error instanceof Error ? error.message : 'Tool execution failed',
           durationMs: Math.max(0, Math.round(performance.now() - startedAt)),
         });
         throw error;
@@ -62,13 +65,14 @@ export class AgentRuntime {
       message: result.message,
       trace,
       approval,
+      supplierOrder,
     };
   }
 
   async approveAndApply(approvalId: string, locale: Locale = DEFAULT_LOCALE): Promise<AgentApprovalApplyResult> {
     this.tools.approve(approvalId);
     const startedAt = performance.now();
-    const result = await this.tools.execute("apply_event_change", { approvalId }, locale);
+    const result = await this.tools.execute('apply_event_change', { approvalId }, locale);
     const approval = this.tools.getApproval(approvalId);
     return {
       approval,
@@ -76,15 +80,14 @@ export class AgentRuntime {
       message: result.summary,
       trace: {
         id: this.generateId(),
-        name: "apply_event_change",
-        group: "MUTATE",
-        status: "completed",
+        name: 'apply_event_change',
+        group: 'MUTATE',
+        status: 'completed',
         summary: result.summary,
         durationMs: Math.max(0, Math.round(performance.now() - startedAt)),
       },
     };
   }
-
 }
 
 const messageSchema = z.string().trim().min(1).max(2_000);

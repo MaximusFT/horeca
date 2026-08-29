@@ -4,8 +4,14 @@ import {
   readSupplierRuntimeConfiguration,
 } from '@/infrastructure/supplier-runtime';
 import { McpJsonRpcClient, McpProtocolError, type McpToolDefinition } from '@/infrastructure/mcp-client';
+import { SilpoOAuthPanel } from '@/components/debug/silpo-oauth-panel';
 
-export default async function McpDebugPage() {
+export default async function McpDebugPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ oauth?: string; detail?: string; tools?: string }>;
+}) {
+  const query = await searchParams;
   const configuration = readSupplierRuntimeConfiguration();
   const gateway = createSupplierGateway(configuration);
 
@@ -53,13 +59,16 @@ export default async function McpDebugPage() {
 
       <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">{detail}</p>
 
+      <SilpoOAuthPanel
+        oauthStatus={query.oauth}
+        detail={query.oauth === 'connected' ? query.tools : query.detail}
+      />
+
       {status === 'blocked' && (
         <p className="mt-4 text-sm text-amber-700">
-          Stage 9 cannot proceed until Silpo OAuth access is granted. Set{' '}
-          <code className="rounded bg-amber-100 px-1">SUPPLIER_MODE=silpo</code>,{' '}
-          <code className="rounded bg-amber-100 px-1">SILPO_MCP_URL</code>, and{' '}
-          <code className="rounded bg-amber-100 px-1">SILPO_MCP_ACCESS_TOKEN</code> once available, then call live{' '}
-          <code className="rounded bg-amber-100 px-1">tools/list</code> before implementing the real gateway.
+          Live supplier mode remains blocked until OAuth succeeds and the returned{' '}
+          <code className="rounded bg-amber-100 px-1">tools/list</code> schemas are mapped. Use the official OAuth panel
+          above; static access-token variables are retained only for legacy transport diagnostics.
         </p>
       )}
 

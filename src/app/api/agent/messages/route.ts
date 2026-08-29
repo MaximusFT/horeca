@@ -1,6 +1,6 @@
-import { z } from "zod";
-import { getDemoPlanningRuntime } from "@/application/demo-runtime";
-import { getServerLocale } from "@/i18n";
+import { z } from 'zod';
+import { getDemoPlanningRuntime } from '@/application/demo-runtime';
+import { getServerLocale } from '@/i18n';
 
 const requestSchema = z.object({ message: z.string().trim().min(1).max(2_000) });
 
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     return Response.json(turn);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Unable to run procurement agent" },
+      { error: error instanceof Error ? error.message : 'Unable to run procurement agent' },
       { status: 400 },
     );
   }

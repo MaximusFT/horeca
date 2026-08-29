@@ -1,5 +1,5 @@
-import { getDemoPlanningRuntime } from "@/application/demo-runtime";
-import { getServerLocale } from "@/i18n";
+import { getDemoPlanningRuntime } from '@/application/demo-runtime';
+import { getServerLocale } from '@/i18n';
 
 export async function POST(_request: Request, context: { params: Promise<{ batchId: string }> }) {
   try {
@@ -9,7 +9,7 @@ export async function POST(_request: Request, context: { params: Promise<{ batch
     return Response.json(session);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Unable to prepare supplier order" },
+      { error: error instanceof Error ? error.message : 'Unable to prepare supplier order' },
       { status: 400 },
     );
   }

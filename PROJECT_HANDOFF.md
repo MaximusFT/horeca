@@ -19,15 +19,15 @@ Demand → Procurement → Explainability → Wedding Change → Product UI
 
 ## Exact continuation point
 
-Stages 0–8 are complete. Continue with **Stage 9 — MCP Spike** from section 15 of the implementation handoff plan.
+Stages 0–8 are complete. A first Stage 11-compatible mock supplier-agent vertical slice is also complete. Continue with **Stage 9 — MCP Spike** from section 15 of the implementation handoff plan.
 
 Recommended Codex setting for Stage 9: **sol high**. The spike involves OAuth, discovery of live `tools/list` schemas, uncertain weighted-product semantics, and a carefully bounded real-cart mutation. Do not invent Silpo arguments or schemas.
 
-Prepared in advance: `src/infrastructure/mcp-client.ts` is a generic MCP JSON-RPC client (transport-only: `initialize`/`tools/list`/`tools/call` envelopes per the public MCP spec). It knows nothing Silpo-specific. `/debug/mcp` already calls `listTools()` and renders the raw live schema the moment `SILPO_MCP_URL`/`SILPO_MCP_ACCESS_TOKEN` are set — no extra wiring needed to complete Stage 9 step 2.
+Prepared in advance: `src/infrastructure/mcp-client.ts` remains a generic protocol test client. The preferred Stage 9 path now uses official `@modelcontextprotocol/sdk` `Client` + `StreamableHTTPClientTransport` and a session-scoped OAuth provider in `src/infrastructure/silpo-oauth-client.ts`. `/debug/mcp` explicitly starts OAuth 2.1/DCR/PKCE and renders live `tools/list` schemas after authorization. No external Silpo request has been executed yet.
 
-Stage 9 requires real Silpo MCP/OAuth access. If credentials or the MCP connection are unavailable, perform safe read-only diagnostics and report the concrete blocker. Do not pretend that live connectivity was proven.
+Stage 9 requires the user to complete the Silpo login/OTP flow. The current OAuth store is process-memory and suitable only for the isolated local spike; replace it with durable encrypted storage before relying on OAuth across serverless instances. If authorization or MCP connectivity is unavailable, report the concrete blocker. Do not pretend that live connectivity was proven.
 
-Preparation already in place: `SUPPLIER_MODE=mock` remains the default. Set `SUPPLIER_MODE=silpo` only after OAuth, together with `SILPO_MCP_URL` and `SILPO_MCP_ACCESS_TOKEN`. Until the live `tools/list` schemas are captured, this mode intentionally reports a configuration/implementation error rather than falling back to mock or pretending to contact Silpo.
+Preparation already in place: `SUPPLIER_MODE=mock` remains the default. The official endpoint is fixed to `https://mcp.silpo.ua/mcp`; static token variables are legacy diagnostics only. Set `SUPPLIER_MODE=silpo` only after OAuth and live schema mapping. Until then this mode intentionally reports an implementation error rather than falling back to mock or pretending to contact Silpo.
 
 ## Completed implementation
 
@@ -89,6 +89,13 @@ Preparation already in place: `SUPPLIER_MODE=mock` remains the default. Set `SUP
   - “Why do we need so much chicken?” → deterministic provenance → concise explanation.
 - Activity trace shows tool group, tool name, status, summary, and duration.
 - UI forms and agent tools call the same `ProcurementPlanningService`.
+
+### Supplier-agent groundwork
+
+- `prepare_supplier_order` is the sixth guarded application tool and uses the same `MockSupplierOrderService` as the batch UI.
+- “Prepare the next supplier order” runs `get_procurement_plan → prepare_supplier_order`, returns a structured supplier session, and does not mutate the cart.
+- Ask Misto renders the unavailable salmon replacement, explicit substitution approval, cart preview, explicit cart-write approval, and supplier activity trace.
+- The full agent-started mock path is regression-tested through cart reread/verification; replacing the gateway with Silpo should preserve this application flow.
 
 ## Agent runtime modes and cost control
 

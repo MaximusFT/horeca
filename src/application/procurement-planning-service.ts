@@ -1,11 +1,11 @@
-import { randomUUID } from "node:crypto";
-import { addMinutes } from "date-fns";
-import type { DemoDataset } from "@/data/demo/dataset";
-import type { Clock } from "@/lib/clock";
-import { calculateDemandPlan } from "@/engine/calculate-demand-plan";
-import { calculateProcurementPlan } from "@/engine/calculate-procurement-plan";
-import { diffProcurementPlans } from "./plan-diff";
-import type { EventChangePreview, PlanningRepository } from "./planning-repository";
+import { randomUUID } from 'node:crypto';
+import { addMinutes } from 'date-fns';
+import type { DemoDataset } from '@/data/demo/dataset';
+import type { Clock } from '@/lib/clock';
+import { calculateDemandPlan } from '@/engine/calculate-demand-plan';
+import { calculateProcurementPlan } from '@/engine/calculate-procurement-plan';
+import { diffProcurementPlans } from './plan-diff';
+import type { EventChangePreview, PlanningRepository } from './planning-repository';
 
 export interface ProcurementPlanningServiceDependencies {
   repository: PlanningRepository;
@@ -27,7 +27,7 @@ export class ProcurementPlanningService {
 
   previewEventChange(eventId: string, guestCount: number): EventChangePreview {
     if (!Number.isInteger(guestCount) || guestCount < 0) {
-      throw new Error("Guest count must be a non-negative integer");
+      throw new Error('Guest count must be a non-negative integer');
     }
 
     const state = this.dependencies.repository.getState();
@@ -35,9 +35,7 @@ export class ProcurementPlanningService {
     if (!event) throw new Error(`Unknown event ${eventId}`);
     if (event.guestCount === guestCount) throw new Error(`Event ${eventId} already has ${guestCount} guests`);
 
-    const candidateEvents = state.events.map((item) =>
-      item.id === eventId ? { ...item, guestCount } : item,
-    );
+    const candidateEvents = state.events.map((item) => (item.id === eventId ? { ...item, guestCount } : item));
     const candidateDataset: DemoDataset = {
       ...this.dependencies.referenceDataset,
       events: candidateEvents,
@@ -62,7 +60,7 @@ export class ProcurementPlanningService {
       diff: diffProcurementPlans(state.activePlan, candidatePlan),
       createdAt: now.toISOString(),
       expiresAt: addMinutes(now, 15).toISOString(),
-      status: "pending",
+      status: 'pending',
     };
 
     this.dependencies.repository.savePreview(preview);
@@ -72,22 +70,22 @@ export class ProcurementPlanningService {
   applyEventChange(previewId: string) {
     const preview = this.dependencies.repository.getPreview(previewId);
     if (!preview) throw new Error(`Unknown event change preview ${previewId}`);
-    if (preview.status !== "pending") throw new Error(`Preview ${previewId} is ${preview.status}`);
+    if (preview.status !== 'pending') throw new Error(`Preview ${previewId} is ${preview.status}`);
 
     const now = this.dependencies.clock.now();
     if (now.getTime() > new Date(preview.expiresAt).getTime()) {
-      this.dependencies.repository.savePreviewStatus(previewId, "expired");
+      this.dependencies.repository.savePreviewStatus(previewId, 'expired');
       throw new Error(`Preview ${previewId} has expired`);
     }
 
     const state = this.dependencies.repository.getState();
     const currentEvent = state.events.find((event) => event.id === preview.eventId);
     if (
-      state.activePlan.version !== preview.basePlanVersion
-      || !currentEvent
-      || currentEvent.guestCount !== preview.beforeGuestCount
+      state.activePlan.version !== preview.basePlanVersion ||
+      !currentEvent ||
+      currentEvent.guestCount !== preview.beforeGuestCount
     ) {
-      this.dependencies.repository.savePreviewStatus(previewId, "stale");
+      this.dependencies.repository.savePreviewStatus(previewId, 'stale');
       throw new Error(`Preview ${previewId} is stale`);
     }
 
@@ -96,7 +94,7 @@ export class ProcurementPlanningService {
     );
     const change = {
       id: this.generateId(),
-      type: "EVENT_CHANGED" as const,
+      type: 'EVENT_CHANGED' as const,
       eventId: preview.eventId,
       beforeGuestCount: preview.beforeGuestCount,
       afterGuestCount: preview.afterGuestCount,
@@ -110,7 +108,7 @@ export class ProcurementPlanningService {
       planHistory: [...state.planHistory, preview.candidatePlan],
       recentChanges: [change, ...state.recentChanges],
     });
-    this.dependencies.repository.savePreviewStatus(previewId, "applied");
+    this.dependencies.repository.savePreviewStatus(previewId, 'applied');
 
     return {
       event: events.find((event) => event.id === preview.eventId)!,

@@ -1,13 +1,15 @@
 import type { EventChangePreviewDto } from "@/application/event-change-dto";
+import type { SupplierOrderSession } from "@/application/mock-supplier-order-service";
 
 export type AgentToolName =
   | "get_event"
   | "get_procurement_plan"
   | "explain_requirement"
   | "preview_event_change"
-  | "apply_event_change";
+  | "apply_event_change"
+  | "prepare_supplier_order";
 
-export type AgentToolGroup = "READ" | "CALCULATE" | "PREVIEW" | "MUTATE";
+export type AgentToolGroup = "READ" | "CALCULATE" | "PREVIEW" | "MUTATE" | "SUPPLIER";
 
 export interface AgentToolDefinition {
   name: AgentToolName;
@@ -42,4 +44,5 @@ export interface AgentTurn {
   message: string;
   trace: AgentToolTrace[];
   approval?: AgentApprovalView;
+  supplierOrder?: SupplierOrderSession;
 }

@@ -67,6 +67,7 @@ export const en: Dictionary = {
       increaseWedding: 'Increase Wedding to 220 guests',
       whyChicken: 'Why do we need so much chicken?',
       readPlan: 'Read the active procurement plan',
+      prepareSupplierOrder: 'Prepare the next supplier order',
     },
   },
   overview: {
@@ -375,6 +376,8 @@ export const en: Dictionary = {
     previewed: (before, after) => `Previewed ${before} → ${after} guests; human approval required.`,
     applied: (eventName, guestCount, planVersion) =>
       `Applied ${eventName} at ${guestCount} guests; Plan v${planVersion} is active.`,
+    supplierPrepared: (date, matched, total, unresolved) =>
+      `Supplier order for ${date} is prepared: ${matched} of ${total} products matched; ${unresolved} decision requires approval. The cart is unchanged.`,
   },
   localAgent: {
     alreadySet: (guestCount) => `Wedding is already set to ${guestCount} guests. No change is needed.`,
@@ -386,6 +389,7 @@ export const en: Dictionary = {
       `The deterministic projection uses ${inventory} of inventory and ${incoming} incoming supply, preserves a ${safety} safety target, and plans ${purchase}.`,
     planSummary: (version, start, end, batches) =>
       `Active Plan v${version} covers ${start} through ${end} with ${batches} dated procurement batches.`,
+    noSupplierBatch: 'The active plan has no batch available for supplier preparation.',
     fallback:
       'I can safely preview a Wedding guest change, explain a procurement requirement, or read the active procurement plan. Try “Increase Wedding to 220 guests” or “Why do we need so much chicken?”.',
   },

@@ -1,5 +1,5 @@
-import { getDemoPlanningRuntime } from "@/application/demo-runtime";
-import { getServerLocale } from "@/i18n";
+import { getDemoPlanningRuntime } from '@/application/demo-runtime';
+import { getServerLocale } from '@/i18n';
 
 export async function POST(_request: Request, context: { params: Promise<{ orderId: string }> }) {
   try {
@@ -9,7 +9,7 @@ export async function POST(_request: Request, context: { params: Promise<{ order
     return Response.json(session);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Unable to apply supplier cart" },
+      { error: error instanceof Error ? error.message : 'Unable to apply supplier cart' },
       { status: 409 },
     );
   }

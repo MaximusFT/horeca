@@ -1,20 +1,22 @@
-import { z } from "zod";
-import type { AgentApprovalView, AgentToolDefinition, AgentToolName } from "@/domain/agent";
-import type { Ingredient } from "@/domain/ingredient";
-import { explainProcurementLine } from "./explain-procurement";
-import { toEventChangePreviewDto } from "./event-change-dto";
-import type { ProcurementPlanningService } from "./procurement-planning-service";
-import type { PlanningRepository } from "./planning-repository";
-import { MemoryAgentApprovalRepository } from "./agent-approval-repository";
-import type { Clock } from "@/lib/clock";
-import { getDictionary } from "@/i18n/get-dictionary";
-import type { Locale } from "@/i18n/locale";
-import { localizedEventName, localizedIngredientName } from "@/i18n/demo-names";
+import { z } from 'zod';
+import type { AgentApprovalView, AgentToolDefinition, AgentToolName } from '@/domain/agent';
+import type { Ingredient } from '@/domain/ingredient';
+import { explainProcurementLine } from './explain-procurement';
+import { toEventChangePreviewDto } from './event-change-dto';
+import type { ProcurementPlanningService } from './procurement-planning-service';
+import type { PlanningRepository } from './planning-repository';
+import { MemoryAgentApprovalRepository } from './agent-approval-repository';
+import type { Clock } from '@/lib/clock';
+import { getDictionary } from '@/i18n/get-dictionary';
+import type { Locale } from '@/i18n/locale';
+import { localizedEventName, localizedIngredientName } from '@/i18n/demo-names';
+import type { MockSupplierOrderService, SupplierOrderSession } from './mock-supplier-order-service';
 
 export interface AgentToolResult {
   output: unknown;
   summary: string;
   approval?: AgentApprovalView;
+  supplierOrder?: SupplierOrderSession;
 }
 
 interface Dependencies {
@@ -23,41 +25,57 @@ interface Dependencies {
   approvals: MemoryAgentApprovalRepository;
   ingredients: Ingredient[];
   clock: Clock;
+  supplierOrders: Pick<MockSupplierOrderService, 'prepareBatch'>;
   generateId?: () => string;
 }
 
-const nullableString = { type: ["string", "null"] };
+const nullableString = { type: ['string', 'null'] };
 
 export const agentToolDefinitions: AgentToolDefinition[] = [
   {
-    name: "get_event",
-    group: "READ",
-    description: "Read one event by its stable event ID. Never infer or calculate event facts.",
-    parameters: objectSchema({ eventId: { type: "string" } }, ["eventId"]),
+    name: 'get_event',
+    group: 'READ',
+    description: 'Read one event by its stable event ID. Never infer or calculate event facts.',
+    parameters: objectSchema({ eventId: { type: 'string' } }, ['eventId']),
   },
   {
-    name: "get_procurement_plan",
-    group: "READ",
-    description: "Read the active deterministic procurement plan, optionally focusing on one batch.",
-    parameters: objectSchema({ batchId: nullableString }, ["batchId"]),
+    name: 'get_procurement_plan',
+    group: 'READ',
+    description: 'Read the active deterministic procurement plan, optionally focusing on one batch.',
+    parameters: objectSchema({ batchId: nullableString }, ['batchId']),
   },
   {
-    name: "explain_requirement",
-    group: "CALCULATE",
-    description: "Return deterministic provenance and quantities for an ingredient requirement. Use this instead of doing arithmetic.",
-    parameters: objectSchema({ ingredientId: { type: "string" }, batchId: nullableString }, ["ingredientId", "batchId"]),
+    name: 'explain_requirement',
+    group: 'CALCULATE',
+    description:
+      'Return deterministic provenance and quantities for an ingredient requirement. Use this instead of doing arithmetic.',
+    parameters: objectSchema({ ingredientId: { type: 'string' }, batchId: nullableString }, [
+      'ingredientId',
+      'batchId',
+    ]),
   },
   {
-    name: "preview_event_change",
-    group: "PREVIEW",
-    description: "Create a backend-stored event-change preview. This does not mutate the event or active plan.",
-    parameters: objectSchema({ eventId: { type: "string" }, guestCount: { type: "integer", minimum: 0 } }, ["eventId", "guestCount"]),
+    name: 'preview_event_change',
+    group: 'PREVIEW',
+    description: 'Create a backend-stored event-change preview. This does not mutate the event or active plan.',
+    parameters: objectSchema({ eventId: { type: 'string' }, guestCount: { type: 'integer', minimum: 0 } }, [
+      'eventId',
+      'guestCount',
+    ]),
   },
   {
-    name: "apply_event_change",
-    group: "MUTATE",
-    description: "Apply an event-change preview only after its backend approval record was explicitly approved by a human.",
-    parameters: objectSchema({ approvalId: { type: "string" } }, ["approvalId"]),
+    name: 'apply_event_change',
+    group: 'MUTATE',
+    description:
+      'Apply an event-change preview only after its backend approval record was explicitly approved by a human.',
+    parameters: objectSchema({ approvalId: { type: 'string' } }, ['approvalId']),
+  },
+  {
+    name: 'prepare_supplier_order',
+    group: 'SUPPLIER',
+    description:
+      'Prepare supplier product matching for one deterministic procurement batch without changing the supplier cart.',
+    parameters: objectSchema({ batchId: nullableString }, ['batchId']),
   },
 ];
 
@@ -70,20 +88,27 @@ export class AgentToolService {
     this.generateId = dependencies.generateId ?? (() => crypto.randomUUID());
   }
 
-  async execute(name: AgentToolName, rawArguments: unknown, locale: Locale = "uk"): Promise<AgentToolResult> {
+  async execute(name: AgentToolName, rawArguments: unknown, locale: Locale = 'uk'): Promise<AgentToolResult> {
     switch (name) {
-      case "get_event": return this.getEvent(getEventSchema.parse(rawArguments), locale);
-      case "get_procurement_plan": return this.getProcurementPlan(getPlanSchema.parse(rawArguments), locale);
-      case "explain_requirement": return this.explainRequirement(explainSchema.parse(rawArguments), locale);
-      case "preview_event_change": return this.previewEventChange(previewSchema.parse(rawArguments), locale);
-      case "apply_event_change": return this.applyEventChange(applySchema.parse(rawArguments), locale);
+      case 'get_event':
+        return this.getEvent(getEventSchema.parse(rawArguments), locale);
+      case 'get_procurement_plan':
+        return this.getProcurementPlan(getPlanSchema.parse(rawArguments), locale);
+      case 'explain_requirement':
+        return this.explainRequirement(explainSchema.parse(rawArguments), locale);
+      case 'preview_event_change':
+        return this.previewEventChange(previewSchema.parse(rawArguments), locale);
+      case 'apply_event_change':
+        return this.applyEventChange(applySchema.parse(rawArguments), locale);
+      case 'prepare_supplier_order':
+        return this.prepareSupplierOrder(getPlanSchema.parse(rawArguments), locale);
     }
   }
 
   approve(approvalId: string): AgentApprovalView {
     const approval = this.dependencies.approvals.require(approvalId);
-    if (approval.status !== "pending") throw new Error(`Approval ${approvalId} is already ${approval.status}`);
-    return this.dependencies.approvals.setStatus(approvalId, "approved");
+    if (approval.status !== 'pending') throw new Error(`Approval ${approvalId} is already ${approval.status}`);
+    return this.dependencies.approvals.setStatus(approvalId, 'approved');
   }
 
   getApproval(approvalId: string): AgentApprovalView {
@@ -117,7 +142,9 @@ export class AgentToolService {
               return {
                 lineId: line.id,
                 ingredientId: line.ingredientId,
-                ingredientName: ingredient ? localizedIngredientName(ingredient.id, ingredient.name, locale) : undefined,
+                ingredientName: ingredient
+                  ? localizedIngredientName(ingredient.id, ingredient.name, locale)
+                  : undefined,
                 quantity: line.quantity,
                 unit: line.unit,
               };
@@ -132,21 +159,30 @@ export class AgentToolService {
         id: plan.id,
         version: plan.version,
         horizon: plan.horizon,
-        batches: plan.batches.map((batch) => ({ id: batch.id, deliveryOn: batch.deliveryOn, lineCount: batch.lines.length })),
+        batches: plan.batches.map((batch) => ({
+          id: batch.id,
+          deliveryOn: batch.deliveryOn,
+          lineCount: batch.lines.length,
+        })),
       },
       summary: dictionary.agentTools.readPlan(plan.version, plan.batches.length),
     };
   }
 
-  private explainRequirement({ ingredientId, batchId }: z.infer<typeof explainSchema>, locale: Locale): AgentToolResult {
+  private explainRequirement(
+    { ingredientId, batchId }: z.infer<typeof explainSchema>,
+    locale: Locale,
+  ): AgentToolResult {
     const plan = this.dependencies.repository.getState().activePlan;
     const ingredient = this.ingredientById.get(ingredientId);
     if (!ingredient) throw new Error(`Unknown ingredient ${ingredientId}`);
     const candidates = batchId
-      ? plan.batches.find((batch) => batch.id === batchId)?.lines.filter((line) => line.ingredientId === ingredientId) ?? []
+      ? (plan.batches
+          .find((batch) => batch.id === batchId)
+          ?.lines.filter((line) => line.ingredientId === ingredientId) ?? [])
       : plan.lines.filter((line) => line.ingredientId === ingredientId);
     const line = [...candidates].sort((a, b) => b.quantity - a.quantity || a.deliveryAt.localeCompare(b.deliveryAt))[0];
-    if (!line) throw new Error(`No planned requirement for ${ingredient.name}${batchId ? ` in ${batchId}` : ""}`);
+    if (!line) throw new Error(`No planned requirement for ${ingredient.name}${batchId ? ` in ${batchId}` : ''}`);
     const explanation = explainProcurementLine(plan, line, ingredient, locale);
     const batch = plan.batches.find((item) => item.lines.some((candidate) => candidate.id === line.id))!;
     const ingredientName = localizedIngredientName(ingredient.id, ingredient.name, locale);
@@ -162,8 +198,8 @@ export class AgentToolService {
     const dto = toEventChangePreviewDto(preview);
     const approval = this.dependencies.approvals.save({
       id: this.generateId(),
-      type: "EVENT_CHANGE",
-      status: "pending",
+      type: 'EVENT_CHANGE',
+      status: 'pending',
       createdAt: this.dependencies.clock.now().toISOString(),
       preview: dto,
     });
@@ -186,12 +222,12 @@ export class AgentToolService {
 
   private applyEventChange({ approvalId }: z.infer<typeof applySchema>, locale: Locale): AgentToolResult {
     const approval = this.dependencies.approvals.require(approvalId);
-    if (approval.status !== "approved") {
+    if (approval.status !== 'approved') {
       throw new Error(`Mutation blocked: approval ${approvalId} is ${approval.status}`);
     }
     try {
       const result = this.dependencies.planningService.applyEventChange(approval.preview.id);
-      this.dependencies.approvals.setStatus(approvalId, "applied");
+      this.dependencies.approvals.setStatus(approvalId, 'applied');
       const dictionary = getDictionary(locale);
       const eventName = localizedEventName(result.event.id, result.event.name, locale);
       return {
@@ -199,9 +235,42 @@ export class AgentToolService {
         summary: dictionary.agentTools.applied(eventName, result.event.guestCount, result.plan.version),
       };
     } catch (error) {
-      this.dependencies.approvals.setStatus(approvalId, "failed", error instanceof Error ? error.message : "Apply failed");
+      this.dependencies.approvals.setStatus(
+        approvalId,
+        'failed',
+        error instanceof Error ? error.message : 'Apply failed',
+      );
       throw error;
     }
+  }
+
+  private async prepareSupplierOrder(
+    { batchId }: z.infer<typeof getPlanSchema>,
+    locale: Locale,
+  ): Promise<AgentToolResult> {
+    const plan = this.dependencies.repository.getState().activePlan;
+    const batch = batchId ? plan.batches.find((item) => item.id === batchId) : plan.batches[0];
+    if (!batch) throw new Error(batchId ? `Unknown procurement batch ${batchId}` : 'No procurement batch available');
+    const supplierOrder = await this.dependencies.supplierOrders.prepareBatch(batch.id, locale);
+    const unresolved = supplierOrder.lines.filter((line) => !line.selectedProduct).length;
+    const dictionary = getDictionary(locale);
+    return {
+      output: {
+        sessionId: supplierOrder.id,
+        batchId: supplierOrder.batchId,
+        planVersion: supplierOrder.planVersion,
+        matchedCount: supplierOrder.lines.length - unresolved,
+        lineCount: supplierOrder.lines.length,
+        unresolvedCount: unresolved,
+      },
+      summary: dictionary.agentTools.supplierPrepared(
+        batch.deliveryOn,
+        supplierOrder.lines.length - unresolved,
+        supplierOrder.lines.length,
+        unresolved,
+      ),
+      supplierOrder,
+    };
   }
 }
 
@@ -212,5 +281,5 @@ const previewSchema = z.object({ eventId: z.string().min(1), guestCount: z.numbe
 const applySchema = z.object({ approvalId: z.string().min(1) });
 
 function objectSchema(properties: Record<string, unknown>, required: string[]) {
-  return { type: "object", properties, required, additionalProperties: false };
+  return { type: 'object', properties, required, additionalProperties: false };
 }

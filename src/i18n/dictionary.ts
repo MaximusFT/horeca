@@ -61,6 +61,7 @@ export interface Dictionary {
       increaseWedding: string;
       whyChicken: string;
       readPlan: string;
+      prepareSupplierOrder: string;
     };
   };
   overview: {
@@ -361,13 +362,21 @@ export interface Dictionary {
     explained: (ingredient: string, batchId: string, sources: number) => string;
     previewed: (before: number, after: number) => string;
     applied: (eventName: string, guests: number, planVersion: number) => string;
+    supplierPrepared: (date: string, matched: number, total: number, unresolved: number) => string;
   };
   localAgent: {
     alreadySet: (guests: number) => string;
-    previewReady: (before: number, after: number, planVersion: number, ingredientCount: number, batchCount: number) => string;
+    previewReady: (
+      before: number,
+      after: number,
+      planVersion: number,
+      ingredientCount: number,
+      batchCount: number,
+    ) => string;
     explanationIntro: (ingredient: string, batchId: string, gross: string, sources: string) => string;
     explanationDetails: (inventory: string, incoming: string, safety: string, purchase: string) => string;
     planSummary: (version: number, start: string, end: string, batches: number) => string;
+    noSupplierBatch: string;
     fallback: string;
   };
   supplierActivity: {
