@@ -15,6 +15,7 @@ export interface OverviewDay {
   loadFactor: number;
   events: Event[];
   batchCount: number;
+  batchId?: string;
   procurementLineCount: number;
 }
 
@@ -29,9 +30,12 @@ export interface DemandSourceSplit {
 export interface AttentionItem {
   id: string;
   tone: "warning" | "info" | "ready";
+  actionable: boolean;
   title: string;
   description: string;
   meta: string;
+  href?: string;
+  actionLabel?: string;
 }
 
 export function buildOverviewSummary(
@@ -58,6 +62,7 @@ export function buildOverviewSummary(
       loadFactor: { quiet: 0.75, normal: 1, busy: 1.25, peak: 1.55 }[day.load],
       events: eventsByDate.get(day.date) ?? [],
       batchCount: batch ? 1 : 0,
+      batchId: batch?.id,
       procurementLineCount: batch?.lines.length ?? 0,
     };
   });
@@ -66,21 +71,27 @@ export function buildOverviewSummary(
   const expired = firstExpiryRisk(plan);
   const incomingCoverageCount = plan.projections.filter((projection) => projection.coverage.incoming > 0).length;
   const nextBatch = plan.batches[0];
+  const largestEvent = [...dataset.events].sort((left, right) => right.guestCount - left.guestCount)[0];
+  const nextPeakDay = timeline.find((day) => day.load === "peak");
   const attention: AttentionItem[] = [];
 
   if (expired) {
     attention.push({
       id: "expiry-risk",
       tone: "warning",
+      actionable: true,
       title: `${ingredientNames.get(expired.ingredientId) ?? expired.ingredientId} expiry risk`,
       description: "Projected stock expires before a later requirement and is excluded from coverage.",
       meta: `${formatAmount(expired.quantity, expired.unit)} projected expiry`,
+      href: "/procurement",
+      actionLabel: "Review procurement",
     });
   }
   if (incomingCoverageCount > 0) {
     attention.push({
       id: "incoming-coverage",
       tone: "info",
+      actionable: false,
       title: "Confirmed supply is already counted",
       description: "Incoming deliveries are applied only when they arrive before the requirement time.",
       meta: `${incomingCoverageCount} requirements covered`,
@@ -90,9 +101,12 @@ export function buildOverviewSummary(
     attention.push({
       id: "supplier-ready",
       tone: "ready",
+      actionable: true,
       title: "Next batch is ready for supplier matching",
       description: "Quantities and delivery timing are calculated; supplier products are the next execution step.",
       meta: `${nextBatch.deliveryOn} · ${nextBatch.lines.length} ingredients`,
+      href: `/procurement/${nextBatch.id}`,
+      actionLabel: "Prepare supplier order",
     });
   }
 
@@ -100,6 +114,9 @@ export function buildOverviewSummary(
     planVersion: plan.version,
     guestTotal: dataset.events.reduce((sum, event) => sum + event.guestCount, 0),
     eventCount: dataset.events.length,
+    operatingDayCount: dataset.restaurantCalendar.length,
+    largestEvent,
+    nextPeakDay,
     batchCount: plan.batches.length,
     procurementLineCount: plan.lines.length,
     timeline,

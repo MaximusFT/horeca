@@ -12,7 +12,15 @@ describe("Overview summary", () => {
 
     expect(summary.guestTotal).toBe(445);
     expect(summary.eventCount).toBe(5);
+    expect(summary.operatingDayCount).toBe(14);
+    expect(summary.largestEvent).toMatchObject({ id: "wedding", guestCount: 180 });
+    expect(summary.nextPeakDay).toMatchObject({ date: "2026-09-05", loadFactor: 1.55 });
     expect(summary.batchCount).toBe(plan.batches.length);
+    expect(summary.attention.filter((item) => item.actionable)).toHaveLength(2);
+    expect(summary.attention.find((item) => item.id === "supplier-ready")).toMatchObject({
+      href: `/procurement/${plan.batches[0].id}`,
+      actionLabel: "Prepare supplier order",
+    });
     expect(summary.timeline).toHaveLength(14);
     expect(weddingDay).toMatchObject({ load: "busy", loadFactor: 1.25 });
     expect(weddingDay?.events[0]).toMatchObject({ id: "wedding", guestCount: 180 });

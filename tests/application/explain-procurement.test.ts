@@ -13,6 +13,11 @@ describe("explainProcurementLine", () => {
 
     expect(explanation.purchaseQuantity).toBe(line.quantity);
     expect(explanation.safetyTarget).toBe(4_000);
+    expect(explanation.deliveryAt).toBe(line.deliveryAt);
+    expect(explanation.requiredAt).toBe(line.triggeredByRequiredAt);
+    expect(explanation.coveredRequiredAt).toEqual(line.coveredRequiredAt);
+    expect(explanation.expiresAt).toBe(line.expiresAt);
+    expect(explanation.shelfLifeDays).toBe(ingredient.shelfLifeDays);
     expect(explanation.demandSources.some((source) => source.label === "Wedding")).toBe(true);
     expect(explanation.demandSources.reduce((sum, source) => sum + source.quantity, 0)).toBe(explanation.grossDemand);
   });

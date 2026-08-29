@@ -104,7 +104,7 @@ export function AgentLauncher() {
         onClick={() => setOpen(true)}
       >
         <SparkIcon />
-        <span className="hidden sm:inline">Ask agent</span>
+        <span className="hidden sm:inline">Procurement agent</span>
       </button>
 
       {open &&

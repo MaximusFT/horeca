@@ -14,6 +14,10 @@ export interface ProcurementLineExplanation {
   ingredientId: string;
   unit: BaseUnit;
   deliveryAt: string;
+  requiredAt: string;
+  coveredRequiredAt: string[];
+  expiresAt: string;
+  shelfLifeDays: number;
   grossDemand: number;
   demandSources: DemandSourceExplanation[];
   balanceBeforeTrigger: number;
@@ -65,6 +69,10 @@ export function explainProcurementLine(
     ingredientId: line.ingredientId,
     unit: line.unit,
     deliveryAt: line.deliveryAt,
+    requiredAt: trigger.requiredAt,
+    coveredRequiredAt: [...line.coveredRequiredAt],
+    expiresAt: line.expiresAt,
+    shelfLifeDays: ingredient.shelfLifeDays,
     grossDemand: round(projections.reduce((sum, projection) => sum + projection.grossDemand, 0)),
     demandSources: [...sources.values()].sort((a, b) => b.quantity - a.quantity),
     balanceBeforeTrigger: trigger.balanceBefore,

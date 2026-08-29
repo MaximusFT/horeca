@@ -1,4 +1,4 @@
-import { resetDemoPlanningRuntime } from "@/application/demo-runtime";
+import { resetDemoPlanningRuntime } from '@/application/demo-runtime';
 
 export async function POST() {
   try {
@@ -6,7 +6,7 @@ export async function POST() {
     return Response.json({ ok: true });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Unable to reset the demo" },
+      { error: error instanceof Error ? error.message : 'Unable to reset the demo' },
       { status: 500 },
     );
   }

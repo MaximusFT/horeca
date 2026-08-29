@@ -10,7 +10,12 @@ import { formatQuantity } from "@/engine/units";
 interface Props {
   event: Event;
   activePlanVersion: number;
-  menuLines: Array<{ menuItemId: string; name: string; quantityLabel: string }>;
+  menuLines: Array<{ menuItemId: string; name: string; mode: "fixed" | "per_guest"; rate: number }>;
+  impact: {
+    affectedIngredientCount: number;
+    nextFreshDeliveryAt?: string;
+    largestDrivers: string[];
+  };
   ingredientNames: Record<string, string>;
 }
 
@@ -18,6 +23,7 @@ export function WeddingEventClient({
   event,
   activePlanVersion,
   menuLines,
+  impact,
   ingredientNames,
 }: Props) {
   const router = useRouter();
@@ -103,40 +109,50 @@ export function WeddingEventClient({
               <p className="mt-1 text-xs text-[#879188]">Per-guest quantities recalculate from the guest count.</p>
             </header>
             <div className="divide-y divide-[#edf0ec]">
-              {menuLines.map((line) => (
-                <div key={line.menuItemId} className="flex items-center justify-between gap-4 px-6 py-4">
-                  <p className="text-sm font-medium text-[#344138]">{line.name}</p>
-                  <span className="rounded-lg bg-[#f0f3ef] px-2.5 py-1.5 text-[10px] font-semibold text-[#67736b]">{line.quantityLabel}</span>
-                </div>
-              ))}
+              {menuLines.map((line) => {
+                const currentQuantity = line.mode === "fixed" ? line.rate : line.rate * currentGuestCount;
+                const candidateQuantity = line.mode === "fixed" ? line.rate : line.rate * guestCount;
+                const delta = candidateQuantity - currentQuantity;
+                return (
+                  <div key={line.menuItemId} className="flex items-center justify-between gap-4 px-6 py-4">
+                    <div>
+                      <p className="text-sm font-medium text-[#344138]">{line.name}</p>
+                      <p className="mt-1 text-[10px] text-[#8a948e]">{line.mode === "fixed" ? `${formatPortions(line.rate)} fixed` : `${line.rate} / guest`}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold tabular-nums text-[#35443a]">{formatPortions(candidateQuantity)} portions</p>
+                      {delta !== 0 && <p className="mt-1 text-[10px] font-semibold tabular-nums text-[#39704b]">{delta > 0 ? "+" : ""}{formatPortions(delta)} pending</p>}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </section>
 
-          <aside className="h-fit rounded-2xl border border-[#dfe3dc] bg-white p-5 shadow-[0_8px_28px_rgba(30,47,36,.06)]">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#879188]">Guest change</p>
-            <h2 className="mt-2 text-lg font-semibold text-[#253229]">Recalculate procurement</h2>
-            <p className="mt-2 text-xs leading-5 text-[#7a867e]">Only guest count changes. Recipes, stock and procurement lines are recalculated deterministically.</p>
-            <label className="mt-5 block text-xs font-semibold text-[#536158]" htmlFor="guest-count">Guests</label>
-            <div className="mt-2 flex gap-2">
-              <input
-                id="guest-count"
-                type="number"
-                min={0}
-                value={guestCount}
-                onChange={(changeEvent) => setGuestCount(Number(changeEvent.target.value))}
-                className="h-11 min-w-0 flex-1 rounded-xl border border-[#d7ddd7] px-3 text-sm font-semibold outline-none focus:border-[#5b936e]"
-              />
-              <button type="button" onClick={() => setGuestCount(currentGuestCount + 20)} className="rounded-xl border border-[#d7ddd7] px-3 text-xs font-semibold text-[#526159]">+20</button>
-            </div>
-            {changed && (
-              <div className="mt-3 flex items-center justify-between rounded-lg bg-[#f1f5f1] px-3 py-2 text-xs">
-                <span className="text-[#748078]">Change</span>
-                <span className="font-semibold text-[#356849]">{guestCount - currentGuestCount > 0 ? "+" : ""}{guestCount - currentGuestCount} guests</span>
+          <aside className="h-fit space-y-4">
+            <section className="rounded-2xl border border-[#dfe3dc] bg-white p-5 shadow-[0_8px_28px_rgba(30,47,36,.06)]">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#64806d]">Procurement impact</p>
+              <p className="mt-3 text-3xl font-semibold tracking-tight text-[#27352c]">{impact.affectedIngredientCount}</p>
+              <p className="mt-1 text-xs text-[#748078]">ingredients used by this event</p>
+              <div className="mt-5 space-y-4 border-t border-[#edf0ec] pt-4">
+                <div><p className="text-[10px] font-semibold uppercase tracking-wide text-[#919a94]">Next fresh-goods delivery</p><p className="mt-1 text-sm font-semibold text-[#35443a]">{impact.nextFreshDeliveryAt ? formatDateTime(impact.nextFreshDeliveryAt) : "Covered by current plan"}</p></div>
+                <div><p className="text-[10px] font-semibold uppercase tracking-wide text-[#919a94]">Largest demand drivers</p><p className="mt-1 text-sm leading-6 text-[#536158]">{impact.largestDrivers.join(" · ")}</p></div>
+                <div><p className="text-[10px] font-semibold uppercase tracking-wide text-[#919a94]">Supplier status</p><p className="mt-1 text-sm font-semibold text-[#8c6428]">Matching pending</p></div>
               </div>
-            )}
-            <button type="button" disabled={!changed || loading} onClick={reviewImpact} className="mt-5 h-11 w-full rounded-xl bg-[#1d5d38] text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
-              {loading ? "Calculating…" : "Review impact"}
-            </button>
+              <Link href="/procurement" className="mt-5 flex h-10 items-center justify-center rounded-xl border border-[#d7ddd7] text-xs font-semibold text-[#456b53]">View full procurement</Link>
+            </section>
+            <section className="rounded-2xl border border-[#dfe3dc] bg-white p-5 shadow-[0_8px_28px_rgba(30,47,36,.06)]">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#879188]">Guest change</p>
+              <h2 className="mt-2 text-lg font-semibold text-[#253229]">Recalculate procurement</h2>
+              <p className="mt-2 text-xs leading-5 text-[#7a867e]">Only guest count changes. Menus, stock coverage and purchasing are recalculated before approval.</p>
+              <label className="mt-5 block text-xs font-semibold text-[#536158]" htmlFor="guest-count">Guests</label>
+              <div className="mt-2 flex gap-2">
+                <input id="guest-count" type="number" min={0} value={guestCount} onChange={(changeEvent) => setGuestCount(Number(changeEvent.target.value))} className="h-11 min-w-0 flex-1 rounded-xl border border-[#d7ddd7] px-3 text-sm font-semibold outline-none focus:border-[#5b936e]" />
+                <button type="button" onClick={() => setGuestCount(currentGuestCount + 20)} className="rounded-xl border border-[#d7ddd7] px-3 text-xs font-semibold text-[#526159]">+20</button>
+              </div>
+              {changed && <div className="mt-3 flex items-center justify-between rounded-lg bg-[#f1f5f1] px-3 py-2 text-xs"><span className="text-[#748078]">Change</span><span className="font-semibold text-[#356849]">{guestCount - currentGuestCount > 0 ? "+" : ""}{guestCount - currentGuestCount} guests</span></div>}
+              <button type="button" disabled={!changed || loading} onClick={reviewImpact} className="mt-5 h-11 w-full rounded-xl bg-[#1d5d38] text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">{loading ? "Calculating…" : "Review impact"}</button>
+            </section>
           </aside>
         </div>
       </div>
@@ -185,10 +201,11 @@ function ImpactDrawer({
           </div>
         </header>
         <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <ImpactMetric label="Guests" value={`+${preview.afterGuestCount - preview.beforeGuestCount}`} />
             <ImpactMetric label="Plan" value={`v${preview.basePlanVersion} → v${preview.candidatePlanVersion}`} />
             <ImpactMetric label="Ingredients" value={String(preview.diff.ingredientDeltas.length)} />
+            <ImpactMetric label="Purchase lines" value={String(preview.diff.lines.length)} />
           </div>
           <div className="mt-6 rounded-2xl border border-[#dfe3dc] bg-white">
             <div className="border-b border-[#e8ebe7] px-4 py-3"><h3 className="text-xs font-semibold text-[#344138]">Top purchase deltas</h3></div>
@@ -196,9 +213,7 @@ function ImpactDrawer({
               {topDeltas.map((item) => (
                 <div key={item.ingredientId} className="flex items-center justify-between gap-4 px-4 py-3">
                   <span className="text-sm text-[#455248]">{ingredientNames[item.ingredientId] ?? item.ingredientId}</span>
-                  <span className={`text-sm font-semibold tabular-nums ${item.delta >= 0 ? "text-[#33704a]" : "text-[#a65345]"}`}>
-                    {item.delta >= 0 ? "+" : ""}{formatQuantity(item.delta, item.unit)}
-                  </span>
+                  <div className="text-right"><p className="text-[10px] tabular-nums text-[#8b958e]">{formatQuantity(item.beforeQuantity, item.unit)} → {formatQuantity(item.afterQuantity, item.unit)}</p><p className={`mt-0.5 text-sm font-semibold tabular-nums ${item.delta >= 0 ? "text-[#33704a]" : "text-[#a65345]"}`}>{item.delta >= 0 ? "+" : ""}{formatQuantity(item.delta, item.unit)}</p></div>
                 </div>
               ))}
             </div>
@@ -221,4 +236,12 @@ function ImpactMetric({ label, value }: { label: string; value: string }) {
       <p className="mt-2 text-base font-semibold text-[#2c3930]">{value}</p>
     </div>
   );
+}
+
+function formatPortions(value: number): string {
+  return new Intl.NumberFormat("en", { maximumFractionDigits: 2 }).format(value);
+}
+
+function formatDateTime(value: string): string {
+  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Kyiv" }).format(new Date(value));
 }
