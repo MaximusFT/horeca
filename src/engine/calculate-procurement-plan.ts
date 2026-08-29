@@ -1,20 +1,20 @@
-import { addDays, subDays } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
-import type { DemoDataset } from "@/data/demo/dataset";
-import type { IncomingSupply, InventoryLot } from "@/domain/inventory";
-import type { Ingredient } from "@/domain/ingredient";
+import { addDays, subDays } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+import type { DemoDataset } from '@/data/demo/dataset';
+import type { IncomingSupply, InventoryLot } from '@/domain/inventory';
+import type { Ingredient } from '@/domain/ingredient';
 import type {
   ChronologicalProcurementPlan,
   PlannedProcurementLine,
   ProcurementBatch,
   ProcurementCoverage,
   RequirementProjection,
-} from "@/domain/procurement";
-import { BUSINESS_TIME_ZONE } from "@/lib/demo-clock";
-import type { Clock } from "@/lib/clock";
-import { aggregateDemand, type AggregatedDemandRequirement } from "./aggregate-demand";
-import { allocateFefo, type ProjectedLot, type SupplySourceType } from "./allocate-fefo";
-import { calculateDemandPlan, type DemandPlan } from "./calculate-demand-plan";
+} from '@/domain/procurement';
+import { BUSINESS_TIME_ZONE } from '@/lib/demo-clock';
+import type { Clock } from '@/lib/clock';
+import { aggregateDemand, type AggregatedDemandRequirement } from './aggregate-demand';
+import { allocateFefo, type ProjectedLot, type SupplySourceType } from './allocate-fefo';
+import { calculateDemandPlan, type DemandPlan } from './calculate-demand-plan';
 
 export interface ProcurementPlanInput {
   ingredients: Ingredient[];
@@ -50,7 +50,9 @@ export function calculateProcurementPlan(input: ProcurementPlanInput): Chronolog
   }
 
   const consolidatedLines = consolidateDeliveryLines(lines);
-  consolidatedLines.sort((a, b) => a.deliveryAt.localeCompare(b.deliveryAt) || a.ingredientId.localeCompare(b.ingredientId));
+  consolidatedLines.sort(
+    (a, b) => a.deliveryAt.localeCompare(b.deliveryAt) || a.ingredientId.localeCompare(b.ingredientId),
+  );
   projections.sort((a, b) => a.requiredAt.localeCompare(b.requiredAt) || a.ingredientId.localeCompare(b.ingredientId));
   const version = input.version ?? 1;
 
@@ -130,7 +132,7 @@ function projectIngredient(input: ProjectionInput): {
       const consolidatedQuantity = round(shortage + consolidation.extraQuantity);
       const lineNumber = lines.length + 1;
       const line: PlannedProcurementLine = {
-        id: `${input.ingredient.id}-${formatInTimeZone(deliveryAt, BUSINESS_TIME_ZONE, "yyyyMMdd")}-${lineNumber}`,
+        id: `${input.ingredient.id}-${formatInTimeZone(deliveryAt, BUSINESS_TIME_ZONE, 'yyyyMMdd')}-${lineNumber}`,
         ingredientId: input.ingredient.id,
         quantity: consolidatedQuantity,
         unit: input.ingredient.unit,
@@ -147,7 +149,7 @@ function projectIngredient(input: ProjectionInput): {
         unit: input.ingredient.unit,
         availableAt: deliveryAt,
         expiresAt,
-        sourceType: "planned",
+        sourceType: 'planned',
         sourceId: line.id,
       });
     }
@@ -177,7 +179,7 @@ function projectIngredient(input: ProjectionInput): {
 }
 
 interface ConsolidationInput {
-  requirements: AggregatedDemandRequirement[],
+  requirements: AggregatedDemandRequirement[];
   currentIndex: number;
   ingredient: Ingredient;
   activeLots: ProjectedLot[];
@@ -192,9 +194,7 @@ function calculateConsolidation(input: ConsolidationInput): {
   extraQuantity: number;
   coveredRequiredAt: string[];
 } {
-  const consolidationDays = input.ingredient.shelfLifeDays > 30
-    ? 7
-    : input.ingredient.shelfLifeDays >= 8 ? 4 : 0;
+  const consolidationDays = input.ingredient.shelfLifeDays > 30 ? 7 : input.ingredient.shelfLifeDays >= 8 ? 4 : 0;
   if (consolidationDays === 0) return { extraQuantity: 0, coveredRequiredAt: [] };
 
   const current = input.requirements[input.currentIndex];
@@ -207,7 +207,7 @@ function calculateConsolidation(input: ConsolidationInput): {
     .filter((item) => new Date(item.requiredAt).getTime() <= limit);
   if (candidates.length === 0) return { extraQuantity: 0, coveredRequiredAt: [] };
 
-  const simulationLotId = "consolidation-simulation";
+  const simulationLotId = 'consolidation-simulation';
   let simulatedLots = input.activeLots.map((lot) => ({ ...lot }));
   simulatedLots.push({
     id: simulationLotId,
@@ -216,7 +216,7 @@ function calculateConsolidation(input: ConsolidationInput): {
     unit: input.ingredient.unit,
     availableAt: input.deliveryAt,
     expiresAt: input.expiresAt,
-    sourceType: "planned",
+    sourceType: 'planned',
     sourceId: simulationLotId,
   });
   simulatedLots = allocateFefo(simulatedLots, current.quantity, input.ingredient.unit).remainingLots;
@@ -235,10 +235,7 @@ function calculateConsolidation(input: ConsolidationInput): {
     }
     simulatedLots = simulatedLots.filter((lot) => new Date(lot.expiresAt).getTime() >= requiredTime);
 
-    const needed = round(Math.max(
-      0,
-      candidate.quantity + input.ingredient.safetyStock - sumLots(simulatedLots),
-    ));
+    const needed = round(Math.max(0, candidate.quantity + input.ingredient.safetyStock - sumLots(simulatedLots)));
     if (needed > 0) {
       const plannedLot = simulatedLots.find((lot) => lot.id === simulationLotId);
       if (plannedLot) plannedLot.quantity = round(plannedLot.quantity + needed);
@@ -250,7 +247,7 @@ function calculateConsolidation(input: ConsolidationInput): {
           unit: input.ingredient.unit,
           availableAt: input.deliveryAt,
           expiresAt: input.expiresAt,
-          sourceType: "planned",
+          sourceType: 'planned',
           sourceId: simulationLotId,
         });
       }
@@ -270,32 +267,33 @@ function scheduleDelivery(requiredAt: string, shelfLifeDays: number, now: Date):
 }
 
 function groupInitialLots(lots: InventoryLot[], availableAt: string): Map<string, ProjectedLot[]> {
-  return groupByIngredient(lots.map((lot) => ({
-    ...lot,
-    availableAt,
-    sourceType: "inventory" as const,
-    sourceId: lot.id,
-  })));
+  return groupByIngredient(
+    lots.map((lot) => ({
+      ...lot,
+      availableAt,
+      sourceType: 'inventory' as const,
+      sourceId: lot.id,
+    })),
+  );
 }
 
-function groupIncoming(
-  supplies: IncomingSupply[],
-  ingredients: Map<string, Ingredient>,
-): Map<string, ProjectedLot[]> {
-  const lots = supplies.flatMap((supply) => supply.lines.map((line, index) => {
-    const ingredient = ingredients.get(line.ingredientId);
-    if (!ingredient) throw new Error(`Incoming supply references unknown ingredient ${line.ingredientId}`);
-    return {
-      id: `${supply.id}-${index + 1}`,
-      ingredientId: line.ingredientId,
-      quantity: line.quantity,
-      unit: line.unit,
-      availableAt: supply.arrivesAt,
-      expiresAt: addDays(new Date(supply.arrivesAt), ingredient.shelfLifeDays).toISOString(),
-      sourceType: "incoming" as const,
-      sourceId: supply.id,
-    };
-  }));
+function groupIncoming(supplies: IncomingSupply[], ingredients: Map<string, Ingredient>): Map<string, ProjectedLot[]> {
+  const lots = supplies.flatMap((supply) =>
+    supply.lines.map((line, index) => {
+      const ingredient = ingredients.get(line.ingredientId);
+      if (!ingredient) throw new Error(`Incoming supply references unknown ingredient ${line.ingredientId}`);
+      return {
+        id: `${supply.id}-${index + 1}`,
+        ingredientId: line.ingredientId,
+        quantity: line.quantity,
+        unit: line.unit,
+        availableAt: supply.arrivesAt,
+        expiresAt: addDays(new Date(supply.arrivesAt), ingredient.shelfLifeDays).toISOString(),
+        sourceType: 'incoming' as const,
+        sourceId: supply.id,
+      };
+    }),
+  );
   return groupByIngredient(lots);
 }
 
@@ -313,7 +311,9 @@ function groupRequirements(requirements: AggregatedDemandRequirement[]): Map<str
   return grouped;
 }
 
-function summarizeCoverage(allocations: Array<{ sourceType: SupplySourceType; quantity: number }>): ProcurementCoverage {
+function summarizeCoverage(
+  allocations: Array<{ sourceType: SupplySourceType; quantity: number }>,
+): ProcurementCoverage {
   const result: ProcurementCoverage = { inventory: 0, incoming: 0, planned: 0 };
   for (const allocation of allocations) {
     result[allocation.sourceType] = round(result[allocation.sourceType] + allocation.quantity);
@@ -324,7 +324,7 @@ function summarizeCoverage(allocations: Array<{ sourceType: SupplySourceType; qu
 function createBatches(lines: PlannedProcurementLine[]): ProcurementBatch[] {
   const grouped = new Map<string, PlannedProcurementLine[]>();
   for (const line of lines) {
-    const deliveryOn = formatInTimeZone(line.deliveryAt, BUSINESS_TIME_ZONE, "yyyy-MM-dd");
+    const deliveryOn = formatInTimeZone(line.deliveryAt, BUSINESS_TIME_ZONE, 'yyyy-MM-dd');
     grouped.set(deliveryOn, [...(grouped.get(deliveryOn) ?? []), line]);
   }
   return [...grouped.entries()]
@@ -340,7 +340,7 @@ function createBatches(lines: PlannedProcurementLine[]): ProcurementBatch[] {
 function consolidateDeliveryLines(lines: PlannedProcurementLine[]): PlannedProcurementLine[] {
   const grouped = new Map<string, PlannedProcurementLine[]>();
   for (const line of lines) {
-    const deliveryOn = formatInTimeZone(line.deliveryAt, BUSINESS_TIME_ZONE, "yyyy-MM-dd");
+    const deliveryOn = formatInTimeZone(line.deliveryAt, BUSINESS_TIME_ZONE, 'yyyy-MM-dd');
     const key = `${deliveryOn}:${line.ingredientId}:${line.unit}`;
     grouped.set(key, [...(grouped.get(key) ?? []), line]);
   }
@@ -356,16 +356,18 @@ function consolidateDeliveryLines(lines: PlannedProcurementLine[]): PlannedProcu
     if (!remainsUsable) return group;
 
     const reference = group[0];
-    return [{
-      id: `${key.replaceAll(":", "-")}-consolidated`,
-      ingredientId: reference.ingredientId,
-      quantity: round(group.reduce((sum, line) => sum + line.quantity, 0)),
-      unit: reference.unit,
-      deliveryAt,
-      expiresAt,
-      triggeredByRequiredAt: group.map((line) => line.triggeredByRequiredAt).sort()[0],
-      coveredRequiredAt,
-    }];
+    return [
+      {
+        id: `${key.replaceAll(':', '-')}-consolidated`,
+        ingredientId: reference.ingredientId,
+        quantity: round(group.reduce((sum, line) => sum + line.quantity, 0)),
+        unit: reference.unit,
+        deliveryAt,
+        expiresAt,
+        triggeredByRequiredAt: group.map((line) => line.triggeredByRequiredAt).sort()[0],
+        coveredRequiredAt,
+      },
+    ];
   });
 }
 

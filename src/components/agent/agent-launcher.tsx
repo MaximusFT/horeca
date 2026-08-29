@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { AgentApprovalApplyResult } from '@/application/agent-runtime';
 import type { AgentApprovalView, AgentToolTrace, AgentTurn } from '@/domain/agent';
 import { demoIngredients } from '@/data/demo/ingredients';
@@ -22,6 +22,8 @@ const ingredientNames = new Map(demoIngredients.map((ingredient) => [ingredient.
 
 export function AgentLauncher() {
   const router = useRouter();
+  const pathname = usePathname();
+  const pageContext = getPageContext(pathname);
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -130,7 +132,7 @@ export function AgentLauncher() {
                         Ask Misto
                       </h2>
                       <p className="mt-1 text-xs text-[#7d8981]">
-                        Tools read and preview; only you can approve mutations.
+                        Context · {pageContext.label}. Tools read and preview; only you approve changes.
                       </p>
                     </div>
                   </div>
@@ -192,12 +194,7 @@ export function AgentLauncher() {
               <footer className="border-t border-[#dfe3dc] bg-white p-4 md:px-6">
                 {messages.length === 1 && (
                   <div className="mb-3 flex flex-wrap gap-2">
-                    <Suggestion onClick={(value) => submit(undefined, value)}>
-                      Increase Wedding to 220 guests
-                    </Suggestion>
-                    <Suggestion onClick={(value) => submit(undefined, value)}>
-                      Why do we need so much chicken?
-                    </Suggestion>
+                    {pageContext.suggestions.map((suggestion) => <Suggestion key={suggestion} onClick={(value) => submit(undefined, value)}>{suggestion}</Suggestion>)}
                   </div>
                 )}
                 <form
@@ -341,6 +338,22 @@ function Suggestion({ children, onClick }: { children: string; onClick: (value: 
       {children}
     </button>
   );
+}
+
+function getPageContext(pathname: string): { label: string; suggestions: string[] } {
+  if (pathname === '/events/wedding') {
+    return { label: 'Wedding', suggestions: ['Increase Wedding to 220 guests', 'Why do we need so much chicken?'] };
+  }
+  if (pathname.startsWith('/events')) {
+    return { label: 'Events & catering', suggestions: ['Increase Wedding to 220 guests', 'Read the active procurement plan'] };
+  }
+  if (pathname.startsWith('/procurement')) {
+    return { label: 'Procurement', suggestions: ['Why do we need so much chicken?', 'Read the active procurement plan'] };
+  }
+  if (pathname.startsWith('/inventory')) {
+    return { label: 'Inventory coverage', suggestions: ['Why do we need so much chicken?', 'Read the active procurement plan'] };
+  }
+  return { label: 'Overview', suggestions: ['Increase Wedding to 220 guests', 'Why do we need so much chicken?'] };
 }
 
 function SparkIcon() {

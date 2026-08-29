@@ -9,7 +9,7 @@ const navigation: Array<{ label: string; icon: IconName; href?: string }> = [
   { label: 'Overview', icon: 'overview', href: '/overview' },
   { label: 'Procurement', icon: 'procurement', href: '/procurement' },
   { label: 'Events', icon: 'events', href: '/events' },
-  { label: 'Inventory', icon: 'inventory' },
+  { label: 'Inventory', icon: 'inventory', href: '/inventory' },
 ];
 
 export function AppShell({ children, active = 'Overview' }: { children: ReactNode; active?: string }) {

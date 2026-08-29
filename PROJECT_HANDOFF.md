@@ -8,6 +8,7 @@ The authoritative files are:
 
 1. `HoReCa_Procurement_Agent_MASTER_SPECIFICATION_v1.0.md`
 2. `HoReCa_Procurement_Agent_IMPLEMENTATION_HANDOFF_PLAN_v1.0.md`
+3. `HoReCa_Procurement_Agent_UI_DIRECTION_CHANGE_REQUEST_v1.0.md`
 
 If implementation choices conflict with the master specification, the master specification wins. Follow the locked sequence:
 
@@ -40,10 +41,23 @@ Preparation already in place: `SUPPLIER_MODE=mock` remains the default. Set `SUP
 
 ### Stages 5–6 — product UI and explainability
 
-- Dynamic Overview, Events, Wedding, Procurement, and batch pages.
+- Dynamic Overview, Events, Wedding, Procurement, Inventory, and batch pages.
+- UI direction correction CR-01–CR-06 is complete: Overview leads with Restaurant Operations + Events & Catering → Combined Procurement; the timeline has three explicit lanes; demand sources are prominent.
+- Procurement batch cards show the actual restaurant/event demand context derived from provenance.
+- Wedding shows calculated portions, a persistent procurement-impact summary, and before/after purchase deltas.
 - Wedding 180→200 structured preview and approval flow.
-- Deterministic “Why this quantity?” drawer with demand-source provenance.
+- Deterministic “Why this quantity?” drawer with demand, coverage, timing, shelf-life rationale, and supplier-enrichment state.
 - Active plan, guest totals, recent changes, and procurement pages update after approval.
+- The global trigger is secondary and named Procurement Agent; its initial suggestions follow the current page and expose only supported Stage 8 commands.
+- Visible Reset demo control rebuilds the in-memory runtime to Wedding 180 / Plan v1.
+
+### Procurement schedule audit
+
+- CR-07 concluded that the 13-batch cadence is justified for the current deterministic heuristic; no engine change was retained.
+- Every dated batch contains at least one ingredient with shelf life ≤7 days and active daily restaurant demand.
+- Flour and sugar consolidate to one purchase each.
+- Wedding salmon and chicken arrive Sep 12; tomato arrives Sep 11; all covered requirements remain within planned-lot expiry.
+- `tests/engine/procurement-schedule-audit.test.ts` protects these conclusions.
 
 ### Stage 7 — mock supplier
 
