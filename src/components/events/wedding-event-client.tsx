@@ -21,6 +21,7 @@ interface Props {
 
 export function WeddingEventClient({ event, activePlanVersion, menuLines, impact, ingredientNames }: Props) {
   const router = useRouter();
+  const canChangeGuests = menuLines.some((line) => line.mode === 'per_guest');
   const [currentGuestCount, setCurrentGuestCount] = useState(event.guestCount);
   const [guestCount, setGuestCount] = useState(event.guestCount);
   const [planVersion, setPlanVersion] = useState(activePlanVersion);
@@ -130,7 +131,7 @@ export function WeddingEventClient({ event, activePlanVersion, menuLines, impact
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-semibold tabular-nums text-[#35443a]">
-                        {formatPortions(candidateQuantity)} portions
+                        {line.mode === 'per_guest' ? `${formatPortions(candidateQuantity)} portions` : `× ${formatPortions(candidateQuantity)}`}
                       </p>
                       {delta !== 0 && (
                         <p className="mt-1 text-[10px] font-semibold tabular-nums text-[#39704b]">
@@ -184,6 +185,12 @@ export function WeddingEventClient({ event, activePlanVersion, menuLines, impact
             <section className="rounded-2xl border border-[#dfe3dc] bg-white p-5 shadow-[0_8px_28px_rgba(30,47,36,.06)]">
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#879188]">Guest change</p>
               <h2 className="mt-2 text-lg font-semibold text-[#253229]">Recalculate procurement</h2>
+              {!canChangeGuests ? (
+                <p className="mt-2 text-xs leading-5 text-[#7a867e]">
+                  This event&apos;s menu is fixed and does not scale with guest count. Guest totals here are informational only.
+                </p>
+              ) : (
+                <>
               <p className="mt-2 text-xs leading-5 text-[#7a867e]">
                 Only guest count changes. Menus, stock coverage and purchasing are recalculated before approval.
               </p>
@@ -224,6 +231,8 @@ export function WeddingEventClient({ event, activePlanVersion, menuLines, impact
               >
                 {loading ? 'Calculating…' : 'Review impact'}
               </button>
+                </>
+              )}
             </section>
           </aside>
         </div>
