@@ -194,7 +194,11 @@ export function AgentLauncher() {
               <footer className="border-t border-[#dfe3dc] bg-white p-4 md:px-6">
                 {messages.length === 1 && (
                   <div className="mb-3 flex flex-wrap gap-2">
-                    {pageContext.suggestions.map((suggestion) => <Suggestion key={suggestion} onClick={(value) => submit(undefined, value)}>{suggestion}</Suggestion>)}
+                    {pageContext.suggestions.map((suggestion) => (
+                      <Suggestion key={suggestion} onClick={(value) => submit(undefined, value)}>
+                        {suggestion}
+                      </Suggestion>
+                    ))}
                   </div>
                 )}
                 <form
@@ -345,13 +349,22 @@ function getPageContext(pathname: string): { label: string; suggestions: string[
     return { label: 'Wedding', suggestions: ['Increase Wedding to 220 guests', 'Why do we need so much chicken?'] };
   }
   if (pathname.startsWith('/events')) {
-    return { label: 'Events & catering', suggestions: ['Increase Wedding to 220 guests', 'Read the active procurement plan'] };
+    return {
+      label: 'Events & catering',
+      suggestions: ['Increase Wedding to 220 guests', 'Read the active procurement plan'],
+    };
   }
   if (pathname.startsWith('/procurement')) {
-    return { label: 'Procurement', suggestions: ['Why do we need so much chicken?', 'Read the active procurement plan'] };
+    return {
+      label: 'Procurement',
+      suggestions: ['Why do we need so much chicken?', 'Read the active procurement plan'],
+    };
   }
   if (pathname.startsWith('/inventory')) {
-    return { label: 'Inventory coverage', suggestions: ['Why do we need so much chicken?', 'Read the active procurement plan'] };
+    return {
+      label: 'Inventory coverage',
+      suggestions: ['Why do we need so much chicken?', 'Read the active procurement plan'],
+    };
   }
   return { label: 'Overview', suggestions: ['Increase Wedding to 220 guests', 'Why do we need so much chicken?'] };
 }

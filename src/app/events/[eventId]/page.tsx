@@ -1,11 +1,11 @@
-import { notFound } from "next/navigation";
-import { AppShell } from "@/components/app-shell";
-import { getDemoPlanningRuntime } from "@/application/demo-runtime";
-import { demoMenuItems } from "@/data/demo/menu-items";
-import { demoIngredients } from "@/data/demo/ingredients";
-import { WeddingEventClient } from "@/components/events/wedding-event-client";
+import { notFound } from 'next/navigation';
+import { AppShell } from '@/components/app-shell';
+import { getDemoPlanningRuntime } from '@/application/demo-runtime';
+import { demoMenuItems } from '@/data/demo/menu-items';
+import { demoIngredients } from '@/data/demo/ingredients';
+import { WeddingEventClient } from '@/components/events/wedding-event-client';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 export default async function EventDetailPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params;
@@ -17,25 +17,28 @@ export default async function EventDetailPage({ params }: { params: Promise<{ ev
     menuItemId: line.menuItemId,
     name: menuNames.get(line.menuItemId) ?? line.menuItemId,
     mode: line.mode,
-    rate: line.mode === "fixed" ? line.quantity : line.quantityPerGuest,
+    rate: line.mode === 'fixed' ? line.quantity : line.quantityPerGuest,
   }));
   const ingredientById = new Map(demoIngredients.map((ingredient) => [ingredient.id, ingredient]));
-  const eventContributions = state.activePlan.projections.flatMap((projection) => projection.contributions).filter(
-    (contribution) => contribution.source.type === "event" && contribution.source.eventId === event.id,
-  );
+  const eventContributions = state.activePlan.projections
+    .flatMap((projection) => projection.contributions)
+    .filter((contribution) => contribution.source.type === 'event' && contribution.source.eventId === event.id);
   const eventIngredientIds = new Set(eventContributions.map((contribution) => contribution.ingredientId));
   const massDemandByIngredient = new Map<string, number>();
   for (const contribution of eventContributions) {
-    if (contribution.unit !== "g") continue;
+    if (contribution.unit !== 'g') continue;
     massDemandByIngredient.set(
       contribution.ingredientId,
       (massDemandByIngredient.get(contribution.ingredientId) ?? 0) + contribution.quantity,
     );
   }
   const freshDelivery = state.activePlan.lines
-    .filter((line) => eventIngredientIds.has(line.ingredientId)
-      && (ingredientById.get(line.ingredientId)?.shelfLifeDays ?? Infinity) <= 7
-      && line.coveredRequiredAt.includes(event.prepStartsAt))
+    .filter(
+      (line) =>
+        eventIngredientIds.has(line.ingredientId) &&
+        (ingredientById.get(line.ingredientId)?.shelfLifeDays ?? Infinity) <= 7 &&
+        line.coveredRequiredAt.includes(event.prepStartsAt),
+    )
     .sort((left, right) => left.deliveryAt.localeCompare(right.deliveryAt))[0];
   const impact = {
     affectedIngredientCount: eventIngredientIds.size,

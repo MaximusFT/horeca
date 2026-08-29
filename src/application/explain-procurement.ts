@@ -1,11 +1,11 @@
-import type { Ingredient } from "@/domain/ingredient";
-import type { ChronologicalProcurementPlan, PlannedProcurementLine } from "@/domain/procurement";
-import type { BaseUnit } from "@/domain/units";
+import type { Ingredient } from '@/domain/ingredient';
+import type { ChronologicalProcurementPlan, PlannedProcurementLine } from '@/domain/procurement';
+import type { BaseUnit } from '@/domain/units';
 
 export interface DemandSourceExplanation {
   id: string;
   label: string;
-  type: "restaurant" | "event";
+  type: 'restaurant' | 'event';
   quantity: number;
 }
 
@@ -43,8 +43,8 @@ export function explainProcurementLine(
     (projection) => projection.ingredientId === line.ingredientId && coveredDates.has(projection.requiredAt),
   );
   const trigger = plan.projections.find(
-    (projection) => projection.ingredientId === line.ingredientId
-      && projection.requiredAt === line.triggeredByRequiredAt,
+    (projection) =>
+      projection.ingredientId === line.ingredientId && projection.requiredAt === line.triggeredByRequiredAt,
   );
   if (!trigger) throw new Error(`Missing trigger projection for procurement line ${line.id}`);
 
@@ -52,10 +52,10 @@ export function explainProcurementLine(
   for (const projection of projections) {
     for (const contribution of projection.contributions) {
       const source = contribution.source;
-      const id = source.type === "restaurant" ? "restaurant" : `event:${source.eventId}`;
+      const id = source.type === 'restaurant' ? 'restaurant' : `event:${source.eventId}`;
       const current = sources.get(id) ?? {
         id,
-        label: source.type === "restaurant" ? "Restaurant operations" : source.eventName,
+        label: source.type === 'restaurant' ? 'Restaurant operations' : source.eventName,
         type: source.type,
         quantity: 0,
       };

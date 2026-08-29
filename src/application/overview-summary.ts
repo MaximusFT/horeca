@@ -1,11 +1,11 @@
-import { formatInTimeZone } from "date-fns-tz";
-import type { DemoDataset } from "@/data/demo/dataset";
-import type { Event } from "@/domain/event";
-import type { ChronologicalProcurementPlan } from "@/domain/procurement";
-import type { RestaurantLoad } from "@/domain/restaurant-demand";
-import type { BaseUnit } from "@/domain/units";
-import { BUSINESS_TIME_ZONE } from "@/lib/demo-clock";
-import type { PlanningChange } from "./planning-repository";
+import { formatInTimeZone } from 'date-fns-tz';
+import type { DemoDataset } from '@/data/demo/dataset';
+import type { Event } from '@/domain/event';
+import type { ChronologicalProcurementPlan } from '@/domain/procurement';
+import type { RestaurantLoad } from '@/domain/restaurant-demand';
+import type { BaseUnit } from '@/domain/units';
+import { BUSINESS_TIME_ZONE } from '@/lib/demo-clock';
+import type { PlanningChange } from './planning-repository';
 
 export interface OverviewDay {
   date: string;
@@ -29,7 +29,7 @@ export interface DemandSourceSplit {
 
 export interface AttentionItem {
   id: string;
-  tone: "warning" | "info" | "ready";
+  tone: 'warning' | 'info' | 'ready';
   actionable: boolean;
   title: string;
   description: string;
@@ -57,7 +57,7 @@ export function buildOverviewSummary(
     return {
       date: day.date,
       dayNumber: Number(day.date.slice(-2)),
-      weekday: formatInTimeZone(date, BUSINESS_TIME_ZONE, "EEE"),
+      weekday: formatInTimeZone(date, BUSINESS_TIME_ZONE, 'EEE'),
       load: day.load,
       loadFactor: { quiet: 0.75, normal: 1, busy: 1.25, peak: 1.55 }[day.load],
       events: eventsByDate.get(day.date) ?? [],
@@ -72,41 +72,41 @@ export function buildOverviewSummary(
   const incomingCoverageCount = plan.projections.filter((projection) => projection.coverage.incoming > 0).length;
   const nextBatch = plan.batches[0];
   const largestEvent = [...dataset.events].sort((left, right) => right.guestCount - left.guestCount)[0];
-  const nextPeakDay = timeline.find((day) => day.load === "peak");
+  const nextPeakDay = timeline.find((day) => day.load === 'peak');
   const attention: AttentionItem[] = [];
 
   if (expired) {
     attention.push({
-      id: "expiry-risk",
-      tone: "warning",
+      id: 'expiry-risk',
+      tone: 'warning',
       actionable: true,
       title: `${ingredientNames.get(expired.ingredientId) ?? expired.ingredientId} expiry risk`,
-      description: "Projected stock expires before a later requirement and is excluded from coverage.",
+      description: 'Projected stock expires before a later requirement and is excluded from coverage.',
       meta: `${formatAmount(expired.quantity, expired.unit)} projected expiry`,
-      href: "/procurement",
-      actionLabel: "Review procurement",
+      href: '/procurement',
+      actionLabel: 'Review procurement',
     });
   }
   if (incomingCoverageCount > 0) {
     attention.push({
-      id: "incoming-coverage",
-      tone: "info",
+      id: 'incoming-coverage',
+      tone: 'info',
       actionable: false,
-      title: "Confirmed supply is already counted",
-      description: "Incoming deliveries are applied only when they arrive before the requirement time.",
+      title: 'Confirmed supply is already counted',
+      description: 'Incoming deliveries are applied only when they arrive before the requirement time.',
       meta: `${incomingCoverageCount} requirements covered`,
     });
   }
   if (nextBatch) {
     attention.push({
-      id: "supplier-ready",
-      tone: "ready",
+      id: 'supplier-ready',
+      tone: 'ready',
       actionable: true,
-      title: "Next batch is ready for supplier matching",
-      description: "Quantities and delivery timing are calculated; supplier products are the next execution step.",
+      title: 'Next batch is ready for supplier matching',
+      description: 'Quantities and delivery timing are calculated; supplier products are the next execution step.',
       meta: `${nextBatch.deliveryOn} · ${nextBatch.lines.length} ingredients`,
       href: `/procurement/${nextBatch.id}`,
-      actionLabel: "Prepare supplier order",
+      actionLabel: 'Prepare supplier order',
     });
   }
 
@@ -124,7 +124,9 @@ export function buildOverviewSummary(
     attention,
     upcomingBatches: plan.batches.slice(0, 4).map((batch) => ({
       ...batch,
-      ingredientNames: batch.lines.slice(0, 3).map((line) => ingredientNames.get(line.ingredientId) ?? line.ingredientId),
+      ingredientNames: batch.lines
+        .slice(0, 3)
+        .map((line) => ingredientNames.get(line.ingredientId) ?? line.ingredientId),
     })),
     recentChanges,
   };
@@ -132,14 +134,14 @@ export function buildOverviewSummary(
 
 function calculateDemandSplit(plan: ChronologicalProcurementPlan): DemandSourceSplit[] {
   const totals = new Map<BaseUnit, { restaurant: number; events: number }>([
-    ["g", { restaurant: 0, events: 0 }],
-    ["ml", { restaurant: 0, events: 0 }],
-    ["pcs", { restaurant: 0, events: 0 }],
+    ['g', { restaurant: 0, events: 0 }],
+    ['ml', { restaurant: 0, events: 0 }],
+    ['pcs', { restaurant: 0, events: 0 }],
   ]);
   for (const projection of plan.projections) {
     for (const contribution of projection.contributions) {
       const total = totals.get(contribution.unit)!;
-      if (contribution.source.type === "restaurant") total.restaurant += contribution.quantity;
+      if (contribution.source.type === 'restaurant') total.restaurant += contribution.quantity;
       else total.events += contribution.quantity;
     }
   }
@@ -156,14 +158,16 @@ function calculateDemandSplit(plan: ChronologicalProcurementPlan): DemandSourceS
   });
 }
 
-function firstExpiryRisk(plan: ChronologicalProcurementPlan): { ingredientId: string; quantity: number; unit: BaseUnit } | undefined {
+function firstExpiryRisk(
+  plan: ChronologicalProcurementPlan,
+): { ingredientId: string; quantity: number; unit: BaseUnit } | undefined {
   const first = plan.projections.find((projection) => projection.expiredQuantity > 0);
   return first ? { ingredientId: first.ingredientId, quantity: first.expiredQuantity, unit: first.unit } : undefined;
 }
 
 function formatAmount(quantity: number, unit: BaseUnit): string {
-  if (unit === "g") return `${round(quantity / 1_000)} kg`;
-  if (unit === "ml") return `${round(quantity / 1_000)} L`;
+  if (unit === 'g') return `${round(quantity / 1_000)} kg`;
+  if (unit === 'ml') return `${round(quantity / 1_000)} L`;
   return `${round(quantity)} pcs`;
 }
 
