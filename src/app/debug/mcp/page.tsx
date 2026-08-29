@@ -3,6 +3,7 @@ import {
   createSupplierGateway,
   readSupplierRuntimeConfiguration,
 } from '@/infrastructure/supplier-runtime';
+import { McpJsonRpcClient, McpProtocolError, type McpToolDefinition } from '@/infrastructure/mcp-client';
 
 export default async function McpDebugPage() {
   const configuration = readSupplierRuntimeConfiguration();
@@ -17,6 +18,22 @@ export default async function McpDebugPage() {
   } catch (error) {
     status = error instanceof SilpoMcpConfigurationError ? 'blocked' : 'error';
     detail = error instanceof Error ? error.message : 'Unknown supplier gateway error';
+  }
+
+  let tools: McpToolDefinition[] | undefined;
+  let toolsError: string | undefined;
+  if (configuration.silpo.endpoint && configuration.silpo.accessToken) {
+    try {
+      const client = new McpJsonRpcClient({
+        endpoint: configuration.silpo.endpoint,
+        accessToken: configuration.silpo.accessToken,
+      });
+      tools = await client.listTools();
+    } catch (error) {
+      toolsError = error instanceof McpProtocolError || error instanceof Error
+        ? error.message
+        : 'Unknown tools/list error';
+    }
   }
 
   return (
@@ -45,6 +62,37 @@ export default async function McpDebugPage() {
           <code className="rounded bg-amber-100 px-1">SILPO_MCP_ACCESS_TOKEN</code> once available, then call live{' '}
           <code className="rounded bg-amber-100 px-1">tools/list</code> before implementing the real gateway.
         </p>
+      )}
+
+      {configuration.silpo.endpoint && configuration.silpo.accessToken && (
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold text-slate-900">Live tools/list</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Fetched directly from <code className="rounded bg-slate-100 px-1">SILPO_MCP_URL</code> using the generic MCP
+            JSON-RPC client. This is the real schema — nothing here is invented.
+          </p>
+
+          {toolsError && (
+            <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{toolsError}</p>
+          )}
+
+          {tools && (
+            <div className="mt-3 space-y-3">
+              <p className="text-sm font-semibold text-slate-800">{tools.length} tools returned</p>
+              {tools.map((tool) => (
+                <details key={tool.name} className="rounded-xl border border-slate-200 bg-white p-4">
+                  <summary className="cursor-pointer font-mono text-sm font-semibold text-slate-800">{tool.name}</summary>
+                  {tool.description && <p className="mt-2 text-sm text-slate-600">{tool.description}</p>}
+                  {tool.inputSchema !== undefined && (
+                    <pre className="mt-2 overflow-x-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100">
+                      {JSON.stringify(tool.inputSchema, null, 2)}
+                    </pre>
+                  )}
+                </details>
+              ))}
+            </div>
+          )}
+        </section>
       )}
     </main>
   );

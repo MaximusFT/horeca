@@ -23,6 +23,8 @@ Stages 0–8 are complete. Continue with **Stage 9 — MCP Spike** from section 
 
 Recommended Codex setting for Stage 9: **sol high**. The spike involves OAuth, discovery of live `tools/list` schemas, uncertain weighted-product semantics, and a carefully bounded real-cart mutation. Do not invent Silpo arguments or schemas.
 
+Prepared in advance: `src/infrastructure/mcp-client.ts` is a generic MCP JSON-RPC client (transport-only: `initialize`/`tools/list`/`tools/call` envelopes per the public MCP spec). It knows nothing Silpo-specific. `/debug/mcp` already calls `listTools()` and renders the raw live schema the moment `SILPO_MCP_URL`/`SILPO_MCP_ACCESS_TOKEN` are set — no extra wiring needed to complete Stage 9 step 2.
+
 Stage 9 requires real Silpo MCP/OAuth access. If credentials or the MCP connection are unavailable, perform safe read-only diagnostics and report the concrete blocker. Do not pretend that live connectivity was proven.
 
 Preparation already in place: `SUPPLIER_MODE=mock` remains the default. Set `SUPPLIER_MODE=silpo` only after OAuth, together with `SILPO_MCP_URL` and `SILPO_MCP_ACCESS_TOKEN`. Until the live `tools/list` schemas are captured, this mode intentionally reports a configuration/implementation error rather than falling back to mock or pretending to contact Silpo.
