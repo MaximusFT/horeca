@@ -1,0 +1,155 @@
+import { formatInTimeZone } from "date-fns-tz";
+import type { DemoDataset } from "@/data/demo/dataset";
+import type { Event } from "@/domain/event";
+import type { ChronologicalProcurementPlan } from "@/domain/procurement";
+import type { RestaurantLoad } from "@/domain/restaurant-demand";
+import type { BaseUnit } from "@/domain/units";
+import { BUSINESS_TIME_ZONE } from "@/lib/demo-clock";
+import type { PlanningChange } from "./planning-repository";
+
+export interface OverviewDay {
+  date: string;
+  dayNumber: number;
+  weekday: string;
+  load: RestaurantLoad;
+  loadFactor: number;
+  events: Event[];
+  batchCount: number;
+  procurementLineCount: number;
+}
+
+export interface DemandSourceSplit {
+  unit: BaseUnit;
+  restaurant: number;
+  events: number;
+  restaurantPercent: number;
+  eventPercent: number;
+}
+
+export interface AttentionItem {
+  id: string;
+  tone: "warning" | "info" | "ready";
+  title: string;
+  description: string;
+  meta: string;
+}
+
+export function buildOverviewSummary(
+  dataset: DemoDataset,
+  plan: ChronologicalProcurementPlan,
+  recentChanges: PlanningChange[] = [],
+) {
+  const ingredientNames = new Map(dataset.ingredients.map((ingredient) => [ingredient.id, ingredient.name]));
+  const eventsByDate = new Map<string, Event[]>();
+  for (const event of dataset.events) {
+    const date = event.startsAt.slice(0, 10);
+    eventsByDate.set(date, [...(eventsByDate.get(date) ?? []), event]);
+  }
+
+  const batchesByDate = new Map(plan.batches.map((batch) => [batch.deliveryOn, batch]));
+  const timeline: OverviewDay[] = dataset.restaurantCalendar.map((day) => {
+    const batch = batchesByDate.get(day.date);
+    const date = new Date(`${day.date}T12:00:00+03:00`);
+    return {
+      date: day.date,
+      dayNumber: Number(day.date.slice(-2)),
+      weekday: formatInTimeZone(date, BUSINESS_TIME_ZONE, "EEE"),
+      load: day.load,
+      loadFactor: { quiet: 0.75, normal: 1, busy: 1.25, peak: 1.55 }[day.load],
+      events: eventsByDate.get(day.date) ?? [],
+      batchCount: batch ? 1 : 0,
+      procurementLineCount: batch?.lines.length ?? 0,
+    };
+  });
+
+  const demandSplit = calculateDemandSplit(plan);
+  const expired = firstExpiryRisk(plan);
+  const incomingCoverageCount = plan.projections.filter((projection) => projection.coverage.incoming > 0).length;
+  const nextBatch = plan.batches[0];
+  const attention: AttentionItem[] = [];
+
+  if (expired) {
+    attention.push({
+      id: "expiry-risk",
+      tone: "warning",
+      title: `${ingredientNames.get(expired.ingredientId) ?? expired.ingredientId} expiry risk`,
+      description: "Projected stock expires before a later requirement and is excluded from coverage.",
+      meta: `${formatAmount(expired.quantity, expired.unit)} projected expiry`,
+    });
+  }
+  if (incomingCoverageCount > 0) {
+    attention.push({
+      id: "incoming-coverage",
+      tone: "info",
+      title: "Confirmed supply is already counted",
+      description: "Incoming deliveries are applied only when they arrive before the requirement time.",
+      meta: `${incomingCoverageCount} requirements covered`,
+    });
+  }
+  if (nextBatch) {
+    attention.push({
+      id: "supplier-ready",
+      tone: "ready",
+      title: "Next batch is ready for supplier matching",
+      description: "Quantities and delivery timing are calculated; supplier products are the next execution step.",
+      meta: `${nextBatch.deliveryOn} · ${nextBatch.lines.length} ingredients`,
+    });
+  }
+
+  return {
+    planVersion: plan.version,
+    guestTotal: dataset.events.reduce((sum, event) => sum + event.guestCount, 0),
+    eventCount: dataset.events.length,
+    batchCount: plan.batches.length,
+    procurementLineCount: plan.lines.length,
+    timeline,
+    demandSplit,
+    attention,
+    upcomingBatches: plan.batches.slice(0, 4).map((batch) => ({
+      ...batch,
+      ingredientNames: batch.lines.slice(0, 3).map((line) => ingredientNames.get(line.ingredientId) ?? line.ingredientId),
+    })),
+    recentChanges,
+  };
+}
+
+function calculateDemandSplit(plan: ChronologicalProcurementPlan): DemandSourceSplit[] {
+  const totals = new Map<BaseUnit, { restaurant: number; events: number }>([
+    ["g", { restaurant: 0, events: 0 }],
+    ["ml", { restaurant: 0, events: 0 }],
+    ["pcs", { restaurant: 0, events: 0 }],
+  ]);
+  for (const projection of plan.projections) {
+    for (const contribution of projection.contributions) {
+      const total = totals.get(contribution.unit)!;
+      if (contribution.source.type === "restaurant") total.restaurant += contribution.quantity;
+      else total.events += contribution.quantity;
+    }
+  }
+
+  return [...totals.entries()].map(([unit, values]) => {
+    const total = values.restaurant + values.events;
+    return {
+      unit,
+      restaurant: round(values.restaurant),
+      events: round(values.events),
+      restaurantPercent: total === 0 ? 0 : Math.round((values.restaurant / total) * 100),
+      eventPercent: total === 0 ? 0 : Math.round((values.events / total) * 100),
+    };
+  });
+}
+
+function firstExpiryRisk(plan: ChronologicalProcurementPlan): { ingredientId: string; quantity: number; unit: BaseUnit } | undefined {
+  const first = plan.projections.find((projection) => projection.expiredQuantity > 0);
+  return first ? { ingredientId: first.ingredientId, quantity: first.expiredQuantity, unit: first.unit } : undefined;
+}
+
+function formatAmount(quantity: number, unit: BaseUnit): string {
+  if (unit === "g") return `${round(quantity / 1_000)} kg`;
+  if (unit === "ml") return `${round(quantity / 1_000)} L`;
+  return `${round(quantity)} pcs`;
+}
+
+function round(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}

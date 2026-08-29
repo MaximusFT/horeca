@@ -1,0 +1,119 @@
+import { describe, expect, it } from "vitest";
+import { createDemoPlanning } from "@/application/demo-planning";
+import { MockSupplierOrderService } from "@/application/mock-supplier-order-service";
+import { demoIngredients } from "@/data/demo/ingredients";
+import { preferredMockProductByIngredient } from "@/data/demo/mock-supplier-catalog";
+import { MockSupplierGateway } from "@/infrastructure/mock-supplier-gateway";
+
+describe("mock supplier order approvals", () => {
+  it("keeps substitution and cart mutation as two explicit human approvals", async () => {
+    const planning = createDemoPlanning();
+    const gateway = new MockSupplierGateway();
+    const service = new MockSupplierOrderService({
+      repository: planning.repository,
+      gateway,
+      ingredients: demoIngredients,
+      preferredProductByIngredient: preferredMockProductByIngredient,
+      generateId: idSequence(),
+    });
+    const batch = planning.repository.getState().activePlan.batches.find(
+      (candidate) => candidate.lines.some((line) => line.ingredientId === "salmon"),
+    );
+    expect(batch).toBeDefined();
+
+    const prepared = await service.prepareBatch(batch!.id);
+    const salmon = prepared.lines.find((line) => line.ingredientId === "salmon")!;
+    expect(prepared.status).toBe("needs_substitution");
+    expect(salmon.selectedProduct).toBeUndefined();
+    expect(salmon.replacements[0].id).toBe("mock-salmon-fillet-400");
+    expect((await gateway.getCart()).lines).toHaveLength(0);
+    await expect(service.previewCart(prepared.id)).rejects.toThrow(/Resolve substitutions/);
+
+    const approved = await service.approveSubstitution(
+      prepared.id,
+      "salmon",
+      "mock-salmon-fillet-400",
+    );
+    const approvedSalmon = approved.lines.find((line) => line.ingredientId === "salmon")!;
+    expect(approved.status).toBe("ready_for_cart");
+    expect(approvedSalmon.substituted).toBe(true);
+    expect(approvedSalmon.suppliedQuantity).toBeGreaterThanOrEqual(approvedSalmon.requiredQuantity);
+    expect((await gateway.getCart()).lines).toHaveLength(0);
+
+    const reviewed = await service.previewCart(approved.id);
+    expect(reviewed.status).toBe("cart_preview");
+    expect(reviewed.cartPreview?.lines).toHaveLength(prepared.lines.length);
+    expect((await gateway.getCart()).lines).toHaveLength(0);
+
+    const applied = await service.applyCart(reviewed.id);
+    expect(applied.status).toBe("cart_applied");
+    expect(applied.cartVerified).toBe(true);
+    expect(applied.cart?.reference).toBe(`plan-v1:${batch!.id}`);
+    expect(applied.activity.map((item) => item.type)).toEqual([
+      "SEARCH",
+      "APPROVAL",
+      "CART_PREVIEW",
+      "CART_APPLY",
+      "VERIFY",
+    ]);
+    await expect(service.applyCart(applied.id)).rejects.toThrow(/reviewed cart preview/);
+  });
+
+  it("rejects a prepared order when its source plan has changed", async () => {
+    const planning = createDemoPlanning(undefined, idSequence());
+    const service = new MockSupplierOrderService({
+      repository: planning.repository,
+      gateway: new MockSupplierGateway(),
+      ingredients: demoIngredients,
+      preferredProductByIngredient: preferredMockProductByIngredient,
+      generateId: idSequence(),
+    });
+    const batch = planning.repository.getState().activePlan.batches.find(
+      (candidate) => candidate.lines.some((line) => line.ingredientId === "salmon"),
+    )!;
+    const prepared = await service.prepareBatch(batch.id);
+    const eventPreview = planning.service.previewEventChange("wedding", 200);
+    planning.service.applyEventChange(eventPreview.id);
+
+    await expect(service.approveSubstitution(
+      prepared.id,
+      "salmon",
+      "mock-salmon-fillet-400",
+    )).rejects.toThrow(/stale/);
+  });
+
+  it("runs the backend hero path from Wedding approval to a verified Plan v2 cart", async () => {
+    const ids = idSequence();
+    const planning = createDemoPlanning(undefined, ids);
+    const gateway = new MockSupplierGateway();
+    const service = new MockSupplierOrderService({
+      repository: planning.repository,
+      gateway,
+      ingredients: demoIngredients,
+      preferredProductByIngredient: preferredMockProductByIngredient,
+      generateId: ids,
+    });
+
+    const wedding = planning.service.previewEventChange("wedding", 200);
+    planning.service.applyEventChange(wedding.id);
+    const batch = planning.repository.getState().activePlan.batches.find(
+      (candidate) => candidate.lines.some((line) => line.ingredientId === "salmon"),
+    )!;
+    const prepared = await service.prepareBatch(batch.id);
+    const replacement = prepared.lines.find((line) => line.ingredientId === "salmon")!.replacements[0];
+    const substituted = await service.approveSubstitution(prepared.id, "salmon", replacement.id);
+    const reviewed = await service.previewCart(substituted.id);
+    const applied = await service.applyCart(reviewed.id);
+
+    expect(applied.planVersion).toBe(2);
+    expect(applied.cart?.reference).toBe(`plan-v2:${batch.id}`);
+    expect(applied.cartVerified).toBe(true);
+    expect(applied.cart?.lines.find((line) => line.ingredientId === "salmon")?.substitutedForProductId)
+      .toBe("mock-salmon-premium-500");
+  });
+});
+
+function idSequence(): () => string {
+  let value = 0;
+  return () => `supplier-test-id-${++value}`;
+}
