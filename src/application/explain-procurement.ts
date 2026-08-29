@@ -1,6 +1,9 @@
 import type { Ingredient } from '@/domain/ingredient';
 import type { ChronologicalProcurementPlan, PlannedProcurementLine } from '@/domain/procurement';
 import type { BaseUnit } from '@/domain/units';
+import { getDictionary } from '@/i18n/get-dictionary';
+import type { Locale } from '@/i18n/locale';
+import { localizedEventName } from '@/i18n/demo-names';
 
 export interface DemandSourceExplanation {
   id: string;
@@ -33,6 +36,7 @@ export function explainProcurementLine(
   plan: ChronologicalProcurementPlan,
   line: PlannedProcurementLine,
   ingredient: Ingredient,
+  locale: Locale = 'uk',
 ): ProcurementLineExplanation {
   if (line.ingredientId !== ingredient.id) {
     throw new Error(`Ingredient ${ingredient.id} does not match procurement line ${line.id}`);
@@ -48,6 +52,7 @@ export function explainProcurementLine(
   );
   if (!trigger) throw new Error(`Missing trigger projection for procurement line ${line.id}`);
 
+  const dictionary = getDictionary(locale);
   const sources = new Map<string, DemandSourceExplanation>();
   for (const projection of projections) {
     for (const contribution of projection.contributions) {
@@ -55,7 +60,10 @@ export function explainProcurementLine(
       const id = source.type === 'restaurant' ? 'restaurant' : `event:${source.eventId}`;
       const current = sources.get(id) ?? {
         id,
-        label: source.type === 'restaurant' ? 'Restaurant operations' : source.eventName,
+        label:
+          source.type === 'restaurant'
+            ? dictionary.procurement.restaurantOperations
+            : localizedEventName(source.eventId, source.eventName, locale),
         type: source.type,
         quantity: 0,
       };

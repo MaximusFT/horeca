@@ -1,9 +1,11 @@
 import { getDemoPlanningRuntime } from "@/application/demo-runtime";
+import { getServerLocale } from "@/i18n";
 
 export async function POST(_request: Request, context: { params: Promise<{ batchId: string }> }) {
   try {
     const { batchId } = await context.params;
-    const session = await getDemoPlanningRuntime().supplierOrders.prepareBatch(batchId);
+    const locale = await getServerLocale();
+    const session = await getDemoPlanningRuntime().supplierOrders.prepareBatch(batchId, locale);
     return Response.json(session);
   } catch (error) {
     return Response.json(

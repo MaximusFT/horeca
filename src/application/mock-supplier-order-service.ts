@@ -10,6 +10,9 @@ import type {
 } from "@/domain/supplier";
 import { roundToPackages } from "@/engine/package-rounding";
 import type { PlanningRepository } from "./planning-repository";
+import { getDictionary } from "@/i18n/get-dictionary";
+import type { Locale } from "@/i18n/locale";
+import { localizedIngredientName, localizedSupplierProductName } from "@/i18n/demo-names";
 
 export type SupplierOrderStatus = "needs_substitution" | "ready_for_cart" | "cart_preview" | "cart_applied";
 
@@ -66,7 +69,7 @@ export class MockSupplierOrderService {
     this.generateId = dependencies.generateId ?? (() => crypto.randomUUID());
   }
 
-  async prepareBatch(batchId: string): Promise<SupplierOrderSession> {
+  async prepareBatch(batchId: string, locale: Locale = "uk"): Promise<SupplierOrderSession> {
     const state = this.dependencies.repository.getState();
     const batch = state.activePlan.batches.find((item) => item.id === batchId);
     if (!batch) throw new Error(`Unknown procurement batch ${batchId}`);
@@ -103,12 +106,12 @@ export class MockSupplierOrderService {
       lines.push({
         lineId: result.request.lineId,
         ingredientId: ingredient.id,
-        ingredientName: ingredient.name,
+        ingredientName: localizedIngredientName(ingredient.id, ingredient.name, locale),
         requiredQuantity: result.request.requiredQuantity,
         unit: result.request.unit,
-        preferredProduct: result.product,
-        selectedProduct,
-        replacements,
+        preferredProduct: localizeProduct(result.product, locale),
+        selectedProduct: selectedProduct ? localizeProduct(selectedProduct, locale) : undefined,
+        replacements: replacements.map((product) => localizeProduct(product, locale)),
         packageCount: rounded?.packageCount,
         suppliedQuantity: rounded?.suppliedQuantity,
         surplusQuantity: rounded?.surplusQuantity,
@@ -117,6 +120,7 @@ export class MockSupplierOrderService {
     }
 
     const unavailableCount = lines.filter((line) => !line.selectedProduct).length;
+    const dictionary = getDictionary(locale);
     const session: SupplierOrderSession = {
       id: this.generateId(),
       batchId,
@@ -129,8 +133,8 @@ export class MockSupplierOrderService {
         id: this.generateId(),
         type: "SEARCH",
         message: unavailableCount > 0
-          ? `Matched ${lines.length - unavailableCount} products; ${unavailableCount} requires a decision.`
-          : `Matched all ${lines.length} products.`,
+          ? dictionary.supplierActivity.matchedPartial(lines.length - unavailableCount, lines.length, unavailableCount)
+          : dictionary.supplierActivity.matchedAll(lines.length),
       }],
       cartVerified: false,
     };
@@ -144,7 +148,7 @@ export class MockSupplierOrderService {
     return structuredClone(session);
   }
 
-  async approveSubstitution(sessionId: string, ingredientId: string, productId: string): Promise<SupplierOrderSession> {
+  async approveSubstitution(sessionId: string, ingredientId: string, productId: string, locale: Locale = "uk"): Promise<SupplierOrderSession> {
     const session = this.getSession(sessionId);
     this.assertCurrentPlan(session);
     if (session.status !== "needs_substitution") throw new Error("Supplier order does not need a substitution");
@@ -159,16 +163,17 @@ export class MockSupplierOrderService {
     line.suppliedQuantity = rounded.suppliedQuantity;
     line.surplusQuantity = rounded.surplusQuantity;
     line.substituted = true;
+    const dictionary = getDictionary(locale);
     session.activity.push({
       id: this.generateId(),
       type: "APPROVAL",
-      message: `Human approved ${replacement.name} for ${line.ingredientName}.`,
+      message: dictionary.supplierActivity.approvedSubstitution(replacement.name, line.ingredientName),
     });
     if (session.lines.every((item) => item.selectedProduct)) session.status = "ready_for_cart";
     return this.save(session);
   }
 
-  async previewCart(sessionId: string): Promise<SupplierOrderSession> {
+  async previewCart(sessionId: string, locale: Locale = "uk"): Promise<SupplierOrderSession> {
     const session = this.getSession(sessionId);
     this.assertCurrentPlan(session);
     if (session.status !== "ready_for_cart") throw new Error("Resolve substitutions before reviewing the cart");
@@ -187,19 +192,21 @@ export class MockSupplierOrderService {
         substitutedForProductId: line.substituted ? line.preferredProduct.id : undefined,
       })),
     });
-    session.cartPreview = preview;
+    session.cartPreview = localizeCartPreview(preview, locale);
     session.status = "cart_preview";
-    session.activity.push({ id: this.generateId(), type: "CART_PREVIEW", message: "Cart preview prepared; no supplier mutation yet." });
+    const dictionary = getDictionary(locale);
+    session.activity.push({ id: this.generateId(), type: "CART_PREVIEW", message: dictionary.supplierActivity.cartPreviewPrepared });
     return this.save(session);
   }
 
-  async applyCart(sessionId: string): Promise<SupplierOrderSession> {
+  async applyCart(sessionId: string, locale: Locale = "uk"): Promise<SupplierOrderSession> {
     const session = this.getSession(sessionId);
     this.assertCurrentPlan(session);
     if (session.status !== "cart_preview" || !session.cartPreview) {
       throw new Error("A reviewed cart preview is required before cart apply");
     }
-    session.activity.push({ id: this.generateId(), type: "CART_APPLY", message: "Human approved writing the preview to the mock cart." });
+    const dictionary = getDictionary(locale);
+    session.activity.push({ id: this.generateId(), type: "CART_APPLY", message: dictionary.supplierActivity.cartApplyApproved });
     await this.dependencies.gateway.applyCart(session.cartPreview);
     const cart = await this.dependencies.gateway.getCart();
     const verified = cart.reference === session.cartPreview.reference
@@ -208,10 +215,10 @@ export class MockSupplierOrderService {
         (actual) => actual.productId === expected.productId && actual.packageCount === expected.packageCount,
       ));
     if (!verified) throw new Error("Mock cart verification failed after apply");
-    session.cart = cart;
+    session.cart = localizeCartPreview(cart, locale);
     session.cartVerified = true;
     session.status = "cart_applied";
-    session.activity.push({ id: this.generateId(), type: "VERIFY", message: "Mock cart re-read and verified against the approved preview." });
+    session.activity.push({ id: this.generateId(), type: "VERIFY", message: dictionary.supplierActivity.cartVerified });
     return this.save(session);
   }
 
@@ -225,4 +232,18 @@ export class MockSupplierOrderService {
     this.sessions.set(session.id, structuredClone(session));
     return structuredClone(session);
   }
+}
+
+function localizeProduct(product: SupplierProduct, locale: Locale): SupplierProduct {
+  return { ...product, name: localizedSupplierProductName(product, locale) };
+}
+
+function localizeCartPreview<T extends SupplierCartPreview>(preview: T, locale: Locale): T {
+  return {
+    ...preview,
+    lines: preview.lines.map((line) => ({
+      ...line,
+      productName: localizedSupplierProductName({ id: line.productId, ingredientId: line.ingredientId, name: line.productName }, locale),
+    })),
+  };
 }

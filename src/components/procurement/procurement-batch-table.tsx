@@ -101,7 +101,9 @@ export function ProcurementBatchTable({ lines, locale }: { lines: ProcurementBat
             <div className="flex-1 overflow-y-auto p-6">
               <section className="rounded-2xl border border-[#dfe3dc] bg-white">
                 <header className="border-b border-[#e8ebe7] px-4 py-3">
-                  <h3 className="text-xs font-semibold text-[#344138]">{dictionary.procurementBatch.why.demandSources}</h3>
+                  <h3 className="text-xs font-semibold text-[#344138]">
+                    {dictionary.procurementBatch.why.demandSources}
+                  </h3>
                 </header>
                 <div className="divide-y divide-[#edf0ec]">
                   {selected.explanation.demandSources.map((source) => (
@@ -119,14 +121,18 @@ export function ProcurementBatchTable({ lines, locale }: { lines: ProcurementBat
                   ))}
                 </div>
                 <div className="flex items-center justify-between border-t border-[#dfe3dc] bg-[#fafbf9] px-4 py-3">
-                  <span className="text-xs font-semibold text-[#536158]">{dictionary.procurementBatch.why.grossCoveredDemand}</span>
+                  <span className="text-xs font-semibold text-[#536158]">
+                    {dictionary.procurementBatch.why.grossCoveredDemand}
+                  </span>
                   <span className="text-sm font-semibold text-[#2d3a31]">
                     {formatQuantity(selected.explanation.grossDemand, selected.line.unit)}
                   </span>
                 </div>
               </section>
               <section className="mt-4 rounded-2xl border border-[#dfe3dc] bg-white p-4">
-                <h3 className="text-xs font-semibold text-[#344138]">{dictionary.procurementBatch.why.coverageAndTarget}</h3>
+                <h3 className="text-xs font-semibold text-[#344138]">
+                  {dictionary.procurementBatch.why.coverageAndTarget}
+                </h3>
                 <div className="mt-4 space-y-3">
                   <BreakdownRow
                     label={dictionary.procurementBatch.why.balanceBeforeTrigger}
@@ -154,7 +160,9 @@ export function ProcurementBatchTable({ lines, locale }: { lines: ProcurementBat
                   )}
                 </div>
                 <div className="mt-4 flex items-center justify-between rounded-xl bg-[#e9f3ec] px-4 py-3">
-                  <span className="text-sm font-semibold text-[#355b42]">{dictionary.procurementBatch.why.purchaseRequirement}</span>
+                  <span className="text-sm font-semibold text-[#355b42]">
+                    {dictionary.procurementBatch.why.purchaseRequirement}
+                  </span>
                   <span className="text-lg font-semibold text-[#28593b]">
                     {formatQuantity(selected.explanation.purchaseQuantity, selected.line.unit)}
                   </span>
@@ -163,8 +171,14 @@ export function ProcurementBatchTable({ lines, locale }: { lines: ProcurementBat
               <section className="mt-4 rounded-2xl border border-[#dfe3dc] bg-white p-4">
                 <h3 className="text-xs font-semibold text-[#344138]">{dictionary.procurementBatch.why.timing}</h3>
                 <div className="mt-4 space-y-3">
-                  <BreakdownRow label={dictionary.procurementBatch.why.deliveryScheduled} value={formatDateTime(selected.explanation.deliveryAt, dictionary.locale)} />
-                  <BreakdownRow label={dictionary.procurementBatch.why.firstRequirement} value={formatDateTime(selected.explanation.requiredAt, dictionary.locale)} />
+                  <BreakdownRow
+                    label={dictionary.procurementBatch.why.deliveryScheduled}
+                    value={formatDateTime(selected.explanation.deliveryAt, dictionary.locale)}
+                  />
+                  <BreakdownRow
+                    label={dictionary.procurementBatch.why.firstRequirement}
+                    value={formatDateTime(selected.explanation.requiredAt, dictionary.locale)}
+                  />
                   <BreakdownRow
                     label={dictionary.procurementBatch.why.requirementsCovered}
                     value={String(selected.explanation.coveredRequirementCount)}
@@ -179,14 +193,12 @@ export function ProcurementBatchTable({ lines, locale }: { lines: ProcurementBat
                 </p>
               </section>
               <section className="mt-4 rounded-2xl border border-dashed border-[#d6ddd7] bg-[#f6f8f5] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-[#78857c]">{dictionary.procurementBatch.why.supplierLabel}</p>
-                <p className="mt-2 text-xs text-[#68756d]">
-                  {dictionary.procurementBatch.why.supplierPending}
+                <p className="text-[10px] font-bold uppercase tracking-wide text-[#78857c]">
+                  {dictionary.procurementBatch.why.supplierLabel}
                 </p>
+                <p className="mt-2 text-xs text-[#68756d]">{dictionary.procurementBatch.why.supplierPending}</p>
               </section>
-              <p className="mt-4 text-[11px] leading-5 text-[#7e8982]">
-                {dictionary.procurementBatch.why.footnote}
-              </p>
+              <p className="mt-4 text-[11px] leading-5 text-[#7e8982]">{dictionary.procurementBatch.why.footnote}</p>
             </div>
           </aside>
         </div>

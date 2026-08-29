@@ -5,6 +5,7 @@ import { demoMenuItems } from '@/data/demo/menu-items';
 import { demoIngredients } from '@/data/demo/ingredients';
 import { WeddingEventClient } from '@/components/events/wedding-event-client';
 import { getServerLocale } from '@/i18n';
+import { localizedIngredientName, localizedMenuItemName } from '@/i18n/demo-names';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,9 @@ export default async function EventDetailPage({ params }: { params: Promise<{ ev
   const state = getDemoPlanningRuntime().repository.getState();
   const event = state.events.find((item) => item.id === eventId);
   if (!event) notFound();
-  const menuNames = new Map(demoMenuItems.map((item) => [item.id, item.name]));
+  const menuNames = new Map(
+    demoMenuItems.map((item) => [item.id, localizedMenuItemName(item.id, item.name, locale)]),
+  );
   const menuLines = event.menu.map((line) => ({
     menuItemId: line.menuItemId,
     name: menuNames.get(line.menuItemId) ?? line.menuItemId,
@@ -48,7 +51,10 @@ export default async function EventDetailPage({ params }: { params: Promise<{ ev
     largestDrivers: [...massDemandByIngredient.entries()]
       .sort((left, right) => right[1] - left[1])
       .slice(0, 3)
-      .map(([ingredientId]) => ingredientById.get(ingredientId)?.name ?? ingredientId),
+      .map(([ingredientId]) => {
+        const ingredient = ingredientById.get(ingredientId);
+        return ingredient ? localizedIngredientName(ingredient.id, ingredient.name, locale) : ingredientId;
+      }),
   };
 
   return (
@@ -59,7 +65,9 @@ export default async function EventDetailPage({ params }: { params: Promise<{ ev
         activePlanVersion={state.activePlan.version}
         menuLines={menuLines}
         impact={impact}
-        ingredientNames={Object.fromEntries(demoIngredients.map((ingredient) => [ingredient.id, ingredient.name]))}
+        ingredientNames={Object.fromEntries(
+          demoIngredients.map((ingredient) => [ingredient.id, localizedIngredientName(ingredient.id, ingredient.name, locale)]),
+        )}
       />
     </AppShell>
   );

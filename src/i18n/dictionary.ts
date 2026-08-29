@@ -1,4 +1,4 @@
-import type { Locale } from "./locale";
+import type { Locale } from './locale';
 
 export interface Dictionary {
   locale: Locale;
@@ -145,6 +145,7 @@ export interface Dictionary {
     recentChanges: {
       title: string;
       subtitle: string;
+      guestChangeSummary: (eventName: string, before: number, after: number) => string;
       activated: (version: number) => string;
       emptyTitle: string;
       emptyBody: string;
@@ -352,5 +353,29 @@ export interface Dictionary {
   };
   loadingPage: {
     label: string;
+  };
+  agentTools: {
+    readEvent: (name: string, guests: number) => string;
+    readBatch: (date: string, lines: number) => string;
+    readPlan: (version: number, batches: number) => string;
+    explained: (ingredient: string, batchId: string, sources: number) => string;
+    previewed: (before: number, after: number) => string;
+    applied: (eventName: string, guests: number, planVersion: number) => string;
+  };
+  localAgent: {
+    alreadySet: (guests: number) => string;
+    previewReady: (before: number, after: number, planVersion: number, ingredientCount: number, batchCount: number) => string;
+    explanationIntro: (ingredient: string, batchId: string, gross: string, sources: string) => string;
+    explanationDetails: (inventory: string, incoming: string, safety: string, purchase: string) => string;
+    planSummary: (version: number, start: string, end: string, batches: number) => string;
+    fallback: string;
+  };
+  supplierActivity: {
+    matchedPartial: (matched: number, total: number, unresolved: number) => string;
+    matchedAll: (total: number) => string;
+    approvedSubstitution: (product: string, ingredient: string) => string;
+    cartPreviewPrepared: string;
+    cartApplyApproved: string;
+    cartVerified: string;
   };
 }

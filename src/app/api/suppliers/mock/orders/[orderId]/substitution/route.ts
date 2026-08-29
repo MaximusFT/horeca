@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getDemoPlanningRuntime } from "@/application/demo-runtime";
+import { getServerLocale } from "@/i18n";
 
 const requestSchema = z.object({ ingredientId: z.string().min(1), productId: z.string().min(1) });
 
@@ -7,10 +8,12 @@ export async function POST(request: Request, context: { params: Promise<{ orderI
   try {
     const { orderId } = await context.params;
     const body = requestSchema.parse(await request.json());
+    const locale = await getServerLocale();
     const session = await getDemoPlanningRuntime().supplierOrders.approveSubstitution(
       orderId,
       body.ingredientId,
       body.productId,
+      locale,
     );
     return Response.json(session);
   } catch (error) {

@@ -2,6 +2,9 @@ import type { Ingredient } from "@/domain/ingredient";
 import type { AgentToolDefinition } from "@/domain/agent";
 import { formatQuantity } from "@/engine/units";
 import type { AgentModelGateway, AgentModelResult, AgentToolInvoker } from "./agent-model";
+import { getDictionary } from "@/i18n/get-dictionary";
+import type { Locale } from "@/i18n/locale";
+import { localizedIngredientName } from "@/i18n/demo-names";
 
 export class LocalAgentModel implements AgentModelGateway {
   readonly mode = "local" as const;
@@ -9,19 +12,26 @@ export class LocalAgentModel implements AgentModelGateway {
 
   constructor(private readonly ingredients: Ingredient[]) {}
 
-  async run(message: string, _tools: AgentToolDefinition[], invoke: AgentToolInvoker): Promise<AgentModelResult> {
+  async run(message: string, _tools: AgentToolDefinition[], invoke: AgentToolInvoker, locale: Locale): Promise<AgentModelResult> {
+    const dictionary = getDictionary(locale);
     const normalized = message.toLowerCase();
     const guestCount = extractGuestCount(normalized);
-    if ((normalized.includes("wedding") || normalized.includes("свад")) && guestCount !== undefined) {
+    if ((normalized.includes("wedding") || normalized.includes("свад") || normalized.includes("весілл")) && guestCount !== undefined) {
       const event = await invoke("get_event", { eventId: "wedding" });
       const current = event.output as { guestCount: number };
       if (current.guestCount === guestCount) {
-        return { message: `Wedding is already set to ${guestCount} guests. No change is needed.` };
+        return { message: dictionary.localAgent.alreadySet(guestCount) };
       }
       const preview = await invoke("preview_event_change", { eventId: "wedding", guestCount });
       const output = preview.output as { beforeGuestCount: number; afterGuestCount: number; candidatePlanVersion: number; changedIngredientCount: number; changedBatchCount: number };
       return {
-        message: `I prepared a protected preview for Wedding ${output.beforeGuestCount} → ${output.afterGuestCount}. It would create Plan v${output.candidatePlanVersion}, changing ${output.changedIngredientCount} ingredient totals across ${output.changedBatchCount} batch dates. Review the structured impact below; nothing has been applied yet.`,
+        message: dictionary.localAgent.previewReady(
+          output.beforeGuestCount,
+          output.afterGuestCount,
+          output.candidatePlanVersion,
+          output.changedIngredientCount,
+          output.changedBatchCount,
+        ),
       };
     }
 
@@ -44,29 +54,45 @@ export class LocalAgentModel implements AgentModelGateway {
       const facts = output.explanation;
       const sources = facts.demandSources.map((source) => `${source.label}: ${formatQuantity(source.quantity, facts.unit)}`).join("; ");
       return {
-        message: `${output.ingredientName} is highest in ${output.batchId}: gross covered demand is ${formatQuantity(facts.grossDemand, facts.unit)} (${sources}). The deterministic projection uses ${formatQuantity(facts.inventoryUsed, facts.unit)} of inventory and ${formatQuantity(facts.incomingUsed, facts.unit)} incoming supply, preserves a ${formatQuantity(facts.safetyTarget, facts.unit)} safety target, and plans ${formatQuantity(facts.purchaseQuantity, facts.unit)}.`,
+        message: [
+          dictionary.localAgent.explanationIntro(
+            output.ingredientName,
+            output.batchId,
+            formatQuantity(facts.grossDemand, facts.unit),
+            sources,
+          ),
+          dictionary.localAgent.explanationDetails(
+            formatQuantity(facts.inventoryUsed, facts.unit),
+            formatQuantity(facts.incomingUsed, facts.unit),
+            formatQuantity(facts.safetyTarget, facts.unit),
+            formatQuantity(facts.purchaseQuantity, facts.unit),
+          ),
+        ].join(" "),
       };
     }
 
     if (normalized.includes("plan") || normalized.includes("план") || normalized.includes("закуп")) {
       const result = await invoke("get_procurement_plan", { batchId: null });
       const plan = result.output as { version: number; horizon: { startsOn: string; endsOn: string }; batches: unknown[] };
-      return { message: `Active Plan v${plan.version} covers ${plan.horizon.startsOn} through ${plan.horizon.endsOn} with ${plan.batches.length} dated procurement batches.` };
+      return { message: dictionary.localAgent.planSummary(plan.version, plan.horizon.startsOn, plan.horizon.endsOn, plan.batches.length) };
     }
 
-    return {
-      message: "I can safely preview a Wedding guest change, explain a procurement requirement, or read the active procurement plan. Try “Increase Wedding to 220 guests” or “Why do we need so much chicken?”.",
-    };
+    return { message: dictionary.localAgent.fallback };
   }
 
   private findIngredient(message: string): Ingredient | undefined {
     const aliases: Record<string, string[]> = {
-      chicken: ["chicken", "куриц"],
+      chicken: ["chicken", "куриц", "курк", "куряч"],
       salmon: ["salmon", "лосос"],
       raspberry: ["raspberry", "малин"],
     };
     return this.ingredients.find((ingredient) => {
-      const candidates = [ingredient.id, ingredient.name.toLowerCase(), ...(aliases[ingredient.id] ?? [])];
+      const candidates = [
+        ingredient.id,
+        ingredient.name.toLowerCase(),
+        localizedIngredientName(ingredient.id, ingredient.name, "uk").toLowerCase(),
+        ...(aliases[ingredient.id] ?? []),
+      ];
       return candidates.some((candidate) => message.includes(candidate));
     });
   }
@@ -80,5 +106,5 @@ function extractGuestCount(message: string): number | undefined {
 }
 
 function isExplanationQuestion(message: string): boolean {
-  return ["why", "explain", "so much", "почему", "объясни", "много"].some((word) => message.includes(word));
+  return ["why", "explain", "so much", "почему", "объясни", "много", "чому", "поясни", "багато"].some((word) => message.includes(word));
 }

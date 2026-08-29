@@ -1,10 +1,11 @@
-import type { DemoDataset } from "@/data/demo/dataset";
-import type { Event } from "@/domain/event";
-import type { ChronologicalProcurementPlan } from "@/domain/procurement";
-import type { RestaurantLoad } from "@/domain/restaurant-demand";
-import type { BaseUnit } from "@/domain/units";
-import { BUSINESS_TIME_ZONE } from "@/lib/demo-clock";
-import { getDictionary, intlTag, type Locale } from "@/i18n";
+import type { DemoDataset } from '@/data/demo/dataset';
+import type { Event } from '@/domain/event';
+import type { ChronologicalProcurementPlan } from '@/domain/procurement';
+import type { RestaurantLoad } from '@/domain/restaurant-demand';
+import type { BaseUnit } from '@/domain/units';
+import { BUSINESS_TIME_ZONE } from '@/lib/demo-clock';
+import { getDictionary, intlTag, type Locale } from '@/i18n';
+import { localizedIngredientName, localizedEventName } from '@/i18n/demo-names';
 import type { PlanningChange } from './planning-repository';
 
 export interface OverviewDay {
@@ -42,11 +43,13 @@ export function buildOverviewSummary(
   dataset: DemoDataset,
   plan: ChronologicalProcurementPlan,
   recentChanges: PlanningChange[] = [],
-  locale: Locale = "uk",
+  locale: Locale = 'uk',
 ) {
-  const weekdayFormatter = new Intl.DateTimeFormat(intlTag(locale), { weekday: "short", timeZone: BUSINESS_TIME_ZONE });
+  const weekdayFormatter = new Intl.DateTimeFormat(intlTag(locale), { weekday: 'short', timeZone: BUSINESS_TIME_ZONE });
   const dictionary = getDictionary(locale);
-  const ingredientNames = new Map(dataset.ingredients.map((ingredient) => [ingredient.id, ingredient.name]));
+  const ingredientNames = new Map(
+    dataset.ingredients.map((ingredient) => [ingredient.id, localizedIngredientName(ingredient.id, ingredient.name, locale)]),
+  );
   const eventsByDate = new Map<string, Event[]>();
   for (const event of dataset.events) {
     const date = event.startsAt.slice(0, 10);
@@ -83,7 +86,9 @@ export function buildOverviewSummary(
       id: 'expiry-risk',
       tone: 'warning',
       actionable: true,
-      title: dictionary.overview.attentionItems.expiryRiskTitle(ingredientNames.get(expired.ingredientId) ?? expired.ingredientId),
+      title: dictionary.overview.attentionItems.expiryRiskTitle(
+        ingredientNames.get(expired.ingredientId) ?? expired.ingredientId,
+      ),
       description: dictionary.overview.attentionItems.expiryRiskDescription,
       meta: dictionary.overview.attentionItems.expiryRiskMeta(formatAmount(expired.quantity, expired.unit)),
       href: '/procurement',
@@ -131,7 +136,15 @@ export function buildOverviewSummary(
         .slice(0, 3)
         .map((line) => ingredientNames.get(line.ingredientId) ?? line.ingredientId),
     })),
-    recentChanges,
+    recentChanges: recentChanges.map((change) => {
+      const event = dataset.events.find((item) => item.id === change.eventId);
+      const eventName = event ? localizedEventName(event.id, event.name, locale) : change.eventId;
+      return {
+        id: change.id,
+        planVersion: change.planVersion,
+        summary: dictionary.overview.recentChanges.guestChangeSummary(eventName, change.beforeGuestCount, change.afterGuestCount),
+      };
+    }),
   };
 }
 

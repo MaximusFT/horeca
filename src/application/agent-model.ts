@@ -1,4 +1,5 @@
 import type { AgentApprovalView, AgentToolDefinition, AgentToolName } from "@/domain/agent";
+import type { Locale } from "@/i18n/locale";
 import type { AgentToolResult } from "./agent-tools";
 
 export interface AgentModelResult {
@@ -10,7 +11,7 @@ export type AgentToolInvoker = (name: AgentToolName, args: unknown) => Promise<A
 export interface AgentModelGateway {
   readonly mode: "openai" | "local";
   readonly model: string;
-  run(message: string, tools: AgentToolDefinition[], invoke: AgentToolInvoker): Promise<AgentModelResult>;
+  run(message: string, tools: AgentToolDefinition[], invoke: AgentToolInvoker, locale: Locale): Promise<AgentModelResult>;
 }
 
 export interface AgentRuntimeContext {

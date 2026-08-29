@@ -13,7 +13,8 @@ export interface PlanningChange {
   id: string;
   type: "EVENT_CHANGED";
   eventId: string;
-  summary: string;
+  beforeGuestCount: number;
+  afterGuestCount: number;
   createdAt: string;
   planVersion: number;
 }

@@ -29,7 +29,8 @@ describe("Wedding event change", () => {
     expect(stateAfterApproval.events.find((event) => event.id === "wedding")?.guestCount).toBe(200);
     expect(stateAfterApproval.activePlan.version).toBe(2);
     expect(stateAfterApproval.planHistory).toHaveLength(2);
-    expect(stateAfterApproval.recentChanges[0].summary).toContain("180 → 200");
+    expect(stateAfterApproval.recentChanges[0].beforeGuestCount).toBe(180);
+    expect(stateAfterApproval.recentChanges[0].afterGuestCount).toBe(200);
     expect(repository.getPreview(preview.id)?.status).toBe("applied");
   });
 

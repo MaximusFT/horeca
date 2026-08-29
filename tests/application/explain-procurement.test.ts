@@ -11,7 +11,7 @@ describe('explainProcurementLine', () => {
       (item) => item.ingredientId === 'chicken' && item.coveredRequiredAt.some((date) => date.startsWith('2026-09-13')),
     )!;
     const ingredient = demoDataset.ingredients.find((item) => item.id === 'chicken')!;
-    const explanation = explainProcurementLine(plan, line, ingredient);
+    const explanation = explainProcurementLine(plan, line, ingredient, 'en');
 
     expect(explanation.purchaseQuantity).toBe(line.quantity);
     expect(explanation.safetyTarget).toBe(4_000);

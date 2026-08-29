@@ -7,6 +7,7 @@ import type { EventChangePreviewDto } from '@/application/event-change-dto';
 import type { Event } from '@/domain/event';
 import { formatQuantity } from '@/engine/units';
 import { getDictionary } from '@/i18n/get-dictionary';
+import { localizedEventName } from '@/i18n/demo-names';
 import type { Dictionary, Locale } from '@/i18n';
 
 interface Props {
@@ -24,6 +25,7 @@ interface Props {
 
 export function WeddingEventClient({ locale, event, activePlanVersion, menuLines, impact, ingredientNames }: Props) {
   const dictionary = getDictionary(locale);
+  const eventName = localizedEventName(event.id, event.name, locale);
   const router = useRouter();
   const canChangeGuests = menuLines.some((line) => line.mode === 'per_guest');
   const [currentGuestCount, setCurrentGuestCount] = useState(event.guestCount);
@@ -66,7 +68,7 @@ export function WeddingEventClient({ locale, event, activePlanVersion, menuLines
       setGuestCount(result.event.guestCount);
       setPlanVersion(result.planVersion);
       setPreview(undefined);
-      setSuccess(dictionary.wedding.updated(event.name, result.planVersion));
+      setSuccess(dictionary.wedding.updated(eventName, result.planVersion));
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : dictionary.wedding.errorApply);
@@ -91,13 +93,19 @@ export function WeddingEventClient({ locale, event, activePlanVersion, menuLines
               </span>
               <span className="text-xs text-[#849087]">{dictionary.wedding.planLabel(planVersion)}</span>
             </div>
-            <h1 className="mt-3 text-[36px] font-semibold tracking-[-0.04em] text-[#18251d]">{event.name}</h1>
+            <h1 className="mt-3 text-[36px] font-semibold tracking-[-0.04em] text-[#18251d]">{eventName}</h1>
             <p className="mt-2 text-sm text-[#6f7c73]">
-              {dictionary.wedding.dateLine(Number(event.startsAt.slice(8, 10)), event.startsAt.slice(11, 16), event.prepStartsAt.slice(11, 16))}
+              {dictionary.wedding.dateLine(
+                Number(event.startsAt.slice(8, 10)),
+                event.startsAt.slice(11, 16),
+                event.prepStartsAt.slice(11, 16),
+              )}
             </p>
           </div>
           <div className="rounded-2xl border border-[#dce2dc] bg-white p-4 shadow-[0_1px_2px_rgba(24,37,29,.03)]">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#879188]">{dictionary.wedding.currentGuests}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#879188]">
+              {dictionary.wedding.currentGuests}
+            </p>
             <p className="mt-1 text-3xl font-semibold tracking-tight text-[#27352c]">{currentGuestCount}</p>
           </div>
         </div>
@@ -129,7 +137,9 @@ export function WeddingEventClient({ locale, event, activePlanVersion, menuLines
                     <div>
                       <p className="text-sm font-medium text-[#344138]">{line.name}</p>
                       <p className="mt-1 text-[10px] text-[#8a948e]">
-                        {line.mode === 'fixed' ? `${formatPortions(line.rate, dictionary.locale)} ${dictionary.wedding.fixedSuffix}` : `${line.rate} ${dictionary.wedding.perGuestSuffix}`}
+                        {line.mode === 'fixed'
+                          ? `${formatPortions(line.rate, dictionary.locale)} ${dictionary.wedding.fixedSuffix}`
+                          : `${line.rate} ${dictionary.wedding.perGuestSuffix}`}
                       </p>
                     </div>
                     <div className="text-right">
@@ -153,7 +163,9 @@ export function WeddingEventClient({ locale, event, activePlanVersion, menuLines
 
           <aside className="h-fit space-y-4">
             <section className="rounded-2xl border border-[#dfe3dc] bg-white p-5 shadow-[0_8px_28px_rgba(30,47,36,.06)]">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#64806d]">{dictionary.wedding.impact.eyebrow}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#64806d]">
+                {dictionary.wedding.impact.eyebrow}
+              </p>
               <p className="mt-3 text-3xl font-semibold tracking-tight text-[#27352c]">
                 {impact.affectedIngredientCount}
               </p>
@@ -176,8 +188,12 @@ export function WeddingEventClient({ locale, event, activePlanVersion, menuLines
                   <p className="mt-1 text-sm leading-6 text-[#536158]">{impact.largestDrivers.join(' · ')}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[#919a94]">{dictionary.wedding.impact.supplierStatus}</p>
-                  <p className="mt-1 text-sm font-semibold text-[#8c6428]">{dictionary.wedding.impact.matchingPending}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[#919a94]">
+                    {dictionary.wedding.impact.supplierStatus}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[#8c6428]">
+                    {dictionary.wedding.impact.matchingPending}
+                  </p>
                 </div>
               </div>
               <Link
@@ -188,17 +204,15 @@ export function WeddingEventClient({ locale, event, activePlanVersion, menuLines
               </Link>
             </section>
             <section className="rounded-2xl border border-[#dfe3dc] bg-white p-5 shadow-[0_8px_28px_rgba(30,47,36,.06)]">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#879188]">{dictionary.wedding.guestChange.eyebrow}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#879188]">
+                {dictionary.wedding.guestChange.eyebrow}
+              </p>
               <h2 className="mt-2 text-lg font-semibold text-[#253229]">{dictionary.wedding.guestChange.title}</h2>
               {!canChangeGuests ? (
-                <p className="mt-2 text-xs leading-5 text-[#7a867e]">
-                  {dictionary.wedding.guestChange.fixedNote}
-                </p>
+                <p className="mt-2 text-xs leading-5 text-[#7a867e]">{dictionary.wedding.guestChange.fixedNote}</p>
               ) : (
                 <>
-                  <p className="mt-2 text-xs leading-5 text-[#7a867e]">
-                    {dictionary.wedding.guestChange.hint}
-                  </p>
+                  <p className="mt-2 text-xs leading-5 text-[#7a867e]">{dictionary.wedding.guestChange.hint}</p>
                   <label className="mt-5 block text-xs font-semibold text-[#536158]" htmlFor="guest-count">
                     {dictionary.wedding.guestChange.guestsLabel}
                   </label>
@@ -246,7 +260,7 @@ export function WeddingEventClient({ locale, event, activePlanVersion, menuLines
       {preview && (
         <ImpactDrawer
           dictionary={dictionary}
-          eventName={event.name}
+          eventName={eventName}
           preview={preview}
           ingredientNames={ingredientNames}
           loading={loading}
@@ -287,7 +301,9 @@ function ImpactDrawer({
         <header className="border-b border-[#dde2dc] bg-white px-6 py-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6c7b71]">{dictionary.wedding.drawer.protectedPreview}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6c7b71]">
+                {dictionary.wedding.drawer.protectedPreview}
+              </p>
               <h2 id="impact-title" className="mt-2 text-xl font-semibold text-[#223028]">
                 {eventName} {dictionary.wedding.drawer.titleSuffix}
               </h2>
@@ -304,10 +320,22 @@ function ImpactDrawer({
         </header>
         <div className="flex-1 overflow-y-auto p-6">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <ImpactMetric label={dictionary.wedding.drawer.metricGuests} value={`+${preview.afterGuestCount - preview.beforeGuestCount}`} />
-            <ImpactMetric label={dictionary.wedding.drawer.metricPlan} value={`v${preview.basePlanVersion} → v${preview.candidatePlanVersion}`} />
-            <ImpactMetric label={dictionary.wedding.drawer.metricIngredients} value={String(preview.diff.ingredientDeltas.length)} />
-            <ImpactMetric label={dictionary.wedding.drawer.metricPurchaseLines} value={String(preview.diff.lines.length)} />
+            <ImpactMetric
+              label={dictionary.wedding.drawer.metricGuests}
+              value={`+${preview.afterGuestCount - preview.beforeGuestCount}`}
+            />
+            <ImpactMetric
+              label={dictionary.wedding.drawer.metricPlan}
+              value={`v${preview.basePlanVersion} → v${preview.candidatePlanVersion}`}
+            />
+            <ImpactMetric
+              label={dictionary.wedding.drawer.metricIngredients}
+              value={String(preview.diff.ingredientDeltas.length)}
+            />
+            <ImpactMetric
+              label={dictionary.wedding.drawer.metricPurchaseLines}
+              value={String(preview.diff.lines.length)}
+            />
           </div>
           <div className="mt-6 rounded-2xl border border-[#dfe3dc] bg-white">
             <div className="border-b border-[#e8ebe7] px-4 py-3">

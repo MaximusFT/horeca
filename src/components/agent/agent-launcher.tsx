@@ -8,6 +8,7 @@ import type { AgentApprovalView, AgentToolTrace, AgentTurn } from '@/domain/agen
 import { demoIngredients } from '@/data/demo/ingredients';
 import { formatQuantity } from '@/engine/units';
 import { getDictionary } from '@/i18n/get-dictionary';
+import { localizedIngredientName } from '@/i18n/demo-names';
 import type { Dictionary, Locale } from '@/i18n';
 
 interface ChatMessage {
@@ -20,10 +21,13 @@ interface ChatMessage {
   approval?: AgentApprovalView;
 }
 
-const ingredientNames = new Map(demoIngredients.map((ingredient) => [ingredient.id, ingredient.name]));
+function buildIngredientNames(locale: Locale) {
+  return new Map(demoIngredients.map((ingredient) => [ingredient.id, localizedIngredientName(ingredient.id, ingredient.name, locale)]));
+}
 
 export function AgentLauncher({ locale }: { locale: Locale }) {
   const dictionary = getDictionary(locale);
+  const ingredientNames = buildIngredientNames(locale);
   const router = useRouter();
   const pathname = usePathname();
   const pageContext = getPageContext(pathname, dictionary);
@@ -168,13 +172,23 @@ export function AgentLauncher({ locale }: { locale: Locale }) {
                       </div>
                       {message.mode && (
                         <p className="mt-1.5 px-1 text-[9px] font-semibold uppercase tracking-wide text-[#929b95]">
-                          {message.mode === 'local' ? dictionary.agent.localMode : dictionary.agent.openaiMode(message.model ?? '')}
+                          {message.mode === 'local'
+                            ? dictionary.agent.localMode
+                            : dictionary.agent.openaiMode(message.model ?? '')}
                         </p>
                       )}
                       {message.approval && (
-                        <EventApprovalCard dictionary={dictionary} approval={message.approval} busy={busy} onApply={applyApproval} />
+                        <EventApprovalCard
+                          dictionary={dictionary}
+                          approval={message.approval}
+                          busy={busy}
+                          onApply={applyApproval}
+                          ingredientNames={ingredientNames}
+                        />
                       )}
-                      {message.trace && message.trace.length > 0 && <AgentTrace dictionary={dictionary} trace={message.trace} />}
+                      {message.trace && message.trace.length > 0 && (
+                        <AgentTrace dictionary={dictionary} trace={message.trace} />
+                      )}
                     </article>
                   ))}
                   {busy && (
@@ -246,26 +260,33 @@ function EventApprovalCard({
   approval,
   busy,
   onApply,
+  ingredientNames,
 }: {
   dictionary: Dictionary;
   approval: AgentApprovalView;
   busy: boolean;
   onApply: (id: string) => void;
+  ingredientNames: Map<string, string>;
 }) {
   const preview = approval.preview;
   return (
     <section className="mt-3 overflow-hidden rounded-2xl border border-[#e2c49b] bg-white">
       <header className="bg-[#fff7e9] px-4 py-3">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-[9px] font-bold uppercase tracking-wide text-[#976326]">{dictionary.agent.approvalRequired}</p>
+          <p className="text-[9px] font-bold uppercase tracking-wide text-[#976326]">
+            {dictionary.agent.approvalRequired}
+          </p>
           <span
             className={`rounded-full px-2 py-1 text-[9px] font-bold uppercase ${approval.status === 'applied' ? 'bg-[#dff0e4] text-[#3e714d]' : 'bg-white text-[#976326]'}`}
           >
-            {approval.status === 'applied' ? dictionary.agent.approvalStatusApplied : dictionary.agent.approvalStatusPending}
+            {approval.status === 'applied'
+              ? dictionary.agent.approvalStatusApplied
+              : dictionary.agent.approvalStatusPending}
           </span>
         </div>
         <p className="mt-2 text-sm font-semibold text-[#4b4132]">
-          {dictionary.agent.pageContext.wedding} · {preview.beforeGuestCount} → {preview.afterGuestCount} {dictionary.agent.guestsSuffix}
+          {dictionary.agent.pageContext.wedding} · {preview.beforeGuestCount} → {preview.afterGuestCount}{' '}
+          {dictionary.agent.guestsSuffix}
         </p>
         <p className="mt-1 text-xs text-[#80715b]">
           {approval.status === 'applied'

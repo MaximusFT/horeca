@@ -42,7 +42,7 @@ describe("single procurement agent", () => {
   it("explains chicken only from deterministic provenance", async () => {
     const { planning, agent } = createAgent();
     const before = planning.repository.getState();
-    const turn = await agent.run("Why do we need so much chicken?");
+    const turn = await agent.run("Why do we need so much chicken?", "en");
 
     expect(turn.trace.map((item) => item.name)).toEqual(["explain_requirement"]);
     expect(turn.message).toContain("Chicken breast");

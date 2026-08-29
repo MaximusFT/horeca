@@ -22,13 +22,11 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         <div className="mx-auto grid size-12 place-items-center rounded-xl bg-[#a65243] text-lg font-black text-white">
           !
         </div>
-        <p className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-[#a65243]">{dictionary.errorPage.eyebrow}</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-[#18251d]">
-          {dictionary.errorPage.title}
-        </h1>
-        <p className="mt-3 text-sm leading-6 text-[#65736a]">
-          {dictionary.errorPage.body}
+        <p className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-[#a65243]">
+          {dictionary.errorPage.eyebrow}
         </p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-[#18251d]">{dictionary.errorPage.title}</h1>
+        <p className="mt-3 text-sm leading-6 text-[#65736a]">{dictionary.errorPage.body}</p>
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <button
             type="button"

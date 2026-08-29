@@ -4,7 +4,8 @@ import { buildOverviewSummary, type DemandSourceSplit, type OverviewDay } from '
 import { getDemoPlanningRuntime } from '@/application/demo-runtime';
 import { demoDataset } from '@/data/demo/dataset';
 import { DEMO_PERIOD } from '@/lib/demo-clock';
-import { getDictionary, getServerLocale, type Dictionary } from '@/i18n';
+import { getDictionary, getServerLocale, type Dictionary, type Locale } from '@/i18n';
+import { localizedEventName } from '@/i18n/demo-names';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,7 +73,10 @@ export default async function OverviewPage() {
               detail={dictionary.overview.eventsCatering.detail(summary.guestTotal)}
               meta={
                 summary.largestEvent
-                  ? dictionary.overview.eventsCatering.metaLargest(summary.largestEvent.name, summary.largestEvent.guestCount)
+                  ? dictionary.overview.eventsCatering.metaLargest(
+                      localizedEventName(summary.largestEvent.id, summary.largestEvent.name, locale),
+                      summary.largestEvent.guestCount,
+                    )
                   : dictionary.overview.eventsCatering.metaEmpty
               }
               accent="blue"
@@ -82,7 +86,9 @@ export default async function OverviewPage() {
               value={dictionary.overview.combinedProcurement.value(summary.batchCount)}
               detail={
                 summary.upcomingBatches[0]
-                  ? dictionary.overview.combinedProcurement.detailNext(Number(summary.upcomingBatches[0].deliveryOn.slice(-2)))
+                  ? dictionary.overview.combinedProcurement.detailNext(
+                      Number(summary.upcomingBatches[0].deliveryOn.slice(-2)),
+                    )
                   : dictionary.overview.combinedProcurement.detailEmpty
               }
               meta={
@@ -110,24 +116,28 @@ export default async function OverviewPage() {
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#4c7c5b]">
                   {dictionary.overview.bridge.restaurantTitle}
                 </p>
-                <p className="mt-2 text-lg font-semibold text-[#26342b]">{dictionary.overview.bridge.restaurantHeadline}</p>
+                <p className="mt-2 text-lg font-semibold text-[#26342b]">
+                  {dictionary.overview.bridge.restaurantHeadline}
+                </p>
                 <p className="mt-1 text-xs leading-5 text-[#77837b]">
                   {dictionary.overview.bridge.restaurantBody(summary.operatingDayCount)}
                 </p>
               </div>
               <div className="px-5 py-5 md:px-6">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#526bb2]">{dictionary.overview.bridge.eventsTitle}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#526bb2]">
+                  {dictionary.overview.bridge.eventsTitle}
+                </p>
                 <p className="mt-2 text-lg font-semibold text-[#26342b]">
                   {dictionary.overview.bridge.eventsHeadline(summary.eventCount, summary.guestTotal)}
                 </p>
-                <p className="mt-1 text-xs leading-5 text-[#77837b]">
-                  {dictionary.overview.bridge.eventsBody}
-                </p>
+                <p className="mt-1 text-xs leading-5 text-[#77837b]">{dictionary.overview.bridge.eventsBody}</p>
               </div>
             </div>
             <div className="flex flex-col justify-between gap-4 bg-[#1d3126] px-5 py-5 text-white md:flex-row md:items-center md:px-6">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a9daba]">{dictionary.overview.bridge.procurementTitle}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a9daba]">
+                  {dictionary.overview.bridge.procurementTitle}
+                </p>
                 <p className="mt-1 text-lg font-semibold">{dictionary.overview.bridge.procurementHeadline}</p>
               </div>
               <div className="flex items-center gap-3 text-xs text-white/65">
@@ -158,7 +168,7 @@ export default async function OverviewPage() {
                 <p className="mt-1 text-xs text-[#7a877f]">{dictionary.overview.timeline.subtitle}</p>
               </div>
             </header>
-            <TimelineLanes days={summary.timeline} dictionary={dictionary} />
+            <TimelineLanes days={summary.timeline} dictionary={dictionary} locale={locale} />
           </section>
 
           <div className="mt-6 grid gap-6 xl:grid-cols-[1.45fr_.8fr]">
@@ -197,7 +207,9 @@ export default async function OverviewPage() {
                     <span
                       className={`w-fit rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${index === 0 ? 'bg-[#fff1d8] text-[#99671d]' : 'bg-[#e9f3ec] text-[#467255]'}`}
                     >
-                      {index === 0 ? dictionary.overview.upcomingBatches.next : dictionary.overview.upcomingBatches.planned}
+                      {index === 0
+                        ? dictionary.overview.upcomingBatches.next
+                        : dictionary.overview.upcomingBatches.planned}
                     </span>
                   </div>
                 ))}
@@ -205,7 +217,10 @@ export default async function OverviewPage() {
             </section>
 
             <section className="rounded-2xl border border-[#dfe3dc] bg-white shadow-[0_1px_2px_rgba(24,37,29,.03)]">
-              <SectionHeader title={dictionary.overview.attentionSection.title} subtitle={dictionary.overview.attentionSection.subtitle} />
+              <SectionHeader
+                title={dictionary.overview.attentionSection.title}
+                subtitle={dictionary.overview.attentionSection.subtitle}
+              />
               <div className="space-y-3 p-4 md:p-5">
                 {summary.attention.map((item) => {
                   const tone = {
@@ -242,7 +257,10 @@ export default async function OverviewPage() {
 
           <div className="mt-6">
             <section className="rounded-2xl border border-[#dfe3dc] bg-white shadow-[0_1px_2px_rgba(24,37,29,.03)]">
-              <SectionHeader title={dictionary.overview.recentChanges.title} subtitle={dictionary.overview.recentChanges.subtitle} />
+              <SectionHeader
+                title={dictionary.overview.recentChanges.title}
+                subtitle={dictionary.overview.recentChanges.subtitle}
+              />
               {summary.recentChanges.length > 0 ? (
                 <div className="divide-y divide-[#edf0ec]">
                   {summary.recentChanges.slice(0, 3).map((change) => (
@@ -265,7 +283,9 @@ export default async function OverviewPage() {
                     <div className="mx-auto grid size-10 place-items-center rounded-full bg-[#eef2ee] text-[#718078]">
                       <Icon name="calendar" />
                     </div>
-                    <p className="mt-3 text-sm font-semibold text-[#344238]">{dictionary.overview.recentChanges.emptyTitle}</p>
+                    <p className="mt-3 text-sm font-semibold text-[#344238]">
+                      {dictionary.overview.recentChanges.emptyTitle}
+                    </p>
                     <p className="mx-auto mt-1 max-w-xs text-xs leading-5 text-[#7c8981]">
                       {dictionary.overview.recentChanges.emptyBody}
                     </p>
@@ -309,7 +329,7 @@ function BusinessMetricCard({
   );
 }
 
-function TimelineLanes({ days, dictionary }: { days: OverviewDay[]; dictionary: Dictionary }) {
+function TimelineLanes({ days, dictionary, locale }: { days: OverviewDay[]; dictionary: Dictionary; locale: Locale }) {
   return (
     <div className="overflow-x-auto">
       <div className="grid min-w-[1320px] grid-cols-[156px_repeat(14,minmax(80px,1fr))] text-center">
@@ -323,7 +343,10 @@ function TimelineLanes({ days, dictionary }: { days: OverviewDay[]; dictionary: 
             <p className="mt-1 text-sm font-semibold text-[#344138]">{monthDay(day.date, dictionary.locale)}</p>
           </div>
         ))}
-        <TimelineLabel title={dictionary.overview.timeline.restaurantLabel} subtitle={dictionary.overview.timeline.restaurantSubtitle} />
+        <TimelineLabel
+          title={dictionary.overview.timeline.restaurantLabel}
+          subtitle={dictionary.overview.timeline.restaurantSubtitle}
+        />
         {days.map((day) => {
           const style = loadStyleClass[day.load];
           const label = dictionary.restaurantLoad[day.load];
@@ -340,7 +363,10 @@ function TimelineLanes({ days, dictionary }: { days: OverviewDay[]; dictionary: 
             </div>
           );
         })}
-        <TimelineLabel title={dictionary.overview.timeline.eventsLabel} subtitle={dictionary.overview.timeline.eventsSubtitle} />
+        <TimelineLabel
+          title={dictionary.overview.timeline.eventsLabel}
+          subtitle={dictionary.overview.timeline.eventsSubtitle}
+        />
         {days.map((day) => (
           <div
             key={`events-${day.date}`}
@@ -352,13 +378,18 @@ function TimelineLanes({ days, dictionary }: { days: OverviewDay[]; dictionary: 
                 href={`/events/${event.id}`}
                 className={`block rounded-lg px-2 py-2 text-left text-[9px] leading-3.5 ${event.id === 'wedding' ? 'bg-[#e7ecfb] text-[#3e579b] ring-1 ring-[#cfd8f3]' : 'bg-[#eef2fe] text-[#455f9e]'}`}
               >
-                <span className="block font-semibold">{event.name}</span>
-                <span className="opacity-70">{event.guestCount} {dictionary.overview.timeline.guestsSuffix}</span>
+                <span className="block font-semibold">{localizedEventName(event.id, event.name, locale)}</span>
+                <span className="opacity-70">
+                  {event.guestCount} {dictionary.overview.timeline.guestsSuffix}
+                </span>
               </Link>
             ))}
           </div>
         ))}
-        <TimelineLabel title={dictionary.overview.timeline.procurementLabel} subtitle={dictionary.overview.timeline.procurementSubtitle} />
+        <TimelineLabel
+          title={dictionary.overview.timeline.procurementLabel}
+          subtitle={dictionary.overview.timeline.procurementSubtitle}
+        />
         {days.map((day) => (
           <div
             key={`procurement-${day.date}`}
@@ -373,7 +404,9 @@ function TimelineLanes({ days, dictionary }: { days: OverviewDay[]; dictionary: 
                   <span className="size-1.5 rounded-full bg-[#708f79]" />
                   {dictionary.overview.timeline.delivery}
                 </span>
-                <span className="mt-0.5 block opacity-75">{day.procurementLineCount} {dictionary.overview.timeline.ingredientsSuffix}</span>
+                <span className="mt-0.5 block opacity-75">
+                  {day.procurementLineCount} {dictionary.overview.timeline.ingredientsSuffix}
+                </span>
               </Link>
             ) : (
               <span className="text-[9px] text-[#bdc4bf]">{dictionary.overview.timeline.covered}</span>

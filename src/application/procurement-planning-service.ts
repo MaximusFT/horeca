@@ -98,7 +98,8 @@ export class ProcurementPlanningService {
       id: this.generateId(),
       type: "EVENT_CHANGED" as const,
       eventId: preview.eventId,
-      summary: `${currentEvent.name}: ${preview.beforeGuestCount} → ${preview.afterGuestCount} guests`,
+      beforeGuestCount: preview.beforeGuestCount,
+      afterGuestCount: preview.afterGuestCount,
       createdAt: now.toISOString(),
       planVersion: preview.candidatePlan.version,
     };

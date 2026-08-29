@@ -8,7 +8,13 @@ import { getDictionary, getServerLocale } from '@/i18n';
 type IconName = 'overview' | 'procurement' | 'events' | 'inventory' | 'spark' | 'calendar' | 'package' | 'arrow';
 export type ActiveNavKey = 'overview' | 'procurement' | 'events' | 'inventory';
 
-export async function AppShell({ children, activeKey = 'overview' }: { children: ReactNode; activeKey?: ActiveNavKey }) {
+export async function AppShell({
+  children,
+  activeKey = 'overview',
+}: {
+  children: ReactNode;
+  activeKey?: ActiveNavKey;
+}) {
   const locale = await getServerLocale();
   const dictionary = getDictionary(locale);
   const navigation: Array<{ key: ActiveNavKey; label: string; icon: IconName; href?: string }> = [
@@ -33,7 +39,9 @@ export async function AppShell({ children, activeKey = 'overview' }: { children:
         </div>
 
         <nav className="flex-1 px-3 py-6" aria-label="Primary navigation">
-          <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">{dictionary.nav.workspace}</p>
+          <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
+            {dictionary.nav.workspace}
+          </p>
           <div className="mt-3 space-y-1">
             {navigation.map((item) => {
               const selected = item.key === activeKey;
@@ -70,7 +78,9 @@ export async function AppShell({ children, activeKey = 'overview' }: { children:
               M
             </div>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#708076]">{dictionary.nav.operationsEyebrow}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#708076]">
+                {dictionary.nav.operationsEyebrow}
+              </p>
               <p className="mt-0.5 text-sm font-semibold text-[#1b2820]">{activeLabel}</p>
             </div>
           </div>

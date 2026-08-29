@@ -10,13 +10,11 @@ export default async function NotFound() {
         <div className="mx-auto grid size-12 place-items-center rounded-xl bg-[#193126] text-lg font-black text-[#b8edca]">
           M
         </div>
-        <p className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-[#728078]">{dictionary.notFound.eyebrow}</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-[#18251d]">
-          {dictionary.notFound.title}
-        </h1>
-        <p className="mt-3 text-sm leading-6 text-[#65736a]">
-          {dictionary.notFound.body}
+        <p className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-[#728078]">
+          {dictionary.notFound.eyebrow}
         </p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-[#18251d]">{dictionary.notFound.title}</h1>
+        <p className="mt-3 text-sm leading-6 text-[#65736a]">{dictionary.notFound.body}</p>
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <Link
             href="/overview"

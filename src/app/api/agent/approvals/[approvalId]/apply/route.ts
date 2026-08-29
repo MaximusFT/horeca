@@ -1,9 +1,11 @@
 import { getDemoPlanningRuntime } from "@/application/demo-runtime";
+import { getServerLocale } from "@/i18n";
 
 export async function POST(_request: Request, context: { params: Promise<{ approvalId: string }> }) {
   try {
     const { approvalId } = await context.params;
-    const result = await getDemoPlanningRuntime().agent.approveAndApply(approvalId);
+    const locale = await getServerLocale();
+    const result = await getDemoPlanningRuntime().agent.approveAndApply(approvalId, locale);
     return Response.json(result);
   } catch (error) {
     return Response.json(

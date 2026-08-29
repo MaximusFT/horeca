@@ -7,6 +7,9 @@ import type { ProcurementPlanningService } from "./procurement-planning-service"
 import type { PlanningRepository } from "./planning-repository";
 import { MemoryAgentApprovalRepository } from "./agent-approval-repository";
 import type { Clock } from "@/lib/clock";
+import { getDictionary } from "@/i18n/get-dictionary";
+import type { Locale } from "@/i18n/locale";
+import { localizedEventName, localizedIngredientName } from "@/i18n/demo-names";
 
 export interface AgentToolResult {
   output: unknown;
@@ -67,13 +70,13 @@ export class AgentToolService {
     this.generateId = dependencies.generateId ?? (() => crypto.randomUUID());
   }
 
-  async execute(name: AgentToolName, rawArguments: unknown): Promise<AgentToolResult> {
+  async execute(name: AgentToolName, rawArguments: unknown, locale: Locale = "uk"): Promise<AgentToolResult> {
     switch (name) {
-      case "get_event": return this.getEvent(getEventSchema.parse(rawArguments));
-      case "get_procurement_plan": return this.getProcurementPlan(getPlanSchema.parse(rawArguments));
-      case "explain_requirement": return this.explainRequirement(explainSchema.parse(rawArguments));
-      case "preview_event_change": return this.previewEventChange(previewSchema.parse(rawArguments));
-      case "apply_event_change": return this.applyEventChange(applySchema.parse(rawArguments));
+      case "get_event": return this.getEvent(getEventSchema.parse(rawArguments), locale);
+      case "get_procurement_plan": return this.getProcurementPlan(getPlanSchema.parse(rawArguments), locale);
+      case "explain_requirement": return this.explainRequirement(explainSchema.parse(rawArguments), locale);
+      case "preview_event_change": return this.previewEventChange(previewSchema.parse(rawArguments), locale);
+      case "apply_event_change": return this.applyEventChange(applySchema.parse(rawArguments), locale);
     }
   }
 
@@ -87,15 +90,18 @@ export class AgentToolService {
     return this.dependencies.approvals.require(approvalId);
   }
 
-  private getEvent({ eventId }: z.infer<typeof getEventSchema>): AgentToolResult {
+  private getEvent({ eventId }: z.infer<typeof getEventSchema>, locale: Locale): AgentToolResult {
     const event = this.dependencies.repository.getState().events.find((item) => item.id === eventId);
     if (!event) throw new Error(`Unknown event ${eventId}`);
-    return { output: event, summary: `Read ${event.name}: ${event.guestCount} guests.` };
+    const dictionary = getDictionary(locale);
+    const eventName = localizedEventName(event.id, event.name, locale);
+    return { output: event, summary: dictionary.agentTools.readEvent(eventName, event.guestCount) };
   }
 
-  private getProcurementPlan({ batchId }: z.infer<typeof getPlanSchema>): AgentToolResult {
+  private getProcurementPlan({ batchId }: z.infer<typeof getPlanSchema>, locale: Locale): AgentToolResult {
     const plan = this.dependencies.repository.getState().activePlan;
     const ingredientNames = this.ingredientById;
+    const dictionary = getDictionary(locale);
     if (batchId) {
       const batch = plan.batches.find((item) => item.id === batchId);
       if (!batch) throw new Error(`Unknown procurement batch ${batchId}`);
@@ -106,16 +112,19 @@ export class AgentToolService {
             id: batch.id,
             deliveryOn: batch.deliveryOn,
             deliveryAt: batch.deliveryAt,
-            lines: batch.lines.map((line) => ({
-              lineId: line.id,
-              ingredientId: line.ingredientId,
-              ingredientName: ingredientNames.get(line.ingredientId)?.name,
-              quantity: line.quantity,
-              unit: line.unit,
-            })),
+            lines: batch.lines.map((line) => {
+              const ingredient = ingredientNames.get(line.ingredientId);
+              return {
+                lineId: line.id,
+                ingredientId: line.ingredientId,
+                ingredientName: ingredient ? localizedIngredientName(ingredient.id, ingredient.name, locale) : undefined,
+                quantity: line.quantity,
+                unit: line.unit,
+              };
+            }),
           },
         },
-        summary: `Read batch ${batch.deliveryOn} with ${batch.lines.length} ingredient lines.`,
+        summary: dictionary.agentTools.readBatch(batch.deliveryOn, batch.lines.length),
       };
     }
     return {
@@ -125,11 +134,11 @@ export class AgentToolService {
         horizon: plan.horizon,
         batches: plan.batches.map((batch) => ({ id: batch.id, deliveryOn: batch.deliveryOn, lineCount: batch.lines.length })),
       },
-      summary: `Read active Plan v${plan.version}: ${plan.batches.length} dated batches.`,
+      summary: dictionary.agentTools.readPlan(plan.version, plan.batches.length),
     };
   }
 
-  private explainRequirement({ ingredientId, batchId }: z.infer<typeof explainSchema>): AgentToolResult {
+  private explainRequirement({ ingredientId, batchId }: z.infer<typeof explainSchema>, locale: Locale): AgentToolResult {
     const plan = this.dependencies.repository.getState().activePlan;
     const ingredient = this.ingredientById.get(ingredientId);
     if (!ingredient) throw new Error(`Unknown ingredient ${ingredientId}`);
@@ -138,15 +147,17 @@ export class AgentToolService {
       : plan.lines.filter((line) => line.ingredientId === ingredientId);
     const line = [...candidates].sort((a, b) => b.quantity - a.quantity || a.deliveryAt.localeCompare(b.deliveryAt))[0];
     if (!line) throw new Error(`No planned requirement for ${ingredient.name}${batchId ? ` in ${batchId}` : ""}`);
-    const explanation = explainProcurementLine(plan, line, ingredient);
+    const explanation = explainProcurementLine(plan, line, ingredient, locale);
     const batch = plan.batches.find((item) => item.lines.some((candidate) => candidate.id === line.id))!;
+    const ingredientName = localizedIngredientName(ingredient.id, ingredient.name, locale);
+    const dictionary = getDictionary(locale);
     return {
-      output: { planVersion: plan.version, batchId: batch.id, ingredientName: ingredient.name, explanation },
-      summary: `Explained ${ingredient.name} in ${batch.id} from ${explanation.demandSources.length} demand sources.`,
+      output: { planVersion: plan.version, batchId: batch.id, ingredientName, explanation },
+      summary: dictionary.agentTools.explained(ingredientName, batch.id, explanation.demandSources.length),
     };
   }
 
-  private previewEventChange({ eventId, guestCount }: z.infer<typeof previewSchema>): AgentToolResult {
+  private previewEventChange({ eventId, guestCount }: z.infer<typeof previewSchema>, locale: Locale): AgentToolResult {
     const preview = this.dependencies.planningService.previewEventChange(eventId, guestCount);
     const dto = toEventChangePreviewDto(preview);
     const approval = this.dependencies.approvals.save({
@@ -156,6 +167,7 @@ export class AgentToolService {
       createdAt: this.dependencies.clock.now().toISOString(),
       preview: dto,
     });
+    const dictionary = getDictionary(locale);
     return {
       output: {
         approvalId: approval.id,
@@ -167,12 +179,12 @@ export class AgentToolService {
         changedBatchCount: new Set(dto.diff.lines.map((line) => line.deliveryOn)).size,
         requiresHumanApproval: true,
       },
-      summary: `Previewed ${dto.beforeGuestCount} → ${dto.afterGuestCount} guests; human approval required.`,
+      summary: dictionary.agentTools.previewed(dto.beforeGuestCount, dto.afterGuestCount),
       approval,
     };
   }
 
-  private applyEventChange({ approvalId }: z.infer<typeof applySchema>): AgentToolResult {
+  private applyEventChange({ approvalId }: z.infer<typeof applySchema>, locale: Locale): AgentToolResult {
     const approval = this.dependencies.approvals.require(approvalId);
     if (approval.status !== "approved") {
       throw new Error(`Mutation blocked: approval ${approvalId} is ${approval.status}`);
@@ -180,9 +192,11 @@ export class AgentToolService {
     try {
       const result = this.dependencies.planningService.applyEventChange(approval.preview.id);
       this.dependencies.approvals.setStatus(approvalId, "applied");
+      const dictionary = getDictionary(locale);
+      const eventName = localizedEventName(result.event.id, result.event.name, locale);
       return {
         output: { event: result.event, planVersion: result.plan.version, change: result.change },
-        summary: `Applied ${result.event.name} at ${result.event.guestCount} guests; Plan v${result.plan.version} is active.`,
+        summary: dictionary.agentTools.applied(eventName, result.event.guestCount, result.plan.version),
       };
     } catch (error) {
       this.dependencies.approvals.setStatus(approvalId, "failed", error instanceof Error ? error.message : "Apply failed");

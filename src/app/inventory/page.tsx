@@ -5,6 +5,7 @@ import { AppShell, Icon } from '@/components/app-shell';
 import { demoDataset } from '@/data/demo/dataset';
 import { formatQuantity } from '@/engine/units';
 import { getDictionary, getServerLocale, type Dictionary } from '@/i18n';
+import { localizedIngredientName } from '@/i18n/demo-names';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,10 +51,10 @@ export default async function InventoryPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#728078]">
                 {dictionary.inventory.planLabel(activePlan.version)}
               </p>
-              <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-[#18251d]">{dictionary.inventory.title}</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6d7a72]">
-                {dictionary.inventory.subtitle}
-              </p>
+              <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-[#18251d]">
+                {dictionary.inventory.title}
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6d7a72]">{dictionary.inventory.subtitle}</p>
             </div>
             <Link
               href="/procurement"
@@ -90,7 +91,9 @@ export default async function InventoryPage() {
                 <tbody className="divide-y divide-[#edf0ec]">
                   {rows.map((row) => (
                     <tr key={row.ingredientId} className="hover:bg-[#fbfcfa]">
-                      <td className="px-5 py-4 text-sm font-semibold text-[#334037] md:px-6">{row.ingredientName}</td>
+                      <td className="px-5 py-4 text-sm font-semibold text-[#334037] md:px-6">
+                        {localizedIngredientName(row.ingredientId, row.ingredientName, locale)}
+                      </td>
                       <td className="px-5 py-4 text-right text-sm tabular-nums text-[#526058]">
                         {formatQuantity(row.onHand, row.unit)}
                       </td>
@@ -102,7 +105,9 @@ export default async function InventoryPage() {
                       </td>
                       <td className="px-5 py-4">
                         <p className="text-xs font-semibold text-[#46544b]">
-                          {row.nextNeedAt ? formatDateTime(row.nextNeedAt, dictionary.locale) : dictionary.inventory.noRequirement}
+                          {row.nextNeedAt
+                            ? formatDateTime(row.nextNeedAt, dictionary.locale)
+                            : dictionary.inventory.noRequirement}
                         </p>
                         {row.nextNeedAt && (
                           <p className="mt-1 text-[10px] text-[#909a93]">
@@ -130,7 +135,7 @@ export default async function InventoryPage() {
 }
 
 function formatDateTime(value: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en", {
+  return new Intl.DateTimeFormat(locale === 'uk' ? 'uk-UA' : 'en', {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
