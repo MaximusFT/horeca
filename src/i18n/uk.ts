@@ -89,7 +89,7 @@ export const uk: Dictionary = {
     },
   },
   overview: {
-    greeting: 'Доброго ранку, Операції',
+    greeting: 'Доброго ранку',
     subtitle: (eventCount) =>
       `Попит ресторану, ${events(eventCount)}, склад і підтверджені поставки об'єднані в один датований план закупівель.`,
     openProcurement: 'Відкрити закупівлі',
@@ -290,6 +290,12 @@ export const uk: Dictionary = {
     upcomingRequirements: (n) => `${requirementsWord(n)} попереду`,
     plannedStatus: 'Заплановано',
     whyButton: 'Чому?',
+    searchLabel: 'Пошук інгредієнтів',
+    searchPlaceholder: 'Знайти інгредієнт…',
+    allLines: 'Усі',
+    attentionOnly: 'Ризик терміну',
+    resultCount: (visible, total) => `${visible} із ${total}`,
+    noMatches: 'За цими умовами інгредієнтів не знайдено.',
     why: {
       title: 'Чому саме ця кількість?',
       subtitle: 'Попит, наявне покриття і терміни закупівлі.',
@@ -351,6 +357,7 @@ export const uk: Dictionary = {
     availableReplacement: 'Доступна заміна',
     replacementSupplies: (packages, packageSize, supplied) => `${packages} × ${packageSize} · постачає ${supplied}`,
     syntheticPrice: 'Синтетична ціна',
+    perPackage: '/ упаковка',
     approveReplacement: 'Підтвердити заміну',
     matchingComplete: 'Підбір завершено',
     reviewRoundingTitle: 'Перегляньте округлення упаковок перед записом кошика',

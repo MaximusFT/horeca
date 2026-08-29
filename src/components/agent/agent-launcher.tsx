@@ -7,7 +7,7 @@ import type { AgentApprovalApplyResult } from '@/application/agent-runtime';
 import type { SupplierOrderSession } from '@/application/mock-supplier-order-service';
 import type { AgentApprovalView, AgentToolTrace, AgentTurn } from '@/domain/agent';
 import { demoIngredients } from '@/data/demo/ingredients';
-import { formatQuantity } from '@/engine/units';
+import { formatLocalizedQuantity } from '@/i18n/format';
 import { getDictionary } from '@/i18n/get-dictionary';
 import { localizedIngredientName } from '@/i18n/demo-names';
 import type { Dictionary, Locale } from '@/i18n';
@@ -325,7 +325,7 @@ function SupplierOrderCard({
             <div>
               <p className="text-xs font-semibold text-[#3b443e]">{line.ingredientName}</p>
               <p className="mt-1 text-[10px] text-[#7f6b61]">
-                {dictionary.mockSupplier.need(formatQuantity(line.requiredQuantity, line.unit))}
+                {dictionary.mockSupplier.need(formatLocalizedQuantity(line.requiredQuantity, line.unit, dictionary.locale))}
               </p>
             </div>
             <span className="rounded-full bg-[#fff0e7] px-2 py-1 text-[9px] font-bold uppercase text-[#a65e3f]">
@@ -337,7 +337,7 @@ function SupplierOrderCard({
               <div>
                 <p className="text-xs font-semibold text-[#36433a]">{replacement.name}</p>
                 <p className="mt-1 text-[10px] text-[#768279]">
-                  {formatQuantity(replacement.packageSize, line.unit)} · {dictionary.mockSupplier.syntheticPrice}{' '}
+                  {formatLocalizedQuantity(replacement.packageSize, line.unit, dictionary.locale)} · {dictionary.mockSupplier.syntheticPrice}{' '}
                   {formatMoney(replacement.priceMinor, dictionary.locale)}
                 </p>
               </div>
@@ -469,7 +469,7 @@ function EventApprovalCard({
               {ingredientNames.get(delta.ingredientId) ?? delta.ingredientId}
             </span>
             <span className="text-xs font-semibold tabular-nums text-[#365542]">
-              +{formatQuantity(delta.delta, delta.unit)}
+              +{formatLocalizedQuantity(delta.delta, delta.unit, dictionary.locale)}
             </span>
           </div>
         ))}

@@ -3,9 +3,9 @@ import { AppShell, Icon } from '@/components/app-shell';
 import { buildOverviewSummary, type DemandSourceSplit, type OverviewDay } from '@/application/overview-summary';
 import { getDemoPlanningRuntime } from '@/application/demo-runtime';
 import { demoDataset } from '@/data/demo/dataset';
-import { DEMO_PERIOD } from '@/lib/demo-clock';
 import { getDictionary, getServerLocale, type Dictionary, type Locale } from '@/i18n';
 import { localizedEventName } from '@/i18n/demo-names';
+import { formatDemoPeriod, unitLabel } from '@/i18n/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +30,7 @@ export default async function OverviewPage() {
           <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
             <div>
               <div className="flex items-center gap-2 text-xs font-semibold text-[#66766c]">
-                <span>{DEMO_PERIOD.label}</span>
+                <span>{formatDemoPeriod(locale)}</span>
                 <span className="text-[#bcc4be]">/</span>
                 <span className="rounded-full bg-[#e1eee5] px-2 py-1 text-[10px] uppercase tracking-wide text-[#39704d]">
                   Plan v{summary.planVersion}
@@ -429,9 +429,9 @@ function TimelineLabel({ title, subtitle }: { title: string; subtitle: string })
 
 function DemandSplitCard({ split, dictionary }: { split: DemandSourceSplit; dictionary: Dictionary }) {
   const labels = {
-    g: [dictionary.overview.demandSources.mass, 'kg'],
-    ml: [dictionary.overview.demandSources.volume, 'L'],
-    pcs: [dictionary.overview.demandSources.units, 'pcs'],
+    g: [dictionary.overview.demandSources.mass, unitLabel('kg', dictionary.locale)],
+    ml: [dictionary.overview.demandSources.volume, unitLabel('l', dictionary.locale)],
+    pcs: [dictionary.overview.demandSources.units, unitLabel('pcs', dictionary.locale)],
   } as const;
   const divisor = split.unit === 'pcs' ? 1 : 1_000;
   const [title, displayUnit] = labels[split.unit];

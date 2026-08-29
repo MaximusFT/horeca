@@ -6,6 +6,7 @@ import type { BaseUnit } from '@/domain/units';
 import { BUSINESS_TIME_ZONE } from '@/lib/demo-clock';
 import { getDictionary, intlTag, type Locale } from '@/i18n';
 import { localizedIngredientName, localizedEventName } from '@/i18n/demo-names';
+import { formatLocalizedQuantity } from '@/i18n/format';
 import type { PlanningChange } from './planning-repository';
 
 export interface OverviewDay {
@@ -93,7 +94,9 @@ export function buildOverviewSummary(
         ingredientNames.get(expired.ingredientId) ?? expired.ingredientId,
       ),
       description: dictionary.overview.attentionItems.expiryRiskDescription,
-      meta: dictionary.overview.attentionItems.expiryRiskMeta(formatAmount(expired.quantity, expired.unit)),
+      meta: dictionary.overview.attentionItems.expiryRiskMeta(
+        formatLocalizedQuantity(expired.quantity, expired.unit, locale),
+      ),
       href: '/procurement',
       actionLabel: dictionary.overview.attentionItems.expiryRiskAction,
     });
@@ -186,12 +189,6 @@ function firstExpiryRisk(
 ): { ingredientId: string; quantity: number; unit: BaseUnit } | undefined {
   const first = plan.projections.find((projection) => projection.expiredQuantity > 0);
   return first ? { ingredientId: first.ingredientId, quantity: first.expiredQuantity, unit: first.unit } : undefined;
-}
-
-function formatAmount(quantity: number, unit: BaseUnit): string {
-  if (unit === 'g') return `${round(quantity / 1_000)} kg`;
-  if (unit === 'ml') return `${round(quantity / 1_000)} L`;
-  return `${round(quantity)} pcs`;
 }
 
 function round(value: number): number {

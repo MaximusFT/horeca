@@ -15,6 +15,7 @@ import {
   type SilpoOAuthRecord,
   type SilpoOAuthStore,
 } from './silpo-oauth-store';
+import { isSilpoReadToolName, type SilpoReadToolName } from './silpo-tool-policy';
 
 export const SILPO_MCP_ENDPOINT = 'https://mcp.silpo.ua/mcp';
 
@@ -161,6 +162,24 @@ export class SilpoOAuthCoordinator {
         description: tool.description,
         inputSchema: tool.inputSchema,
       }));
+    } finally {
+      await connection.transport.close();
+    }
+  }
+
+  async callReadTool(
+    sessionId: string,
+    redirectUrl: URL,
+    name: SilpoReadToolName,
+    args: Record<string, unknown>,
+  ): Promise<unknown> {
+    if (!isSilpoReadToolName(name)) throw new Error(`Silpo tool ${name} is not allowed in read-only spike mode`);
+    if (!(await this.store.get(sessionId))?.tokens) throw new UnauthorizedError('Silpo OAuth authorization is required');
+    const provider = new SilpoOAuthClientProvider(sessionId, redirectUrl, this.store);
+    const connection = this.connection(provider);
+    try {
+      await connection.client.connect(connection.transport);
+      return await connection.client.callTool({ name, arguments: args });
     } finally {
       await connection.transport.close();
     }

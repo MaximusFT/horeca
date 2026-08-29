@@ -25,6 +25,8 @@ Recommended Codex setting for Stage 9: **sol high**. The spike involves OAuth, d
 
 Prepared in advance: `src/infrastructure/mcp-client.ts` remains a generic protocol test client. The preferred Stage 9 path now uses official `@modelcontextprotocol/sdk` `Client` + `StreamableHTTPClientTransport` and a session-scoped OAuth provider in `src/infrastructure/silpo-oauth-client.ts`. `/debug/mcp` explicitly starts OAuth 2.1/DCR/PKCE and renders live `tools/list` schemas after authorization. No external Silpo request has been executed yet.
 
+The complete local spike UI is ready before access opens: live schemas can be downloaded as JSON, and only the documented Stage 9 read tools can be executed through `/api/silpo/tools/call`. The same allowlist is enforced in the browser and server; all cart mutations are blocked in spike mode. On September 1 the first action is therefore an explicit click on `Connect Silpo`, followed by login/OTP completed by the user.
+
 Stage 9 requires the user to complete the Silpo login/OTP flow. The current OAuth store is process-memory and suitable only for the isolated local spike; replace it with durable encrypted storage before relying on OAuth across serverless instances. If authorization or MCP connectivity is unavailable, report the concrete blocker. Do not pretend that live connectivity was proven.
 
 Preparation already in place: `SUPPLIER_MODE=mock` remains the default. The official endpoint is fixed to `https://mcp.silpo.ua/mcp`; static token variables are legacy diagnostics only. Set `SUPPLIER_MODE=silpo` only after OAuth and live schema mapping. Until then this mode intentionally reports an implementation error rather than falling back to mock or pretending to contact Silpo.
@@ -136,7 +138,7 @@ Never commit `.env.local`, OAuth tokens, MCP tokens, cart identifiers containing
 Follow the implementation handoff plan exactly:
 
 1. Establish OAuth/connectivity.
-2. Call `tools/list` and save the actual live schemas.
+2. Click `Load live tools`, inspect the result, and download the actual schemas from `/debug/mcp`.
 3. Read active cart context.
 4. Read the full cart/context and delivery options.
 5. Batch-search eggs, tomatoes, and salmon.
@@ -157,6 +159,9 @@ Use a dedicated `/debug/mcp` route or server-side script. The first spike should
 - `src/application/agent-tools.ts` — protected Stage 8 tools.
 - `src/application/agent-runtime.ts` — single-agent orchestration and approval apply.
 - `src/infrastructure/openai-responses-agent-model.ts` — optional live Responses adapter.
+- `src/infrastructure/silpo-oauth-client.ts` — official SDK OAuth coordinator and live MCP client.
+- `src/infrastructure/silpo-tool-policy.ts` — server-enforced Stage 9 read-only allowlist.
+- `src/components/debug/silpo-oauth-panel.tsx` — OAuth, schema capture, and read-only spike UI.
 - `src/components/agent/agent-launcher.tsx` — Ask Misto UI.
 - `src/application/demo-runtime.ts` — shared in-memory demo composition root.
 
@@ -165,11 +170,11 @@ Use a dedicated `/debug/mcp` route or server-side script. The first spike should
 At handoff, all checks pass:
 
 ```text
-npm test          → 41 tests passed in 13 files
+npm test          → 55 tests passed in 18 files
 npm run typecheck → passed
 npm run lint      → passed
 npm run build     → passed
-npm audit         → previously reported 0 vulnerabilities; rerun after dependency changes
+npm audit         → 0 vulnerabilities after installing `@modelcontextprotocol/sdk`
 ```
 
 Browser QA completed:
@@ -179,6 +184,9 @@ Browser QA completed:
 - Mock salmon substitution → cart preview → cart approval → reread/verify.
 - Ask Misto Wedding 180→220 → protected preview → explicit approval → Plan v2 and 485 total guests.
 - Ask Misto chicken explanation through `explain_requirement`.
+- Ask Misto supplier preparation → salmon replacement approval → cart preview → explicit cart apply → reread/verify.
+- Tablet/mobile navigation at 850 px and 390 px; all four primary sections and Reset remain available with no page-level horizontal overflow.
+- Procurement batch search (`лосось`) and expiry-risk filter; localized quantities (`кг`, `г`, `л`, `шт`).
 
 ## Working-tree and Git notes
 

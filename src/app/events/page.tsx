@@ -3,6 +3,7 @@ import { AppShell, Icon } from '@/components/app-shell';
 import { getDemoPlanningRuntime } from '@/application/demo-runtime';
 import { getDictionary, getServerLocale } from '@/i18n';
 import { localizedEventName } from '@/i18n/demo-names';
+import { formatMonthShort } from '@/i18n/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,7 +54,9 @@ export default async function EventsPage() {
                     className={`grid grid-cols-[92px_minmax(0,1fr)_100px_110px_32px items-center px-5 py-5 transition hover:bg-[#fafbf9] md:grid-cols-[120px_minmax(0,1fr)_140px_130px_32px] md:px-6 ${isHero ? 'bg-[#f8fbf8]' : ''}`}
                   >
                     <div>
-                      <p className="text-[10px] font-semibold uppercase text-[#8b958e]">Sep</p>
+                      <p className="text-[10px] font-semibold uppercase text-[#8b958e]">
+                        {formatMonthShort(event.startsAt, locale)}
+                      </p>
                       <p className="mt-1 text-lg font-semibold text-[#2d3a31]">{Number(event.startsAt.slice(8, 10))}</p>
                     </div>
                     <div className="min-w-0">

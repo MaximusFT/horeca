@@ -261,6 +261,12 @@ export interface Dictionary {
     upcomingRequirements: (n: number) => string;
     plannedStatus: string;
     whyButton: string;
+    searchLabel: string;
+    searchPlaceholder: string;
+    allLines: string;
+    attentionOnly: string;
+    resultCount: (visible: number, total: number) => string;
+    noMatches: string;
     why: {
       title: string;
       subtitle: string;
@@ -321,6 +327,7 @@ export interface Dictionary {
     availableReplacement: string;
     replacementSupplies: (packages: number, packageSize: string, supplied: string) => string;
     syntheticPrice: string;
+    perPackage: string;
     approveReplacement: string;
     matchingComplete: string;
     reviewRoundingTitle: string;

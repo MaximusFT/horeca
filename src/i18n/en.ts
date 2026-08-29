@@ -71,7 +71,7 @@ export const en: Dictionary = {
     },
   },
   overview: {
-    greeting: 'Good morning, Operations',
+    greeting: 'Good morning',
     subtitle: (eventCount) =>
       `Restaurant demand, ${eventCount} events, stock and incoming supply are reconciled into one dated procurement plan.`,
     openProcurement: 'Open procurement',
@@ -272,6 +272,12 @@ export const en: Dictionary = {
     upcomingRequirements: (n) => `${n} upcoming ${plural(n, 'requirement', 'requirements')}`,
     plannedStatus: 'Planned',
     whyButton: 'Why?',
+    searchLabel: 'Search ingredients',
+    searchPlaceholder: 'Find an ingredient…',
+    allLines: 'All',
+    attentionOnly: 'Expiry risk',
+    resultCount: (visible, total) => `${visible} of ${total}`,
+    noMatches: 'No ingredients match these filters.',
     why: {
       title: 'Why this quantity?',
       subtitle: 'Demand, available coverage and purchase timing.',
@@ -333,6 +339,7 @@ export const en: Dictionary = {
     availableReplacement: 'Available replacement',
     replacementSupplies: (packages, packageSize, supplied) => `${packages} × ${packageSize} · supplies ${supplied}`,
     syntheticPrice: 'Synthetic price',
+    perPackage: '/ package',
     approveReplacement: 'Approve replacement',
     matchingComplete: 'Matching complete',
     reviewRoundingTitle: 'Review package rounding before any cart write',

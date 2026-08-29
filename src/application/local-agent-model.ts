@@ -1,6 +1,6 @@
 import type { Ingredient } from '@/domain/ingredient';
 import type { AgentToolDefinition } from '@/domain/agent';
-import { formatQuantity } from '@/engine/units';
+import { formatLocalizedQuantity } from '@/i18n/format';
 import type { AgentModelGateway, AgentModelResult, AgentToolInvoker } from './agent-model';
 import { getDictionary } from '@/i18n/get-dictionary';
 import type { Locale } from '@/i18n/locale';
@@ -67,21 +67,21 @@ export class LocalAgentModel implements AgentModelGateway {
       };
       const facts = output.explanation;
       const sources = facts.demandSources
-        .map((source) => `${source.label}: ${formatQuantity(source.quantity, facts.unit)}`)
+        .map((source) => `${source.label}: ${formatLocalizedQuantity(source.quantity, facts.unit, locale)}`)
         .join('; ');
       return {
         message: [
           dictionary.localAgent.explanationIntro(
             output.ingredientName,
             output.batchId,
-            formatQuantity(facts.grossDemand, facts.unit),
+            formatLocalizedQuantity(facts.grossDemand, facts.unit, locale),
             sources,
           ),
           dictionary.localAgent.explanationDetails(
-            formatQuantity(facts.inventoryUsed, facts.unit),
-            formatQuantity(facts.incomingUsed, facts.unit),
-            formatQuantity(facts.safetyTarget, facts.unit),
-            formatQuantity(facts.purchaseQuantity, facts.unit),
+            formatLocalizedQuantity(facts.inventoryUsed, facts.unit, locale),
+            formatLocalizedQuantity(facts.incomingUsed, facts.unit, locale),
+            formatLocalizedQuantity(facts.safetyTarget, facts.unit, locale),
+            formatLocalizedQuantity(facts.purchaseQuantity, facts.unit, locale),
           ),
         ].join(' '),
       };

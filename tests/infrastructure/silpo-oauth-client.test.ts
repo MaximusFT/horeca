@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { SilpoOAuthClientProvider } from '@/infrastructure/silpo-oauth-client';
 import { MemorySilpoOAuthStore } from '@/infrastructure/silpo-oauth-store';
+import { isSilpoReadToolName } from '@/infrastructure/silpo-tool-policy';
 
 describe('Silpo OAuth client provider', () => {
   const sessionId = 'oauth-test-session';
@@ -46,5 +47,12 @@ describe('Silpo OAuth client provider', () => {
     expect(await provider.tokens()).toBeUndefined();
     expect(await provider.clientInformation()).toEqual({ client_id: 'silpo-test-client' });
     expect(await provider.codeVerifier()).toBe('pkce-verifier');
+  });
+
+  it('allows required Stage 9 reads and blocks cart mutations', () => {
+    expect(isSilpoReadToolName('silpo_get_my_shopping_cart')).toBe(true);
+    expect(isSilpoReadToolName('silpo_find_products_batch')).toBe(true);
+    expect(isSilpoReadToolName('silpo_add_or_update_cart_products')).toBe(false);
+    expect(isSilpoReadToolName('silpo_clear_shopping_cart')).toBe(false);
   });
 });

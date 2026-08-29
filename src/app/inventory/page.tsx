@@ -3,7 +3,7 @@ import { buildInventorySummary, type InventoryStatus } from '@/application/inven
 import { getDemoPlanningRuntime } from '@/application/demo-runtime';
 import { AppShell, Icon } from '@/components/app-shell';
 import { demoDataset } from '@/data/demo/dataset';
-import { formatQuantity } from '@/engine/units';
+import { formatLocalizedQuantity } from '@/i18n/format';
 import { getDictionary, getServerLocale, type Dictionary } from '@/i18n';
 import { localizedIngredientName } from '@/i18n/demo-names';
 
@@ -95,13 +95,13 @@ export default async function InventoryPage() {
                         {localizedIngredientName(row.ingredientId, row.ingredientName, locale)}
                       </td>
                       <td className="px-5 py-4 text-right text-sm tabular-nums text-[#526058]">
-                        {formatQuantity(row.onHand, row.unit)}
+                        {formatLocalizedQuantity(row.onHand, row.unit, locale)}
                       </td>
                       <td className="px-5 py-4 text-right text-sm tabular-nums text-[#718078]">
-                        {formatQuantity(row.safetyTarget, row.unit)}
+                        {formatLocalizedQuantity(row.safetyTarget, row.unit, locale)}
                       </td>
                       <td className="px-5 py-4 text-right text-sm tabular-nums text-[#526058]">
-                        {formatQuantity(row.confirmedIncoming, row.unit)}
+                        {formatLocalizedQuantity(row.confirmedIncoming, row.unit, locale)}
                       </td>
                       <td className="px-5 py-4">
                         <p className="text-xs font-semibold text-[#46544b]">
@@ -111,7 +111,7 @@ export default async function InventoryPage() {
                         </p>
                         {row.nextNeedAt && (
                           <p className="mt-1 text-[10px] text-[#909a93]">
-                            {formatQuantity(row.nextNeedQuantity, row.unit)}
+                            {formatLocalizedQuantity(row.nextNeedQuantity, row.unit, locale)}
                           </p>
                         )}
                       </td>

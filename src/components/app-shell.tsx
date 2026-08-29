@@ -91,11 +91,31 @@ export async function AppShell({
             </div>
             <LanguageSwitcher locale={locale} />
             <AgentLauncher locale={locale} />
-            <div className="grid size-10 place-items-center rounded-full bg-[#dfe8e1] text-xs font-bold text-[#31503d]">
+            <div className="hidden size-10 place-items-center rounded-full bg-[#dfe8e1] text-xs font-bold text-[#31503d] sm:grid">
               MK
             </div>
           </div>
         </header>
+        <nav
+          className="sticky top-[78px] z-10 grid grid-cols-[repeat(4,minmax(0,1fr))_44px] border-b border-[#dfe3dc] bg-white/95 backdrop-blur lg:hidden"
+          aria-label="Primary navigation"
+        >
+          {navigation.map((item) => {
+            const selected = item.key === activeKey;
+            return (
+              <Link
+                key={item.key}
+                href={item.href!}
+                aria-current={selected ? 'page' : undefined}
+                className={`flex h-14 min-w-0 flex-col items-center justify-center gap-1 px-1 text-[9px] font-semibold ${selected ? 'bg-[#edf4ef] text-[#275b3a]' : 'text-[#708076]'}`}
+              >
+                <Icon name={item.icon} className={selected ? 'text-[#317c50]' : 'text-[#809087]'} />
+                <span className="max-w-full truncate">{item.label}</span>
+              </Link>
+            );
+          })}
+          <ResetDemoButton locale={locale} compact />
+        </nav>
         {children}
       </div>
     </div>

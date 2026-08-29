@@ -5,9 +5,9 @@ import { buildOverviewSummary } from '@/application/overview-summary';
 import { demoIngredients } from '@/data/demo/ingredients';
 import { demoDataset } from '@/data/demo/dataset';
 import type { ChronologicalProcurementPlan, ProcurementBatch } from '@/domain/procurement';
-import { DEMO_PERIOD } from '@/lib/demo-clock';
 import { getDictionary, getServerLocale, type Dictionary, type Locale } from '@/i18n';
 import { localizedIngredientName, localizedEventName } from '@/i18n/demo-names';
+import { formatDemoPeriod } from '@/i18n/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +33,7 @@ export default async function ProcurementPage() {
           <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#728078]">
-                {dictionary.procurement.planLabel(activePlan.version, DEMO_PERIOD.label)}
+                {dictionary.procurement.planLabel(activePlan.version, formatDemoPeriod(locale))}
               </p>
               <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-[#18251d]">
                 {dictionary.procurement.title}

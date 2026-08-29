@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { SupplierOrderSession } from '@/application/mock-supplier-order-service';
-import { formatQuantity } from '@/engine/units';
+import { formatLocalizedQuantity } from '@/i18n/format';
 import { getDictionary } from '@/i18n/get-dictionary';
 import type { Locale } from '@/i18n';
 
@@ -150,7 +150,7 @@ export function MockSupplierFlow({ batchId, locale }: { batchId: string; locale:
                           <div>
                             <h3 className="text-sm font-semibold text-[#3b443e]">{line.ingredientName}</h3>
                             <p className="mt-1 text-xs text-[#7d756f]">
-                              {dictionary.mockSupplier.need(formatQuantity(line.requiredQuantity, line.unit))}
+                              {dictionary.mockSupplier.need(formatLocalizedQuantity(line.requiredQuantity, line.unit, dictionary.locale))}
                             </p>
                           </div>
                           <span className="rounded-full bg-white px-2.5 py-1 text-[9px] font-bold uppercase text-[#ae6044]">
@@ -160,7 +160,7 @@ export function MockSupplierFlow({ batchId, locale }: { batchId: string; locale:
                         <p className="mt-3 text-xs text-[#7f6b61]">
                           {dictionary.mockSupplier.preferred(
                             line.preferredProduct.name,
-                            formatQuantity(line.preferredProduct.packageSize, line.unit),
+                            formatLocalizedQuantity(line.preferredProduct.packageSize, line.unit, dictionary.locale),
                           )}
                         </p>
                       </div>
@@ -181,13 +181,13 @@ export function MockSupplierFlow({ batchId, locale }: { batchId: string; locale:
                                   <p className="mt-1 text-xs text-[#768279]">
                                     {dictionary.mockSupplier.replacementSupplies(
                                       packages,
-                                      formatQuantity(replacement.packageSize, line.unit),
-                                      formatQuantity(packages * replacement.packageSize, line.unit),
+                                      formatLocalizedQuantity(replacement.packageSize, line.unit, dictionary.locale),
+                                      formatLocalizedQuantity(packages * replacement.packageSize, line.unit, dictionary.locale),
                                     )}
                                   </p>
                                   <p className="mt-1 text-[10px] text-[#969e98]">
                                     {dictionary.mockSupplier.syntheticPrice}{' '}
-                                    {money(replacement.priceMinor, dictionary.locale)} / package
+                                    {money(replacement.priceMinor, dictionary.locale)} {dictionary.mockSupplier.perPackage}
                                   </p>
                                 </div>
                                 <button
@@ -251,8 +251,8 @@ export function MockSupplierFlow({ batchId, locale }: { batchId: string; locale:
                               <p className="mt-1 text-[10px] text-[#879189]">
                                 {dictionary.mockSupplier.packages(line.packageCount)} ·{' '}
                                 {dictionary.mockSupplier.suppliedSurplus(
-                                  formatQuantity(line.suppliedQuantity, line.unit),
-                                  formatQuantity(line.surplusQuantity, line.unit),
+                                  formatLocalizedQuantity(line.suppliedQuantity, line.unit, dictionary.locale),
+                                  formatLocalizedQuantity(line.surplusQuantity, line.unit, dictionary.locale),
                                 )}
                               </p>
                             </div>

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { EventChangePreviewDto } from '@/application/event-change-dto';
 import type { Event } from '@/domain/event';
-import { formatQuantity } from '@/engine/units';
+import { formatLocalizedQuantity } from '@/i18n/format';
 import { getDictionary } from '@/i18n/get-dictionary';
 import { localizedEventName } from '@/i18n/demo-names';
 import type { Dictionary, Locale } from '@/i18n';
@@ -349,13 +349,14 @@ function ImpactDrawer({
                   </span>
                   <div className="text-right">
                     <p className="text-[10px] tabular-nums text-[#8b958e]">
-                      {formatQuantity(item.beforeQuantity, item.unit)} → {formatQuantity(item.afterQuantity, item.unit)}
+                      {formatLocalizedQuantity(item.beforeQuantity, item.unit, dictionary.locale)} →{' '}
+                      {formatLocalizedQuantity(item.afterQuantity, item.unit, dictionary.locale)}
                     </p>
                     <p
                       className={`mt-0.5 text-sm font-semibold tabular-nums ${item.delta >= 0 ? 'text-[#33704a]' : 'text-[#a65345]'}`}
                     >
                       {item.delta >= 0 ? '+' : ''}
-                      {formatQuantity(item.delta, item.unit)}
+                      {formatLocalizedQuantity(item.delta, item.unit, dictionary.locale)}
                     </p>
                   </div>
                 </div>
