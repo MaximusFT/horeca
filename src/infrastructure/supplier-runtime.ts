@@ -23,6 +23,11 @@ export interface SupplierRuntimeConfiguration {
   silpo: SilpoMcpConfiguration;
 }
 
+export interface SupplierRuntimeStatus {
+  mode: SupplierMode;
+  state: 'demo' | 'connection_required';
+}
+
 export class SilpoMcpConfigurationError extends Error {
   constructor() {
     super('Silpo MCP is not configured. Set SILPO_MCP_URL and SILPO_MCP_ACCESS_TOKEN after OAuth authorization.');
@@ -49,6 +54,14 @@ export function readSupplierRuntimeConfiguration(
 export function createSupplierGateway(configuration = readSupplierRuntimeConfiguration()): SupplierGateway {
   if (configuration.mode === 'mock') return new MockSupplierGateway();
   return new UnconfiguredSilpoMcpGateway(configuration.silpo);
+}
+
+export function getSupplierRuntimeStatus(
+  configuration = readSupplierRuntimeConfiguration(),
+): SupplierRuntimeStatus {
+  return configuration.mode === 'mock'
+    ? { mode: 'mock', state: 'demo' }
+    : { mode: 'silpo', state: 'connection_required' };
 }
 
 class UnconfiguredSilpoMcpGateway implements SupplierGateway {

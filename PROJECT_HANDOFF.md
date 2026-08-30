@@ -33,6 +33,8 @@ Preparation already in place: `SUPPLIER_MODE=mock` remains the default. The offi
 
 The Stage 10 application boundary is now supplier-neutral: domain session types live in `src/domain/supplier.ts`, agent tools depend on a narrow preparer contract, UI calls `/api/suppliers/*`, and `SupplierOrderService`/`SupplierOrderFlow` are stable facades. Existing `/api/suppliers/mock/*` routes remain compatibility aliases. The live Silpo implementation should replace `SupplierGateway` without changing agent or UI contracts.
 
+Procurement pages now show a configuration-derived supplier status without network probing: mock mode is visibly labelled as demo, while `SUPPLIER_MODE=silpo` remains “connection required” until Stage 9 proves a live session. Merely configuring legacy endpoint/token values never produces a false connected state.
+
 ## Completed implementation
 
 ### Stages 0–4 — deterministic domain and application core
@@ -175,7 +177,7 @@ Use a dedicated `/debug/mcp` route or server-side script. The first spike should
 At handoff, all checks pass:
 
 ```text
-npm test          → 58 tests passed in 19 files
+npm test          → 59 tests passed in 19 files, plus 1 remote smoke test skipped locally without secrets
 npm run typecheck → passed
 npm run lint      → passed
 npm run build     → passed

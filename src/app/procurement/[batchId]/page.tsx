@@ -8,12 +8,14 @@ import { ProcurementBatchTable } from '@/components/procurement/procurement-batc
 import { SupplierOrderFlow } from '@/components/procurement/supplier-order-flow';
 import { getDictionary, getServerLocale } from '@/i18n';
 import { localizedIngredientName } from '@/i18n/demo-names';
+import { getSupplierRuntimeStatus } from '@/infrastructure/supplier-runtime';
 export const dynamic = 'force-dynamic';
 
 export default async function ProcurementBatchPage({ params }: { params: Promise<{ batchId: string }> }) {
   const { batchId } = await params;
   const locale = await getServerLocale();
   const dictionary = getDictionary(locale);
+  const supplierStatus = getSupplierRuntimeStatus();
   const { activePlan } = getDemoPlanningRuntime().repository.getState();
   const batch = activePlan.batches.find((item) => item.id === batchId);
   if (!batch) notFound();
@@ -42,6 +44,13 @@ export default async function ProcurementBatchPage({ params }: { params: Promise
                 </span>
                 <span className="text-xs text-[#849087]">
                   {dictionary.procurementBatch.planLabel(activePlan.version)}
+                </span>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide ${supplierStatus.state === 'demo' ? 'bg-[#edf2fd] text-[#536eae]' : 'bg-[#fff0e7] text-[#a65e3f]'}`}
+                >
+                  {supplierStatus.state === 'demo'
+                    ? dictionary.procurement.demoSupplier
+                    : dictionary.procurement.silpoConnectionRequired}
                 </span>
               </div>
               <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-[#18251d]">

@@ -250,6 +250,8 @@ export const en: Dictionary = {
     actionsSuffix: 'actions',
     supplier: 'Supplier',
     matchingPending: 'Matching pending',
+    demoSupplier: 'Demo mode',
+    silpoConnectionRequired: 'Silpo connection required',
     restaurantOperations: 'Restaurant operations',
     ingredientsSuffix: 'ingredients',
     next: 'Next',

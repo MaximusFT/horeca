@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   SilpoMcpConfigurationError,
   createSupplierGateway,
+  getSupplierRuntimeStatus,
   readSupplierRuntimeConfiguration,
 } from '@/infrastructure/supplier-runtime';
 
@@ -25,5 +26,18 @@ describe('supplier runtime', () => {
     const gateway = createSupplierGateway(readSupplierRuntimeConfiguration({ SUPPLIER_MODE: 'silpo' }));
 
     await expect(gateway.initializeContext()).rejects.toBeInstanceOf(SilpoMcpConfigurationError);
+  });
+
+  it('reports configured supplier mode without claiming live connectivity', () => {
+    expect(getSupplierRuntimeStatus(readSupplierRuntimeConfiguration({}))).toEqual({ mode: 'mock', state: 'demo' });
+    expect(
+      getSupplierRuntimeStatus(
+        readSupplierRuntimeConfiguration({
+          SUPPLIER_MODE: 'silpo',
+          SILPO_MCP_URL: 'https://mcp.silpo.ua/mcp',
+          SILPO_MCP_ACCESS_TOKEN: 'configured-but-not-probed',
+        }),
+      ),
+    ).toEqual({ mode: 'silpo', state: 'connection_required' });
   });
 });

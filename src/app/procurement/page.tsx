@@ -8,12 +8,14 @@ import type { ChronologicalProcurementPlan, ProcurementBatch } from '@/domain/pr
 import { getDictionary, getServerLocale, type Dictionary, type Locale } from '@/i18n';
 import { localizedIngredientName, localizedEventName } from '@/i18n/demo-names';
 import { formatDemoPeriod } from '@/i18n/format';
+import { getSupplierRuntimeStatus } from '@/infrastructure/supplier-runtime';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ProcurementPage() {
   const locale = await getServerLocale();
   const dictionary = getDictionary(locale);
+  const supplierStatus = getSupplierRuntimeStatus();
   const state = getDemoPlanningRuntime().repository.getState();
   const { activePlan } = state;
   const summary = buildOverviewSummary(
@@ -54,7 +56,14 @@ export default async function ProcurementPage() {
                 label={dictionary.procurement.attention}
                 value={`${summary.attention.filter((item) => item.actionable).length} ${dictionary.procurement.actionsSuffix}`}
               />
-              <SummaryPill label={dictionary.procurement.supplier} value={dictionary.procurement.matchingPending} />
+              <SummaryPill
+                label={dictionary.procurement.supplier}
+                value={
+                  supplierStatus.state === 'demo'
+                    ? dictionary.procurement.demoSupplier
+                    : dictionary.procurement.silpoConnectionRequired
+                }
+              />
             </div>
           </div>
 

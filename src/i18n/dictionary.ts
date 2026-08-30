@@ -240,6 +240,8 @@ export interface Dictionary {
     actionsSuffix: string;
     supplier: string;
     matchingPending: string;
+    demoSupplier: string;
+    silpoConnectionRequired: string;
     restaurantOperations: string;
     ingredientsSuffix: string;
     next: string;

@@ -268,6 +268,8 @@ export const uk: Dictionary = {
     actionsSuffix: 'дій',
     supplier: 'Постачальник',
     matchingPending: 'Підбір очікується',
+    demoSupplier: 'Тестовий режим',
+    silpoConnectionRequired: 'Потрібне підключення Silpo',
     restaurantOperations: 'Робота ресторану',
     ingredientsSuffix: 'інгредієнтів',
     next: 'Наступна',
