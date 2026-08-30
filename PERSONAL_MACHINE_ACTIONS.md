@@ -50,11 +50,17 @@ vercel env add SILPO_OAUTH_ENCRYPTION_KEY preview
 
 Enter each value directly into the CLI prompt. Do not put values on the command line.
 
-## Transfer and Publish Current Local Commit
+## Git Publishing
 
-The corporate-machine workflow may create local commits but must not trigger Vercel deployment. A local bundle named `horeca-personal.bundle` contains the unpublished `main` history. Transfer that file to the personal computer using an approved offline method.
+Normal GitHub operations are allowed from the corporate machine. Publish committed work normally:
 
-From the personal clone:
+```bash
+git push origin main
+```
+
+Do not use Vercel CLI/API from the corporate machine. The existing GitHub integration may deploy the pushed commit automatically.
+
+An offline backup bundle may still be transferred to the personal computer if GitHub is temporarily unavailable:
 
 ```bash
 git fetch /path/to/horeca-personal.bundle main:refs/remotes/personal-handoff/main

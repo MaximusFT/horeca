@@ -22,4 +22,6 @@ Continue from the first unfinished stage recorded in `PROJECT_HANDOFF.md`. Prese
 
 This workspace is normally opened on a corporate laptop. Never execute cloud-provider CLIs or direct cloud setup calls here, including Turso, Vercel, Silpo OAuth/MCP, or similar external services. Do not install or authenticate their CLIs on this machine.
 
-When a cloud action is required, append an exact, non-secret command or checklist item to `PERSONAL_MACHINE_ACTIONS.md`. The project owner runs it from a personal computer and reports the result. Local coding, tests, builds, Git commits, and read-only repository inspection remain allowed. Do not place tokens, passwords, OTP codes, or generated credentials in the action file.
+Normal Git and GitHub operations remain allowed, including `git fetch`, commit, and `git push`. An existing deployment triggered indirectly by a GitHub push is part of the normal repository workflow; do not call the Vercel CLI/API directly from this machine.
+
+When a direct cloud-provider action is required, append an exact, non-secret command or checklist item to `PERSONAL_MACHINE_ACTIONS.md`. The project owner runs it from a personal computer and reports the result. Do not place tokens, passwords, OTP codes, or generated credentials in the action file.
