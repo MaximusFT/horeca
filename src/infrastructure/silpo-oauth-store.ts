@@ -1,7 +1,4 @@
-import type {
-  OAuthClientInformationMixed,
-  OAuthTokens,
-} from '@modelcontextprotocol/sdk/shared/auth.js';
+import type { OAuthClientInformationMixed, OAuthTokens } from '@modelcontextprotocol/sdk/shared/auth.js';
 import type { OAuthDiscoveryState } from '@modelcontextprotocol/sdk/client/auth.js';
 
 export interface SilpoOAuthRecord {

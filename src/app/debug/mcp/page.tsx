@@ -59,10 +59,7 @@ export default async function McpDebugPage({
 
       <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">{detail}</p>
 
-      <SilpoOAuthPanel
-        oauthStatus={query.oauth}
-        detail={query.oauth === 'connected' ? query.tools : query.detail}
-      />
+      <SilpoOAuthPanel oauthStatus={query.oauth} detail={query.oauth === 'connected' ? query.tools : query.detail} />
 
       {status === 'blocked' && (
         <p className="mt-4 text-sm text-amber-700">

@@ -17,3 +17,9 @@ Before changing this repository, read these files in order:
 3. `HoReCa_Procurement_Agent_IMPLEMENTATION_HANDOFF_PLAN_v1.0.md` — locked implementation sequence.
 
 Continue from the first unfinished stage recorded in `PROJECT_HANDOFF.md`. Preserve the deterministic engine, supplier abstraction, single-agent design, backend-stored approvals, and human confirmation before every mutation.
+
+## Corporate machine safety
+
+This workspace is normally opened on a corporate laptop. Never execute cloud-provider CLIs or direct cloud setup calls here, including Turso, Vercel, Silpo OAuth/MCP, or similar external services. Do not install or authenticate their CLIs on this machine.
+
+When a cloud action is required, append an exact, non-secret command or checklist item to `PERSONAL_MACHINE_ACTIONS.md`. The project owner runs it from a personal computer and reports the result. Local coding, tests, builds, Git commits, and read-only repository inspection remain allowed. Do not place tokens, passwords, OTP codes, or generated credentials in the action file.

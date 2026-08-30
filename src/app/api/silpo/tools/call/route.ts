@@ -19,12 +19,7 @@ export async function POST(request: Request) {
       return Response.json({ error: `Tool ${body.name} is blocked in read-only spike mode` }, { status: 403 });
     }
     const redirectUrl = new URL('/api/silpo/oauth/callback', request.url);
-    const result = await new SilpoOAuthCoordinator().callReadTool(
-      sessionId,
-      redirectUrl,
-      body.name,
-      body.arguments,
-    );
+    const result = await new SilpoOAuthCoordinator().callReadTool(sessionId, redirectUrl, body.name, body.arguments);
     return Response.json({ result });
   } catch (error) {
     return Response.json(

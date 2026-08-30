@@ -27,7 +27,7 @@ Prepared in advance: `src/infrastructure/mcp-client.ts` remains a generic protoc
 
 The complete local spike UI is ready before access opens: live schemas can be downloaded as JSON, and only the documented Stage 9 read tools can be executed through `/api/silpo/tools/call`. The same allowlist is enforced in the browser and server; all cart mutations are blocked in spike mode. On September 1 the first action is therefore an explicit click on `Connect Silpo`, followed by login/OTP completed by the user.
 
-Stage 9 requires the user to complete the Silpo login/OTP flow. The current OAuth store is process-memory and suitable only for the isolated local spike; replace it with durable encrypted storage before relying on OAuth across serverless instances. If authorization or MCP connectivity is unavailable, report the concrete blocker. Do not pretend that live connectivity was proven.
+Stage 9 requires the user to complete the Silpo login/OTP flow. Durable encrypted OAuth storage is implemented through `TursoSilpoOAuthStore`: configure `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and `SILPO_OAUTH_ENCRYPTION_KEY` before using OAuth across serverless instances. With no Turso env, local development intentionally falls back to process memory. If authorization or MCP connectivity is unavailable, report the concrete blocker. Do not pretend that live connectivity was proven.
 
 Preparation already in place: `SUPPLIER_MODE=mock` remains the default. The official endpoint is fixed to `https://mcp.silpo.ua/mcp`; static token variables are legacy diagnostics only. Set `SUPPLIER_MODE=silpo` only after OAuth and live schema mapping. Until then this mode intentionally reports an implementation error rather than falling back to mock or pretending to contact Silpo.
 
@@ -160,6 +160,8 @@ Use a dedicated `/debug/mcp` route or server-side script. The first spike should
 - `src/application/agent-runtime.ts` — single-agent orchestration and approval apply.
 - `src/infrastructure/openai-responses-agent-model.ts` — optional live Responses adapter.
 - `src/infrastructure/silpo-oauth-client.ts` — official SDK OAuth coordinator and live MCP client.
+- `src/infrastructure/turso-silpo-oauth-store.ts` — AES-256-GCM encrypted durable OAuth store.
+- `PERSONAL_MACHINE_ACTIONS.md` — authoritative queue for all external cloud/CLI actions.
 - `src/infrastructure/silpo-tool-policy.ts` — server-enforced Stage 9 read-only allowlist.
 - `src/components/debug/silpo-oauth-panel.tsx` — OAuth, schema capture, and read-only spike UI.
 - `src/components/agent/agent-launcher.tsx` — Ask Misto UI.
@@ -170,7 +172,7 @@ Use a dedicated `/debug/mcp` route or server-side script. The first spike should
 At handoff, all checks pass:
 
 ```text
-npm test          → 55 tests passed in 18 files
+npm test          → 58 tests passed in 19 files
 npm run typecheck → passed
 npm run lint      → passed
 npm run build     → passed

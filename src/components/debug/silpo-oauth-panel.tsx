@@ -172,7 +172,11 @@ function ReadToolRunner({ tool }: { tool: SilpoToolDefinition }) {
       >
         {busy ? 'Running…' : 'Run read-only tool'}
       </button>
-      {error && <p role="alert" className="mt-2 text-xs text-red-700">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-red-700">
+          {error}
+        </p>
+      )}
       {result !== undefined && (
         <pre className="mt-2 max-h-80 overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-100">
           {JSON.stringify(result, null, 2)}

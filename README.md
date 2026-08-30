@@ -48,7 +48,26 @@ To opt into the OpenAI Responses API, copy `.env.example` to `.env.local`, set `
 
 ## Supplier modes
 
-`SUPPLIER_MODE=mock` is the default and keeps the complete supplier flow offline. Start official Silpo OAuth explicitly from `/debug/mcp`; the MCP endpoint is fixed and tokens remain server-side. Before the Stage 9 live schema spike and gateway mapping are complete, `SUPPLIER_MODE=silpo` intentionally fails explicitly; it never falls back to mock or impersonates live MCP connectivity. The current OAuth credential store is process-memory for the isolated local spike and must be replaced with durable encrypted storage before relying on the flow in a serverless deployment.
+`SUPPLIER_MODE=mock` is the default and keeps the complete supplier flow offline. Start official Silpo OAuth explicitly from `/debug/mcp`; the MCP endpoint is fixed and tokens remain server-side. Before the Stage 9 live schema spike and gateway mapping are complete, `SUPPLIER_MODE=silpo` intentionally fails explicitly; it never falls back to mock or impersonates live MCP connectivity. OAuth storage uses process memory for local development and switches to the encrypted Turso adapter only when all required deployment secrets are configured.
+
+When `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and a base64-encoded 32-byte `SILPO_OAUTH_ENCRYPTION_KEY` are configured, OAuth DCR information, PKCE state, discovery metadata, access tokens, and refresh tokens are stored in Turso using AES-256-GCM. With none of these variables configured, local development uses process memory. Partial durable configuration fails explicitly rather than silently storing secrets in memory.
+
+Cloud-provider setup and CLI commands are never run from the corporate development machine. `PERSONAL_MACHINE_ACTIONS.md` is the authoritative queue for database creation, token rotation, deployment secrets, and publishing actions that the project owner executes from a personal computer.
+
+## Silpo MCP contract knowledge before authorization
+
+The public documentation and unauthenticated well-known metadata establish:
+
+- protected resource: `https://mcp.silpo.ua`;
+- Streamable HTTP endpoint: `https://mcp.silpo.ua/mcp`;
+- OAuth endpoints: `/authorize`, `/token`, `/register`;
+- authorization-code + refresh-token grants, Dynamic Client Registration, PKCE S256, bearer header;
+- required workflow: `silpo_get_my_shopping_cart` → `silpo_get_shopping_cart_by_id` → `silpo_get_time_slots` → `silpo_find_products_batch`;
+- known workflow fields: `cartId`, `branchId`, `deliveryType`, `timeslot`, and search result identifiers `productId`, `companyId`, `branchId`;
+- cart verification reads `validations[]`, totals, loyalty state, `checkoutWebLink`, and `checkoutMobileLink`;
+- cart writes require a separate `silpo_add_or_update_cart_products` call and a subsequent full cart reread.
+
+Exact input and output JSON Schemas are deliberately not copied or inferred here: the official documentation states that the current schemas are returned by authenticated `tools/list`. `/debug/mcp` captures and downloads those live schemas, and its spike runner permits only server-allowlisted read tools before the separate approved write stage.
 
 ## Development
 

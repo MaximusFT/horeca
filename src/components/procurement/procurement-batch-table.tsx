@@ -207,7 +207,11 @@ export function ProcurementBatchTable({ lines, locale }: { lines: ProcurementBat
                   />
                   <BreakdownRow
                     label={dictionary.procurementBatch.why.safetyTarget}
-                    value={formatLocalizedQuantity(selected.explanation.safetyTarget, selected.line.unit, dictionary.locale)}
+                    value={formatLocalizedQuantity(
+                      selected.explanation.safetyTarget,
+                      selected.line.unit,
+                      dictionary.locale,
+                    )}
                     accent
                   />
                   {selected.explanation.expiredExcluded > 0 && (

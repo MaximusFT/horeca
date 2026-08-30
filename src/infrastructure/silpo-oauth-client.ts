@@ -1,21 +1,14 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import {
-  OAuthClientProvider,
-  OAuthDiscoveryState,
-  UnauthorizedError,
-} from '@modelcontextprotocol/sdk/client/auth.js';
+import { OAuthClientProvider, OAuthDiscoveryState, UnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type {
   OAuthClientInformationMixed,
   OAuthClientMetadata,
   OAuthTokens,
 } from '@modelcontextprotocol/sdk/shared/auth.js';
-import {
-  MemorySilpoOAuthStore,
-  type SilpoOAuthRecord,
-  type SilpoOAuthStore,
-} from './silpo-oauth-store';
+import { type SilpoOAuthRecord, type SilpoOAuthStore } from './silpo-oauth-store';
 import { isSilpoReadToolName, type SilpoReadToolName } from './silpo-tool-policy';
+import { getSilpoOAuthStore } from './create-silpo-oauth-store';
 
 export const SILPO_MCP_ENDPOINT = 'https://mcp.silpo.ua/mcp';
 
@@ -112,7 +105,7 @@ export class SilpoOAuthClientProvider implements OAuthClientProvider {
 
 export class SilpoOAuthCoordinator {
   constructor(
-    private readonly store: SilpoOAuthStore = new MemorySilpoOAuthStore(),
+    private readonly store: SilpoOAuthStore = getSilpoOAuthStore(),
     private readonly endpoint = SILPO_MCP_ENDPOINT,
   ) {}
 
@@ -174,7 +167,8 @@ export class SilpoOAuthCoordinator {
     args: Record<string, unknown>,
   ): Promise<unknown> {
     if (!isSilpoReadToolName(name)) throw new Error(`Silpo tool ${name} is not allowed in read-only spike mode`);
-    if (!(await this.store.get(sessionId))?.tokens) throw new UnauthorizedError('Silpo OAuth authorization is required');
+    if (!(await this.store.get(sessionId))?.tokens)
+      throw new UnauthorizedError('Silpo OAuth authorization is required');
     const provider = new SilpoOAuthClientProvider(sessionId, redirectUrl, this.store);
     const connection = this.connection(provider);
     try {

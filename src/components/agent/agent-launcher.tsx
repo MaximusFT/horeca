@@ -313,8 +313,12 @@ function SupplierOrderCard({
             </p>
             <p className="mt-1 text-[10px] text-[#6e8174]">{session.delivery.label}</p>
           </div>
-          <span className={`rounded-full px-2 py-1 text-[9px] font-bold uppercase ${unresolved.length ? 'bg-[#fff0e7] text-[#a65e3f]' : 'bg-[#dff0e4] text-[#3e714d]'}`}>
-            {unresolved.length ? dictionary.mockSupplier.decisions(unresolved.length) : dictionary.mockSupplier.complete}
+          <span
+            className={`rounded-full px-2 py-1 text-[9px] font-bold uppercase ${unresolved.length ? 'bg-[#fff0e7] text-[#a65e3f]' : 'bg-[#dff0e4] text-[#3e714d]'}`}
+          >
+            {unresolved.length
+              ? dictionary.mockSupplier.decisions(unresolved.length)
+              : dictionary.mockSupplier.complete}
           </span>
         </div>
       </header>
@@ -325,7 +329,9 @@ function SupplierOrderCard({
             <div>
               <p className="text-xs font-semibold text-[#3b443e]">{line.ingredientName}</p>
               <p className="mt-1 text-[10px] text-[#7f6b61]">
-                {dictionary.mockSupplier.need(formatLocalizedQuantity(line.requiredQuantity, line.unit, dictionary.locale))}
+                {dictionary.mockSupplier.need(
+                  formatLocalizedQuantity(line.requiredQuantity, line.unit, dictionary.locale),
+                )}
               </p>
             </div>
             <span className="rounded-full bg-[#fff0e7] px-2 py-1 text-[9px] font-bold uppercase text-[#a65e3f]">
@@ -333,21 +339,26 @@ function SupplierOrderCard({
             </span>
           </div>
           {line.replacements.map((replacement) => (
-            <div key={replacement.id} className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-[#dfe3dc] bg-[#fafbf9] p-3">
+            <div
+              key={replacement.id}
+              className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-[#dfe3dc] bg-[#fafbf9] p-3"
+            >
               <div>
                 <p className="text-xs font-semibold text-[#36433a]">{replacement.name}</p>
                 <p className="mt-1 text-[10px] text-[#768279]">
-                  {formatLocalizedQuantity(replacement.packageSize, line.unit, dictionary.locale)} · {dictionary.mockSupplier.syntheticPrice}{' '}
-                  {formatMoney(replacement.priceMinor, dictionary.locale)}
+                  {formatLocalizedQuantity(replacement.packageSize, line.unit, dictionary.locale)} ·{' '}
+                  {dictionary.mockSupplier.syntheticPrice} {formatMoney(replacement.priceMinor, dictionary.locale)}
                 </p>
               </div>
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => call(`/api/suppliers/mock/orders/${session.id}/substitution`, {
-                  ingredientId: line.ingredientId,
-                  productId: replacement.id,
-                })}
+                onClick={() =>
+                  call(`/api/suppliers/mock/orders/${session.id}/substitution`, {
+                    ingredientId: line.ingredientId,
+                    productId: replacement.id,
+                  })
+                }
                 className="shrink-0 rounded-lg bg-[#1d5d38] px-3 py-2 text-[10px] font-semibold text-white disabled:opacity-50"
               >
                 {dictionary.mockSupplier.approveReplacement}
@@ -397,7 +408,11 @@ function SupplierOrderCard({
         </div>
       )}
 
-      {error && <p role="alert" className="border-t border-[#efc9bb] bg-[#fff4ef] px-4 py-3 text-xs text-[#9c5138]">{error}</p>}
+      {error && (
+        <p role="alert" className="border-t border-[#efc9bb] bg-[#fff4ef] px-4 py-3 text-xs text-[#9c5138]">
+          {error}
+        </p>
+      )}
 
       <details className="border-t border-[#edf0ec]">
         <summary className="cursor-pointer px-4 py-2 text-[9px] font-semibold uppercase tracking-wide text-[#748178]">

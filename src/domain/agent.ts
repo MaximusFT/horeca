@@ -1,15 +1,15 @@
-import type { EventChangePreviewDto } from "@/application/event-change-dto";
-import type { SupplierOrderSession } from "@/application/mock-supplier-order-service";
+import type { EventChangePreviewDto } from '@/application/event-change-dto';
+import type { SupplierOrderSession } from '@/application/mock-supplier-order-service';
 
 export type AgentToolName =
-  | "get_event"
-  | "get_procurement_plan"
-  | "explain_requirement"
-  | "preview_event_change"
-  | "apply_event_change"
-  | "prepare_supplier_order";
+  | 'get_event'
+  | 'get_procurement_plan'
+  | 'explain_requirement'
+  | 'preview_event_change'
+  | 'apply_event_change'
+  | 'prepare_supplier_order';
 
-export type AgentToolGroup = "READ" | "CALCULATE" | "PREVIEW" | "MUTATE" | "SUPPLIER";
+export type AgentToolGroup = 'READ' | 'CALCULATE' | 'PREVIEW' | 'MUTATE' | 'SUPPLIER';
 
 export interface AgentToolDefinition {
   name: AgentToolName;
@@ -18,11 +18,11 @@ export interface AgentToolDefinition {
   parameters: Record<string, unknown>;
 }
 
-export type AgentApprovalStatus = "pending" | "approved" | "applied" | "failed";
+export type AgentApprovalStatus = 'pending' | 'approved' | 'applied' | 'failed';
 
 export interface AgentApprovalView {
   id: string;
-  type: "EVENT_CHANGE";
+  type: 'EVENT_CHANGE';
   status: AgentApprovalStatus;
   createdAt: string;
   preview: EventChangePreviewDto;
@@ -32,14 +32,14 @@ export interface AgentToolTrace {
   id: string;
   name: AgentToolName;
   group: AgentToolGroup;
-  status: "completed" | "blocked" | "failed";
+  status: 'completed' | 'blocked' | 'failed';
   summary: string;
   durationMs: number;
 }
 
 export interface AgentTurn {
   id: string;
-  mode: "openai" | "local";
+  mode: 'openai' | 'local';
   model: string;
   message: string;
   trace: AgentToolTrace[];

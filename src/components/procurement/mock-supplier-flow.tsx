@@ -150,7 +150,9 @@ export function MockSupplierFlow({ batchId, locale }: { batchId: string; locale:
                           <div>
                             <h3 className="text-sm font-semibold text-[#3b443e]">{line.ingredientName}</h3>
                             <p className="mt-1 text-xs text-[#7d756f]">
-                              {dictionary.mockSupplier.need(formatLocalizedQuantity(line.requiredQuantity, line.unit, dictionary.locale))}
+                              {dictionary.mockSupplier.need(
+                                formatLocalizedQuantity(line.requiredQuantity, line.unit, dictionary.locale),
+                              )}
                             </p>
                           </div>
                           <span className="rounded-full bg-white px-2.5 py-1 text-[9px] font-bold uppercase text-[#ae6044]">
@@ -182,12 +184,17 @@ export function MockSupplierFlow({ batchId, locale }: { batchId: string; locale:
                                     {dictionary.mockSupplier.replacementSupplies(
                                       packages,
                                       formatLocalizedQuantity(replacement.packageSize, line.unit, dictionary.locale),
-                                      formatLocalizedQuantity(packages * replacement.packageSize, line.unit, dictionary.locale),
+                                      formatLocalizedQuantity(
+                                        packages * replacement.packageSize,
+                                        line.unit,
+                                        dictionary.locale,
+                                      ),
                                     )}
                                   </p>
                                   <p className="mt-1 text-[10px] text-[#969e98]">
                                     {dictionary.mockSupplier.syntheticPrice}{' '}
-                                    {money(replacement.priceMinor, dictionary.locale)} {dictionary.mockSupplier.perPackage}
+                                    {money(replacement.priceMinor, dictionary.locale)}{' '}
+                                    {dictionary.mockSupplier.perPackage}
                                   </p>
                                 </div>
                                 <button
