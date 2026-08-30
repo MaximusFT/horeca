@@ -10,7 +10,11 @@ import type { Clock } from '@/lib/clock';
 import { getDictionary } from '@/i18n/get-dictionary';
 import type { Locale } from '@/i18n/locale';
 import { localizedEventName, localizedIngredientName } from '@/i18n/demo-names';
-import type { MockSupplierOrderService, SupplierOrderSession } from './mock-supplier-order-service';
+import type { SupplierOrderSession } from '@/domain/supplier';
+
+interface SupplierOrderPreparer {
+  prepareBatch(batchId: string, locale?: Locale): Promise<SupplierOrderSession>;
+}
 
 export interface AgentToolResult {
   output: unknown;
@@ -25,7 +29,7 @@ interface Dependencies {
   approvals: MemoryAgentApprovalRepository;
   ingredients: Ingredient[];
   clock: Clock;
-  supplierOrders: Pick<MockSupplierOrderService, 'prepareBatch'>;
+  supplierOrders: SupplierOrderPreparer;
   generateId?: () => string;
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createDemoPlanning } from "@/application/demo-planning";
-import { MockSupplierOrderService } from "@/application/mock-supplier-order-service";
+import { SupplierOrderService } from "@/application/supplier-order-service";
 import { demoIngredients } from "@/data/demo/ingredients";
 import { preferredMockProductByIngredient } from "@/data/demo/mock-supplier-catalog";
 import { MockSupplierGateway } from "@/infrastructure/mock-supplier-gateway";
@@ -9,7 +9,7 @@ describe("mock supplier order approvals", () => {
   it("keeps substitution and cart mutation as two explicit human approvals", async () => {
     const planning = createDemoPlanning();
     const gateway = new MockSupplierGateway();
-    const service = new MockSupplierOrderService({
+    const service = new SupplierOrderService({
       repository: planning.repository,
       gateway,
       ingredients: demoIngredients,
@@ -61,7 +61,7 @@ describe("mock supplier order approvals", () => {
 
   it("rejects a prepared order when its source plan has changed", async () => {
     const planning = createDemoPlanning(undefined, idSequence());
-    const service = new MockSupplierOrderService({
+    const service = new SupplierOrderService({
       repository: planning.repository,
       gateway: new MockSupplierGateway(),
       ingredients: demoIngredients,
@@ -86,7 +86,7 @@ describe("mock supplier order approvals", () => {
     const ids = idSequence();
     const planning = createDemoPlanning(undefined, ids);
     const gateway = new MockSupplierGateway();
-    const service = new MockSupplierOrderService({
+    const service = new SupplierOrderService({
       repository: planning.repository,
       gateway,
       ingredients: demoIngredients,

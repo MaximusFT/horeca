@@ -40,6 +40,8 @@ React UI
 
 Arithmetic, BOM expansion, chronology, FEFO, safety stock, package rounding, plan diffs, and provenance belong to deterministic code. AI is limited to language understanding, explanation, and controlled orchestration over application use cases.
 
+Supplier execution is exposed through supplier-neutral domain session types, `SupplierOrderService`, `/api/suppliers/*` routes, and `SupplierOrderFlow`. Mock-specific routes remain temporary compatibility aliases. Stage 10 can therefore replace the configured `SupplierGateway` with the live Silpo adapter without changing agent contracts or UI call sites.
+
 ## Agent modes
 
 The default `local` mode is deterministic, offline, and incurs no API cost. It exercises the same protected application tools as the live agent for the two Stage 8 scenarios.

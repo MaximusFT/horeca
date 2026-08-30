@@ -1,5 +1,5 @@
 import { createDemoPlanning } from './demo-planning';
-import { MockSupplierOrderService } from './mock-supplier-order-service';
+import { SupplierOrderService } from './supplier-order-service';
 import { createSupplierGateway } from '@/infrastructure/supplier-runtime';
 import { demoIngredients } from '@/data/demo/ingredients';
 import { preferredMockProductByIngredient } from '@/data/demo/mock-supplier-catalog';
@@ -12,7 +12,7 @@ import { OpenAIResponsesAgentModel } from '@/infrastructure/openai-responses-age
 function createDemoRuntime() {
   const planning = createDemoPlanning();
   const supplierGateway = createSupplierGateway();
-  const supplierOrders = new MockSupplierOrderService({
+  const supplierOrders = new SupplierOrderService({
     repository: planning.repository,
     gateway: supplierGateway,
     ingredients: demoIngredients,

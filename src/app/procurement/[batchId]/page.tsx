@@ -5,7 +5,7 @@ import { getDemoPlanningRuntime } from '@/application/demo-runtime';
 import { explainProcurementLine } from '@/application/explain-procurement';
 import { demoIngredients } from '@/data/demo/ingredients';
 import { ProcurementBatchTable } from '@/components/procurement/procurement-batch-table';
-import { MockSupplierFlow } from '@/components/procurement/mock-supplier-flow';
+import { SupplierOrderFlow } from '@/components/procurement/supplier-order-flow';
 import { getDictionary, getServerLocale } from '@/i18n';
 import { localizedIngredientName } from '@/i18n/demo-names';
 export const dynamic = 'force-dynamic';
@@ -51,7 +51,7 @@ export default async function ProcurementBatchPage({ params }: { params: Promise
                 {dictionary.procurementBatch.targetArrival(batch.deliveryAt.slice(11, 16), batch.lines.length)}
               </p>
             </div>
-            <MockSupplierFlow batchId={batch.id} locale={locale} />
+            <SupplierOrderFlow batchId={batch.id} locale={locale} />
           </div>
           <div className="mt-7">
             <ProcurementBatchTable lines={lines} locale={locale} />

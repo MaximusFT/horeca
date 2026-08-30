@@ -4,7 +4,7 @@ import type { AgentModelGateway } from './agent-model';
 import { agentToolDefinitions, type AgentToolResult, AgentToolService } from './agent-tools';
 import type { Locale } from '@/i18n/locale';
 import { DEFAULT_LOCALE } from '@/i18n/locale';
-import type { SupplierOrderSession } from './mock-supplier-order-service';
+import type { SupplierOrderSession } from '@/domain/supplier';
 
 export interface AgentApprovalApplyResult {
   approval: AgentApprovalView;

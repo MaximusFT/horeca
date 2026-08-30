@@ -88,6 +88,43 @@ export interface SupplierCart extends SupplierCartPreview {
   updatedAt: string;
 }
 
+export type SupplierOrderStatus = 'needs_substitution' | 'ready_for_cart' | 'cart_preview' | 'cart_applied';
+
+export interface SupplierOrderLine {
+  lineId: string;
+  ingredientId: string;
+  ingredientName: string;
+  requiredQuantity: number;
+  unit: BaseUnit;
+  preferredProduct: SupplierProduct;
+  selectedProduct?: SupplierProduct;
+  replacements: SupplierProduct[];
+  packageCount?: number;
+  suppliedQuantity?: number;
+  surplusQuantity?: number;
+  substituted: boolean;
+}
+
+export interface SupplierOrderActivity {
+  id: string;
+  type: 'SEARCH' | 'APPROVAL' | 'CART_PREVIEW' | 'CART_APPLY' | 'VERIFY';
+  message: string;
+}
+
+export interface SupplierOrderSession {
+  id: string;
+  batchId: string;
+  planVersion: number;
+  status: SupplierOrderStatus;
+  supplier: SupplierContext;
+  delivery: SupplierDeliveryOption;
+  lines: SupplierOrderLine[];
+  activity: SupplierOrderActivity[];
+  cartPreview?: SupplierCartPreview;
+  cart?: SupplierCart;
+  cartVerified: boolean;
+}
+
 export interface SupplierGateway {
   initializeContext(): Promise<SupplierContext>;
   searchProducts(requests: SupplierSearchRequest[]): Promise<SupplierSearchResult[]>;

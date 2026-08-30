@@ -4,7 +4,7 @@ import { FormEvent, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
 import type { AgentApprovalApplyResult } from '@/application/agent-runtime';
-import type { SupplierOrderSession } from '@/application/mock-supplier-order-service';
+import type { SupplierOrderSession } from '@/domain/supplier';
 import type { AgentApprovalView, AgentToolTrace, AgentTurn } from '@/domain/agent';
 import { demoIngredients } from '@/data/demo/ingredients';
 import { formatLocalizedQuantity } from '@/i18n/format';
@@ -354,7 +354,7 @@ function SupplierOrderCard({
                 type="button"
                 disabled={busy}
                 onClick={() =>
-                  call(`/api/suppliers/mock/orders/${session.id}/substitution`, {
+                  call(`/api/suppliers/orders/${session.id}/substitution`, {
                     ingredientId: line.ingredientId,
                     productId: replacement.id,
                   })
@@ -373,7 +373,7 @@ function SupplierOrderCard({
           <button
             type="button"
             disabled={busy}
-            onClick={() => call(`/api/suppliers/mock/orders/${session.id}/preview-cart`)}
+            onClick={() => call(`/api/suppliers/orders/${session.id}/preview-cart`)}
             className="w-full rounded-xl border border-[#2e6b43] px-4 py-2.5 text-xs font-semibold text-[#285f3b] disabled:opacity-50"
           >
             {dictionary.mockSupplier.reviewCartPreview}
@@ -390,7 +390,7 @@ function SupplierOrderCard({
           <button
             type="button"
             disabled={busy}
-            onClick={() => call(`/api/suppliers/mock/orders/${session.id}/apply-cart`)}
+            onClick={() => call(`/api/suppliers/orders/${session.id}/apply-cart`)}
             className="w-full rounded-xl bg-[#1d5d38] px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-50"
           >
             {dictionary.mockSupplier.approveAndApplyCart}

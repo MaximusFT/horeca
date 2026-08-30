@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import type { SupplierOrderSession } from '@/application/mock-supplier-order-service';
+import type { SupplierOrderSession } from '@/domain/supplier';
 import { formatLocalizedQuantity } from '@/i18n/format';
 import { getDictionary } from '@/i18n/get-dictionary';
 import type { Locale } from '@/i18n';
 
-export function MockSupplierFlow({ batchId, locale }: { batchId: string; locale: Locale }) {
+export function SupplierOrderFlow({ batchId, locale }: { batchId: string; locale: Locale }) {
   const dictionary = getDictionary(locale);
   const [open, setOpen] = useState(false);
   const [session, setSession] = useState<SupplierOrderSession>();
@@ -36,7 +36,7 @@ export function MockSupplierFlow({ batchId, locale }: { batchId: string; locale:
 
   async function prepare() {
     setOpen(true);
-    if (!session) await call(`/api/suppliers/mock/batches/${batchId}/prepare`);
+    if (!session) await call(`/api/suppliers/batches/${batchId}/prepare`);
   }
 
   const unresolved = session?.lines.filter((line) => !line.selectedProduct) ?? [];
@@ -201,7 +201,7 @@ export function MockSupplierFlow({ batchId, locale }: { batchId: string; locale:
                                   type="button"
                                   disabled={busy}
                                   onClick={() =>
-                                    call(`/api/suppliers/mock/orders/${session.id}/substitution`, {
+                                    call(`/api/suppliers/orders/${session.id}/substitution`, {
                                       ingredientId: line.ingredientId,
                                       productId: replacement.id,
                                     })
@@ -232,7 +232,7 @@ export function MockSupplierFlow({ batchId, locale }: { batchId: string; locale:
                       <button
                         type="button"
                         disabled={busy}
-                        onClick={() => call(`/api/suppliers/mock/orders/${session.id}/preview-cart`)}
+                        onClick={() => call(`/api/suppliers/orders/${session.id}/preview-cart`)}
                         className="mt-4 w-full rounded-xl border border-[#2e6b43] bg-white px-4 py-3 text-sm font-semibold text-[#285f3b] disabled:opacity-50"
                       >
                         {dictionary.mockSupplier.reviewCartPreview}
@@ -286,7 +286,7 @@ export function MockSupplierFlow({ batchId, locale }: { batchId: string; locale:
                         <button
                           type="button"
                           disabled={busy}
-                          onClick={() => call(`/api/suppliers/mock/orders/${session.id}/apply-cart`)}
+                          onClick={() => call(`/api/suppliers/orders/${session.id}/apply-cart`)}
                           className="w-full rounded-xl bg-[#1d5d38] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
                         >
                           {dictionary.mockSupplier.approveAndApplyCart}

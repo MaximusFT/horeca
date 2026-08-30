@@ -6,7 +6,7 @@ import { createDemoPlanning } from '@/application/demo-planning';
 import { LocalAgentModel } from '@/application/local-agent-model';
 import { demoIngredients } from '@/data/demo/ingredients';
 import { OpenAIResponsesAgentModel } from '@/infrastructure/openai-responses-agent-model';
-import { MockSupplierOrderService } from '@/application/mock-supplier-order-service';
+import { SupplierOrderService } from '@/application/supplier-order-service';
 import { preferredMockProductByIngredient } from '@/data/demo/mock-supplier-catalog';
 import { MockSupplierGateway } from '@/infrastructure/mock-supplier-gateway';
 
@@ -182,7 +182,7 @@ function createSupplierOrders(
   gateway: MockSupplierGateway,
   generateId = idSequence(),
 ) {
-  return new MockSupplierOrderService({
+  return new SupplierOrderService({
     repository: planning.repository,
     gateway,
     ingredients: demoIngredients,

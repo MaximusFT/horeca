@@ -406,7 +406,7 @@ export const en: Dictionary = {
     matchedAll: (total) => `Matched all ${total} products.`,
     approvedSubstitution: (product, ingredient) => `Human approved ${product} for ${ingredient}.`,
     cartPreviewPrepared: 'Cart preview prepared; no supplier mutation yet.',
-    cartApplyApproved: 'Human approved writing the preview to the mock cart.',
-    cartVerified: 'Mock cart re-read and verified against the approved preview.',
+    cartApplyApproved: 'Human approved writing the preview to the supplier cart.',
+    cartVerified: 'Supplier cart re-read and verified against the approved preview.',
   },
 };

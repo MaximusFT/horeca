@@ -1,11 +1,10 @@
 import type { Ingredient } from '@/domain/ingredient';
 import type {
-  SupplierCart,
   SupplierCartPreview,
-  SupplierContext,
-  SupplierDeliveryOption,
   SupplierGateway,
   SupplierOrderDraftLine,
+  SupplierOrderLine,
+  SupplierOrderSession,
   SupplierProduct,
 } from '@/domain/supplier';
 import { roundToPackages } from '@/engine/package-rounding';
@@ -13,43 +12,6 @@ import type { PlanningRepository } from './planning-repository';
 import { getDictionary } from '@/i18n/get-dictionary';
 import type { Locale } from '@/i18n/locale';
 import { localizedIngredientName, localizedSupplierProductName } from '@/i18n/demo-names';
-
-export type SupplierOrderStatus = 'needs_substitution' | 'ready_for_cart' | 'cart_preview' | 'cart_applied';
-
-export interface SupplierOrderLine {
-  lineId: string;
-  ingredientId: string;
-  ingredientName: string;
-  requiredQuantity: number;
-  unit: Ingredient['unit'];
-  preferredProduct: SupplierProduct;
-  selectedProduct?: SupplierProduct;
-  replacements: SupplierProduct[];
-  packageCount?: number;
-  suppliedQuantity?: number;
-  surplusQuantity?: number;
-  substituted: boolean;
-}
-
-export interface SupplierOrderActivity {
-  id: string;
-  type: 'SEARCH' | 'APPROVAL' | 'CART_PREVIEW' | 'CART_APPLY' | 'VERIFY';
-  message: string;
-}
-
-export interface SupplierOrderSession {
-  id: string;
-  batchId: string;
-  planVersion: number;
-  status: SupplierOrderStatus;
-  supplier: SupplierContext;
-  delivery: SupplierDeliveryOption;
-  lines: SupplierOrderLine[];
-  activity: SupplierOrderActivity[];
-  cartPreview?: SupplierCartPreview;
-  cart?: SupplierCart;
-  cartVerified: boolean;
-}
 
 interface Dependencies {
   repository: PlanningRepository;
@@ -59,7 +21,7 @@ interface Dependencies {
   generateId?: () => string;
 }
 
-export class MockSupplierOrderService {
+export class SupplierOrderService {
   private readonly sessions = new Map<string, SupplierOrderSession>();
   private readonly ingredientById: Map<string, Ingredient>;
   private readonly generateId: () => string;
@@ -86,7 +48,7 @@ export class MockSupplierOrderService {
       preferredProductId: this.dependencies.preferredProductByIngredient[line.ingredientId],
     }));
     if (requests.some((request) => !request.preferredProductId)) {
-      throw new Error('Mock supplier mapping is incomplete');
+      throw new Error('Supplier product mapping is incomplete');
     }
 
     const results = await this.dependencies.gateway.searchProducts(requests);
@@ -94,7 +56,7 @@ export class MockSupplierOrderService {
     for (const result of results) {
       const ingredient = this.ingredientById.get(result.request.ingredientId);
       if (!ingredient) throw new Error(`Unknown ingredient ${result.request.ingredientId}`);
-      if (!result.product) throw new Error(`No mock product found for ${ingredient.name}`);
+      if (!result.product) throw new Error(`No supplier product found for ${ingredient.name}`);
 
       const replacements =
         result.status === 'unavailable' ? await this.dependencies.gateway.findReplacements(result.product.id) : [];
@@ -238,7 +200,7 @@ export class MockSupplierOrderService {
           (actual) => actual.productId === expected.productId && actual.packageCount === expected.packageCount,
         ),
       );
-    if (!verified) throw new Error('Mock cart verification failed after apply');
+    if (!verified) throw new Error('Supplier cart verification failed after apply');
     session.cart = localizeCartPreview(cart, locale);
     session.cartVerified = true;
     session.status = 'cart_applied';

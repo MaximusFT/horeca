@@ -1,5 +1,5 @@
 import type { EventChangePreviewDto } from '@/application/event-change-dto';
-import type { SupplierOrderSession } from '@/application/mock-supplier-order-service';
+import type { SupplierOrderSession } from './supplier';
 
 export type AgentToolName =
   | 'get_event'

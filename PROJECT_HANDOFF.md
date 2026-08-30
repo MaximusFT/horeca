@@ -1,6 +1,6 @@
 # HoReCa Procurement Agent — Project Handoff
 
-Last updated: 2026-08-29. This file is the starting point for the next coding agent.
+Last updated: 2026-08-30. This file is the starting point for the next coding agent.
 
 ## Read first
 
@@ -30,6 +30,8 @@ The complete local spike UI is ready before access opens: live schemas can be do
 Stage 9 requires the user to complete the Silpo login/OTP flow. Durable encrypted OAuth storage is implemented through `TursoSilpoOAuthStore`: configure `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and `SILPO_OAUTH_ENCRYPTION_KEY` before using OAuth across serverless instances. With no Turso env, local development intentionally falls back to process memory. If authorization or MCP connectivity is unavailable, report the concrete blocker. Do not pretend that live connectivity was proven.
 
 Preparation already in place: `SUPPLIER_MODE=mock` remains the default. The official endpoint is fixed to `https://mcp.silpo.ua/mcp`; static token variables are legacy diagnostics only. Set `SUPPLIER_MODE=silpo` only after OAuth and live schema mapping. Until then this mode intentionally reports an implementation error rather than falling back to mock or pretending to contact Silpo.
+
+The Stage 10 application boundary is now supplier-neutral: domain session types live in `src/domain/supplier.ts`, agent tools depend on a narrow preparer contract, UI calls `/api/suppliers/*`, and `SupplierOrderService`/`SupplierOrderFlow` are stable facades. Existing `/api/suppliers/mock/*` routes remain compatibility aliases. The live Silpo implementation should replace `SupplierGateway` without changing agent or UI contracts.
 
 ## Completed implementation
 
@@ -94,7 +96,7 @@ Preparation already in place: `SUPPLIER_MODE=mock` remains the default. The offi
 
 ### Supplier-agent groundwork
 
-- `prepare_supplier_order` is the sixth guarded application tool and uses the same `MockSupplierOrderService` as the batch UI.
+- `prepare_supplier_order` is the sixth guarded application tool and uses the same supplier-neutral `SupplierOrderService` contract as the batch UI.
 - “Prepare the next supplier order” runs `get_procurement_plan → prepare_supplier_order`, returns a structured supplier session, and does not mutate the cart.
 - Ask Misto renders the unavailable salmon replacement, explicit substitution approval, cart preview, explicit cart-write approval, and supplier activity trace.
 - The full agent-started mock path is regression-tested through cart reread/verification; replacing the gateway with Silpo should preserve this application flow.
@@ -155,7 +157,8 @@ Use a dedicated `/debug/mcp` route or server-side script. The first spike should
 - `src/application/explain-procurement.ts` — deterministic provenance.
 - `src/domain/supplier.ts` — supplier boundary.
 - `src/infrastructure/mock-supplier-gateway.ts` — permanent offline supplier.
-- `src/application/mock-supplier-order-service.ts` — supplier approval workflow.
+- `src/application/supplier-order-service.ts` — supplier-neutral approval workflow facade over `SupplierGateway`.
+- `src/components/procurement/supplier-order-flow.tsx` — supplier-neutral batch execution UI facade.
 - `src/application/agent-tools.ts` — protected Stage 8 tools.
 - `src/application/agent-runtime.ts` — single-agent orchestration and approval apply.
 - `src/infrastructure/openai-responses-agent-model.ts` — optional live Responses adapter.
@@ -178,6 +181,8 @@ npm run lint      → passed
 npm run build     → passed
 npm audit         → 0 vulnerabilities after installing `@modelcontextprotocol/sdk`
 ```
+
+GitHub-hosted `Turso storage smoke test` completed successfully: Node.js connected through `@libsql/client`, created the OAuth table, performed encrypted write/read verification, confirmed no plaintext marker in storage, and removed the temporary record. The remote smoke test is intentionally skipped in local runs without secrets.
 
 Browser QA completed:
 
