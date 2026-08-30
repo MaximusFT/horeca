@@ -54,6 +54,8 @@ When `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and a base64-encoded 32-byte `SIL
 
 Cloud-provider setup and CLI commands are never run from the corporate development machine. `PERSONAL_MACHINE_ACTIONS.md` is the authoritative queue for database creation, token rotation, deployment secrets, and publishing actions that the project owner executes from a personal computer.
 
+The manual GitHub Actions workflow `.github/workflows/turso-storage-smoke.yml` verifies the real encrypted Turso adapter outside the corporate network. It requires the three repository secrets above, writes a unique temporary OAuth record, validates encrypted persistence, and removes the record in `finally`. This provides the same `Node.js → Turso` check that corporate TLS interception prevents locally, without requiring Windows WSL or a personal server.
+
 ## Silpo MCP contract knowledge before authorization
 
 The public documentation and unauthenticated well-known metadata establish:
