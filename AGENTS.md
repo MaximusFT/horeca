@@ -20,8 +20,13 @@ Continue from the first unfinished stage recorded in `PROJECT_HANDOFF.md`. Prese
 
 ## Corporate machine safety
 
-This workspace is normally opened on a corporate laptop. Never execute cloud-provider CLIs or direct cloud setup calls here, including Turso, Vercel, Silpo OAuth/MCP, or similar external services. Do not install or authenticate their CLIs on this machine.
+This workspace is normally opened on a corporate laptop. Apply restrictions by traffic type, not by treating every cloud service as forbidden:
 
-Normal Git and GitHub operations remain allowed, including `git fetch`, commit, and `git push`. An existing deployment triggered indirectly by a GitHub push is part of the normal repository workflow; do not call the Vercel CLI/API directly from this machine.
+- Git and GitHub are allowed, including fetch, commit, push, PRs, Actions, and repository secrets.
+- Turso control-plane CLI is allowed: install/auth, database lifecycle, token rotation, and configuration. Do not run local application/libSQL data-plane requests or migrations against Turso from this laptop; corporate TLS interception breaks Node/libSQL certificate validation. Use GitHub Actions for data-plane checks.
+- Vercel control-plane configuration is permitted, but local `vercel login` currently fails with `fetch failed` on the corporate network. Use the `Sync Vercel environment` GitHub Actions workflow or the web dashboard instead. Do not open, fetch, or smoke-test `*.vercel.app` runtime endpoints from this laptop because they are blocked by the corporate proxy.
+- Railway control-plane operations are allowed, including logs, variables, and deployments.
+- Direct runtime calls to Telegram (`api.telegram.org`) and OpenAI (`api.openai.com`) are forbidden. Do not locally start workloads that call them.
+- Silpo OAuth/MCP is allowed when hackathon access opens. Login/OTP must be entered by the user directly in the browser; never route credentials through the model.
 
-When a direct cloud-provider action is required, append an exact, non-secret command or checklist item to `PERSONAL_MACHINE_ACTIONS.md`. The project owner runs it from a personal computer and reports the result. Do not place tokens, passwords, OTP codes, or generated credentials in the action file.
+Normal GitHub-triggered deployments remain part of the repository workflow. If an action truly cannot run from this laptop, append a non-secret checklist item to `PERSONAL_MACHINE_ACTIONS.md`. Never place tokens, passwords, OTP codes, or generated credentials in that file or tool output.

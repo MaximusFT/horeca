@@ -1,24 +1,16 @@
 # Personal Machine Actions
 
-Run these actions from a personal computer without corporate network restrictions. Windows does not need WSL or any local cloud CLI: use the Turso, GitHub, and Vercel web dashboards. Never paste tokens, passwords, OTP codes, or generated encryption keys into chat, commits, screenshots, or issue comments.
+This file contains only actions that require access to blocked runtime endpoints from a personal computer. Turso control-plane setup, GitHub, Vercel configuration, and Railway control-plane operations are allowed on the corporate laptop. Never paste tokens, passwords, OTP codes, or generated encryption keys into chat, commits, screenshots, issue comments, or tool output.
 
-## Required Security Cleanup
+## Turso Token Rotation
 
-The first `horeca-procurement` Turso database and its token were created from the corporate laptop. The token appeared in a local tool log and must be treated as compromised.
+The `horeca-procurement` database is retained. It was empty, and no credential was committed to GitHub. An initial database token appeared only in a local Copilot tool log. Turso invalidates tokens at the shared `default` group level, which would also break `mft-agents-dev`, `mft-agents-prod`, and `todo-tg`; do not run group-wide invalidation. The project owner accepts the low residual risk of leaving that initial token valid.
 
-1. Open the Turso web dashboard.
-2. Delete the existing `horeca-procurement` database.
-3. Confirm deletion in the dashboard.
+Current outcome:
 
-Do not reuse that database or any token created before its deletion.
-
-## Create Fresh OAuth Storage
-
-In the Turso web dashboard:
-
-1. Create a database named `horeca-procurement` in an EU region.
-2. Copy its libSQL URL.
-3. Create a new database auth token.
+1. Keep the existing `horeca-procurement` database.
+2. Keep the shared group keys unchanged so neighboring projects continue working.
+3. A fresh database token has been created for the HoReCa GitHub smoke test.
 
 Generate a 32-byte encryption key without WSL. In Windows PowerShell:
 
@@ -34,7 +26,7 @@ Store the three resulting values only in a local password manager or secret stor
 - `TURSO_AUTH_TOKEN`
 - `SILPO_OAUTH_ENCRYPTION_KEY`
 
-Local `.env.local` is optional. For cloud verification, add the values directly to GitHub and Vercel through their web dashboards.
+Do not store the fresh token in `.env.local` on the corporate laptop. Pipe values directly from CLI output into GitHub/Vercel secret commands without printing them.
 
 ## Configure GitHub Secrets and Run the Test
 
@@ -44,6 +36,8 @@ Open the repository on GitHub, then go to **Settings → Secrets and variables �
 - `TURSO_AUTH_TOKEN`
 - `SILPO_OAUTH_ENCRYPTION_KEY`
 
+Status: all three GitHub Actions secrets are configured by the agent through the allowed Turso/GitHub control planes; values were piped through stdin and not written to project files.
+
 Open **Actions → Turso storage smoke test → Run workflow**. The workflow runs from GitHub infrastructure, not from Windows or the corporate network. It executes the real application storage adapter and:
 
 1. creates the OAuth table if needed;
@@ -52,15 +46,17 @@ Open **Actions → Turso storage smoke test → Run workflow**. The workflow run
 4. verifies the database row does not contain the plaintext marker;
 5. deletes the temporary record even if an assertion fails.
 
+Status: the workflow completed successfully on GitHub. Node.js connected to Turso, performed the encrypted round trip, and removed the temporary record.
+
 ## Configure Deployment Secrets
 
-Open the existing project in the Vercel web dashboard. Under **Settings → Environment Variables**, add the same three values for Production and Preview:
+Local `vercel login` currently fails with `fetch failed` on the corporate network. Use the GitHub-hosted workflow instead:
 
-- `TURSO_DATABASE_URL`
-- `TURSO_AUTH_TOKEN`
-- `SILPO_OAUTH_ENCRYPTION_KEY`
+1. In the Vercel web dashboard, open **Account Settings → Tokens** and create a token scoped to the `maximusfts-projects` team.
+2. In GitHub, open **Settings → Secrets and variables → Actions** and add it as `VERCEL_TOKEN`.
+3. Open **Actions → Sync Vercel environment → Run workflow**.
 
-Trigger a redeployment from the dashboard after saving variables. No Vercel CLI is needed.
+The workflow links `maximusfts-projects/horeca`, copies the existing Turso secrets into Vercel Production and Preview environments, and creates a production deployment. Do not open or fetch the deployed `*.vercel.app` URL from the corporate laptop.
 
 ## Git Publishing
 
@@ -82,9 +78,9 @@ git push origin main
 
 If `origin/main` advanced before this action, run `git fetch origin`, rebase or cherry-pick onto the current base, execute the full quality gate, then push.
 
-## Verify Durable OAuth Storage
+## Personal-Computer Runtime Verification
 
-After deployment, open `/debug/mcp` from the personal computer. Do not start Silpo OAuth before September 1. Once access opens:
+After deployment, open the blocked Vercel runtime URL from a personal computer. Do not start Silpo OAuth before September 1. Once access opens:
 
 1. Select `Connect Silpo`.
 2. Complete login and OTP directly in the browser.

@@ -56,6 +56,8 @@ Cloud-provider setup and CLI commands are never run from the corporate developme
 
 The manual GitHub Actions workflow `.github/workflows/turso-storage-smoke.yml` verifies the real encrypted Turso adapter outside the corporate network. It requires the three repository secrets above, writes a unique temporary OAuth record, validates encrypted persistence, and removes the record in `finally`. This provides the same `Node.js → Turso` check that corporate TLS interception prevents locally, without requiring Windows WSL or a personal server.
 
+The manual `.github/workflows/sync-vercel-environment.yml` workflow uses a browser-created `VERCEL_TOKEN` to copy those Turso secrets into the linked Vercel Production/Preview environments and deploy from a GitHub-hosted runner. This avoids both the blocked corporate Vercel endpoint and any Windows/WSL setup.
+
 ## Silpo MCP contract knowledge before authorization
 
 The public documentation and unauthenticated well-known metadata establish:

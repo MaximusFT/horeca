@@ -1,0 +1,57 @@
+name: Sync Vercel environment
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      SILPO_OAUTH_ENCRYPTION_KEY: ${{ secrets.SILPO_OAUTH_ENCRYPTION_KEY }}
+      VERCEL_SCOPE: maximusfts-projects
+      VERCEL_PROJECT: horeca
+    steps:
+      - name: Check required secrets
+        run: |
+          test -n "$VERCEL_TOKEN" || { echo "Missing VERCEL_TOKEN"; exit 1; }
+          test -n "$TURSO_DATABASE_URL" || { echo "Missing TURSO_DATABASE_URL"; exit 1; }
+          test -n "$TURSO_AUTH_TOKEN" || { echo "Missing TURSO_AUTH_TOKEN"; exit 1; }
+          test -n "$SILPO_OAUTH_ENCRYPTION_KEY" || { echo "Missing SILPO_OAUTH_ENCRYPTION_KEY"; exit 1; }
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Link Vercel project
+        run: npx --yes vercel@59.10.0 link --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" --project "$VERCEL_PROJECT"
+
+      - name: Sync Turso secrets to Vercel
+        run: |
+          sync_secret() {
+            name="$1"
+            value="$2"
+            for target in production preview; do
+              printf '%s' "$value" | npx --yes vercel@59.10.0 env add "$name" "$target" --force --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE"
+            done
+          }
+          sync_secret TURSO_DATABASE_URL "$TURSO_DATABASE_URL"
+          sync_secret TURSO_AUTH_TOKEN "$TURSO_AUTH_TOKEN"
+          sync_secret SILPO_OAUTH_ENCRYPTION_KEY "$SILPO_OAUTH_ENCRYPTION_KEY"
+
+      - name: Deploy production with updated environment
+        run: npx --yes vercel@59.10.0 deploy --prod --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE"
