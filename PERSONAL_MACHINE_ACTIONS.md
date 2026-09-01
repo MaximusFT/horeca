@@ -89,3 +89,5 @@ After deployment, open the blocked Vercel runtime URL from a personal computer. 
 5. Run only read-only spike tools first.
 
 If OAuth start and callback are handled by different serverless instances without losing PKCE state, durable storage is working.
+
+After running any MCP reads from the personal browser, tell the agent that the flow is complete. The agent can run **Actions → Inspect Silpo MCP trace** through GitHub CLI and inspect the sanitized server-side sequence without opening the blocked Vercel runtime. The trace contains operation names, argument-key names, status, duration, and structural result summaries only.

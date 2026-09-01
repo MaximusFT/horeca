@@ -29,6 +29,8 @@ The spike UI compiles the captured draft-07 schemas and validates arguments serv
 
 Safe MCP observability is implemented at the server boundary. `/debug/mcp` shows operation name, argument keys, status, duration, and a structural result summary. It never persists token values, raw arguments, profile/address data, or cart contents. Trace uses Turso when deployment secrets are configured and process memory locally.
 
+Because the corporate proxy blocks `*.vercel.app`, deployed MCP behavior can also be inspected through the manual GitHub Actions workflow `Inspect Silpo MCP trace`, which prints the same sanitized durable trace from Turso. The user performs OAuth and clicks from a personal browser; the coding agent inspects the server-side sequence through GitHub.
+
 Stage 9 requires the user to complete the Silpo login/OTP flow. Durable encrypted OAuth storage is implemented through `TursoSilpoOAuthStore`: configure `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and `SILPO_OAUTH_ENCRYPTION_KEY` before using OAuth across serverless instances. With no Turso env, local development intentionally falls back to process memory. If authorization or MCP connectivity is unavailable, report the concrete blocker. Do not pretend that live connectivity was proven.
 
 Preparation already in place: `SUPPLIER_MODE=mock` remains the default. The official endpoint is fixed to `https://mcp.silpo.ua/mcp`; static token variables are legacy diagnostics only. Set `SUPPLIER_MODE=silpo` only after OAuth and live schema mapping. Until then this mode intentionally reports an implementation error rather than falling back to mock or pretending to contact Silpo.
