@@ -102,7 +102,9 @@ silpo_find_address
 
 Текущий cart timeslot отсутствует среди доступных `slots[]` или `available=false`. Workflow правильно остановился до product search.
 
-Не меняй slot вручную. Передай агенту status и delivery type; он реализует approved `silpo_update_shopping_cart` branch.
+Нажми **Find available slots**. Если Silpo вернул варианты, выбери один в approval-карточке и нажми **Approve and update cart timeslot**. Приложение выполнит ровно один `silpo_update_shopping_cart`, немедленно перечитает корзину и подтвердит выбранный slot. Затем нажми **Continue Stage 9 reads**.
+
+Если показано **No available delivery slots**, mutation не выполнялась. Для этого branch/delivery type Silpo не предложил безопасного варианта; остановись до отдельной preview/approval ветки смены способа доставки.
 
 ## 4. Ручная schema-driven диагностика
 

@@ -178,6 +178,26 @@ export class SilpoOAuthCoordinator {
   ): Promise<unknown> {
     if (!isSilpoReadToolName(name)) throw new Error(`Silpo tool ${name} is not allowed in read-only spike mode`);
     const validatedArguments = validateCapturedSilpoToolArguments(name, args);
+    return this.callTool(sessionId, redirectUrl, name, validatedArguments);
+  }
+
+  async callApprovedTimeslotUpdate(
+    sessionId: string,
+    redirectUrl: URL,
+    args: Record<string, unknown>,
+  ): Promise<unknown> {
+    const name = 'silpo_update_shopping_cart';
+    const validatedArguments = validateCapturedSilpoToolArguments(name, args);
+    return this.callTool(sessionId, redirectUrl, name, validatedArguments, true);
+  }
+
+  private async callTool(
+    sessionId: string,
+    redirectUrl: URL,
+    name: string,
+    validatedArguments: Record<string, unknown>,
+    rejectMcpErrorResult = false,
+  ): Promise<unknown> {
     if (!(await this.store.get(sessionId))?.tokens)
       throw new UnauthorizedError('Silpo OAuth authorization is required');
     const provider = new SilpoOAuthClientProvider(sessionId, redirectUrl, this.store);
@@ -186,6 +206,9 @@ export class SilpoOAuthCoordinator {
     try {
       await connection.client.connect(connection.transport);
       const result = await connection.client.callTool({ name, arguments: validatedArguments });
+      if (rejectMcpErrorResult && result.isError === true) {
+        throw new Error(`${name} returned an MCP error result`);
+      }
       await this.recordTrace(
         sessionId,
         name,

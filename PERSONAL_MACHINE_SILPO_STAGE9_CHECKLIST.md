@@ -165,19 +165,20 @@ Error type: <only the short error name, without raw response>
 
 Это штатная безопасная остановка. Product search и mutations не выполнялись.
 
-1. Запиши только delivery type из синей плашки.
-2. Вернись в официальную корзину Silpo.
-3. Выбери другой доступный timeslot вручную.
-4. Вернись на `/debug/mcp`.
-5. Нажми **Run Stage 9 reads** ещё раз.
-6. Если status повторился, остановись и пришли:
+1. Нажми **Find available slots**.
+2. Если появилась approval-карточка, выбери один из показанных slots.
+3. Проверь локальное время и нажми **Approve and update cart timeslot**.
+4. Дождись зелёной карточки **Timeslot update verified**. Приложение уже перечитало корзину после mutation.
+5. Нажми **Continue Stage 9 reads**.
+6. Если показано **No available delivery slots**, остановись и пришли:
 
 ```text
 Report status: timeslot_update_required
 Delivery type: <type>
+Available slots: 0
 ```
 
-Не запускай `silpo_update_shopping_cart` через MCP вручную.
+Не меняй slot вручную и не запускай `silpo_update_shopping_cart` через отдельный MCP runner.
 
 ## G. Если появился HTTP 401
 

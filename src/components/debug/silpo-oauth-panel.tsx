@@ -5,6 +5,10 @@ import type { SilpoOAuthStartResult, SilpoToolDefinition } from '@/infrastructur
 import { isSilpoReadToolName } from '@/infrastructure/silpo-tool-policy';
 import type { SilpoMcpTraceEntry } from '@/infrastructure/silpo-mcp-trace';
 import type { SilpoStage9ReadReport } from '@/infrastructure/silpo-stage9-workflow';
+import type {
+  SilpoTimeslotApplyResult,
+  SilpoTimeslotPreview,
+} from '@/infrastructure/silpo-stage9-timeslot-service';
 
 export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string; detail?: string }) {
   const [busy, setBusy] = useState(false);
@@ -12,6 +16,9 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
   const [tools, setTools] = useState<SilpoToolDefinition[]>();
   const [trace, setTrace] = useState<Array<Omit<SilpoMcpTraceEntry, 'sessionId'>>>([]);
   const [stage9Report, setStage9Report] = useState<SilpoStage9ReadReport>();
+  const [timeslotPreview, setTimeslotPreview] = useState<SilpoTimeslotPreview>();
+  const [selectedTimeslot, setSelectedTimeslot] = useState<string>();
+  const [timeslotResult, setTimeslotResult] = useState<SilpoTimeslotApplyResult>();
 
   async function connect() {
     setBusy(true);
@@ -91,6 +98,53 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
     }
   }
 
+  async function prepareTimeslotUpdate() {
+    setBusy(true);
+    setError(undefined);
+    setTimeslotPreview(undefined);
+    setSelectedTimeslot(undefined);
+    setTimeslotResult(undefined);
+    try {
+      const response = await fetch('/api/silpo/stage9/timeslot/preview', { method: 'POST' });
+      const payload = (await response.json()) as { preview?: SilpoTimeslotPreview; error?: string };
+      if (!response.ok || !payload.preview) throw new Error(payload.error ?? 'Unable to prepare timeslot update');
+      setTimeslotPreview(payload.preview);
+      if (payload.preview.status === 'approval_required' && payload.preview.slots[0]) {
+        setSelectedTimeslot(timeslotKey(payload.preview.slots[0]));
+      }
+      await loadTrace();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Unable to prepare timeslot update');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function applyTimeslotUpdate() {
+    if (timeslotPreview?.status !== 'approval_required' || !selectedTimeslot) return;
+    const timeslot = timeslotPreview.slots.find((slot) => timeslotKey(slot) === selectedTimeslot);
+    if (!timeslot) return;
+    setBusy(true);
+    setError(undefined);
+    try {
+      const response = await fetch('/api/silpo/stage9/timeslot/apply', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approvalId: timeslotPreview.approvalId, timeslot }),
+      });
+      const payload = (await response.json()) as { result?: SilpoTimeslotApplyResult; error?: string };
+      if (!response.ok || !payload.result) throw new Error(payload.error ?? 'Unable to apply timeslot update');
+      setTimeslotResult(payload.result);
+      setTimeslotPreview(undefined);
+      setSelectedTimeslot(undefined);
+      await loadTrace();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Unable to apply timeslot update');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function downloadSchemas() {
     if (!tools) return;
     const blob = new Blob([JSON.stringify({ capturedAt: new Date().toISOString(), tools }, null, 2)], {
@@ -124,7 +178,7 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
       )}
       {error && <p className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
-      <div className="mt-4 flex gap-3">
+      <div className="mt-4 flex flex-wrap gap-3">
         <button
           type="button"
           disabled={busy}
@@ -166,7 +220,17 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
             <p className="mt-2">No active cart exists. The workflow stopped before the approved cart-creation branch.</p>
           )}
           {stage9Report.status === 'timeslot_update_required' && (
-            <p className="mt-2">The current {stage9Report.deliveryType} slot is unavailable. The workflow stopped before product search.</p>
+            <div className="mt-2">
+              <p>The current {stage9Report.deliveryType} slot is unavailable. The workflow stopped before product search.</p>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={prepareTimeslotUpdate}
+                className="mt-3 rounded bg-blue-800 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+              >
+                Find available slots
+              </button>
+            </div>
           )}
           {stage9Report.status === 'complete' && (
             <p className="mt-2">
@@ -176,6 +240,72 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
             </p>
           )}
           <p className="mt-2 text-xs text-blue-800">No cart mutation was executed.</p>
+        </section>
+      )}
+
+      {timeslotPreview?.status === 'no_available_slots' && (
+        <section className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          <h3 className="font-semibold">No available delivery slots</h3>
+          <p className="mt-2">
+            Silpo returned no available slots for {timeslotPreview.deliveryType}. No approval or cart mutation was created.
+          </p>
+        </section>
+      )}
+
+      {timeslotPreview?.status === 'cart_creation_required' && (
+        <p className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          No active cart exists. Timeslot update was not prepared.
+        </p>
+      )}
+
+      {timeslotPreview?.status === 'approval_required' && (
+        <section className="mt-5 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          <h3 className="font-semibold">Approve delivery slot update</h3>
+          <p className="mt-1 text-xs text-amber-800">
+            Select one Silpo slot. Approval expires at {formatTimeslotDate(timeslotPreview.expiresAt)}. Applying it will update delivery settings and immediately reread the cart.
+          </p>
+          <div className="mt-3 space-y-2">
+            {timeslotPreview.slots.map((slot) => {
+              const key = timeslotKey(slot);
+              return (
+                <label key={key} className="flex cursor-pointer items-center gap-3 rounded border border-amber-200 bg-white p-3">
+                  <input
+                    type="radio"
+                    name="silpo-timeslot"
+                    value={key}
+                    checked={selectedTimeslot === key}
+                    onChange={() => setSelectedTimeslot(key)}
+                  />
+                  <span>{formatTimeslotRange(slot.start, slot.end)}</span>
+                </label>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            disabled={busy || !selectedTimeslot}
+            onClick={applyTimeslotUpdate}
+            className="mt-3 rounded bg-amber-800 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+          >
+            Approve and update cart timeslot
+          </button>
+        </section>
+      )}
+
+      {timeslotResult && (
+        <section className="mt-5 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-950">
+          <h3 className="font-semibold">Timeslot update verified</h3>
+          <p className="mt-2">
+            {formatTimeslotRange(timeslotResult.timeslot.start, timeslotResult.timeslot.end)} · cart reread completed · {timeslotResult.validations.errors} errors · {timeslotResult.validations.warnings} warnings.
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={runStage9Reads}
+            className="mt-3 rounded bg-green-800 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+          >
+            Continue Stage 9 reads
+          </button>
         </section>
       )}
 
@@ -228,6 +358,32 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
       )}
     </section>
   );
+}
+
+function timeslotKey(slot: { start: string; end: string }): string {
+  return `${slot.start}|${slot.end}`;
+}
+
+function formatTimeslotDate(value: string): string {
+  return new Intl.DateTimeFormat('uk-UA', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Europe/Kyiv',
+  }).format(new Date(value));
+}
+
+function formatTimeslotRange(start: string, end: string): string {
+  const date = new Intl.DateTimeFormat('uk-UA', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'Europe/Kyiv',
+  }).format(new Date(start));
+  const time = new Intl.DateTimeFormat('uk-UA', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Europe/Kyiv',
+  });
+  return `${date}, ${time.format(new Date(start))}–${time.format(new Date(end))}`;
 }
 
 function ReadToolRunner({ tool, onComplete }: { tool: SilpoToolDefinition; onComplete: () => Promise<void> }) {

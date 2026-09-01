@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   buildProductSearchArguments,
   buildTimeSlotArguments,
+  buildTimeslotUpdateArguments,
   describeJsonShape,
   isCurrentTimeslotAvailable,
+  parseAvailableTimeslots,
   parseCartContext,
   parseCartReference,
+  parseCartUpdateSource,
   parseProductSearchSummary,
   runSilpoStage9ReadSequence,
 } from '@/infrastructure/silpo-stage9-workflow';
@@ -94,6 +97,49 @@ describe('Silpo Stage 9 read workflow', () => {
         cartContext,
       ),
     ).toBe(false);
+  });
+
+  it('builds a schema-valid update from cart-owned address and shipment data', () => {
+    const source = parseCartUpdateSource(
+      {
+        structuredContent: {
+          cart: {
+            address: { addressType: 'delivery', latitude: '50.45', longitude: '30.52' },
+            deliveryType: cartContext.deliveryType,
+            timeslot: { start: cartContext.timeslotStart, end: cartContext.timeslotEnd },
+            shipments: [
+              {
+                companyId: '33333333-3333-4333-8333-333333333333',
+                branchId: cartContext.branchId,
+              },
+            ],
+          },
+        },
+      },
+      cartContext.shoppingCartId,
+    );
+    const slots = parseAvailableTimeslots({
+      structuredContent: {
+        slots: [
+          { start: '2026-09-01T12:00:00Z', end: '2026-09-01T14:00:00Z', available: true },
+          { start: '2026-09-01T14:00:00Z', end: '2026-09-01T16:00:00Z', available: false },
+        ],
+      },
+    });
+
+    expect(slots).toEqual([{ start: '2026-09-01T12:00:00Z', end: '2026-09-01T14:00:00Z' }]);
+    expect(buildTimeslotUpdateArguments(source, slots[0])).toEqual({
+      shoppingCartId: cartContext.shoppingCartId,
+      deliveryType: cartContext.deliveryType,
+      timeslot: slots[0],
+      address: { addressType: 'delivery', latitude: '50.45', longitude: '30.52' },
+      shipments: [
+        {
+          companyId: '33333333-3333-4333-8333-333333333333',
+          branchId: cartContext.branchId,
+        },
+      ],
+    });
   });
 
   it('summarizes documented batch-search query counts without exposing products', () => {

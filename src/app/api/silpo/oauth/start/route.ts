@@ -10,9 +10,10 @@ export async function POST(request: Request) {
     const redirectUrl = new URL('/api/silpo/oauth/callback', request.url);
     const result = await new SilpoOAuthCoordinator().start(sessionId, redirectUrl);
     const response = Response.json(result);
+    const secure = redirectUrl.protocol === 'https:' ? '; Secure' : '';
     response.headers.append(
       'set-cookie',
-      `${SILPO_OAUTH_SESSION_COOKIE}=${sessionId}; Path=/; HttpOnly; Max-Age=86400; SameSite=Lax`,
+      `${SILPO_OAUTH_SESSION_COOKIE}=${sessionId}; Path=/; HttpOnly; Max-Age=86400; SameSite=Lax${secure}`,
     );
     return response;
   } catch (error) {

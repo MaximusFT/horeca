@@ -16,6 +16,16 @@ export interface SilpoCartContext {
   timeslotEnd: string;
 }
 
+export interface SilpoCartUpdateSource extends SilpoCartContext {
+  address: Record<string, unknown>;
+  shipments: Array<{ companyId: string; branchId: string }>;
+}
+
+export interface SilpoTimeslot {
+  start: string;
+  end: string;
+}
+
 export interface SilpoSearchSummary {
   queryCount: number;
   returnedProductCount: number;
@@ -121,6 +131,53 @@ export function parseCartContext(result: unknown, shoppingCartId: string): Silpo
   };
 }
 
+export function parseCartUpdateSource(result: unknown, shoppingCartId: string): SilpoCartUpdateSource {
+  const payload = unwrapMcpPayload(result, 'cart update source');
+  const cart = asObject(payload.cart);
+  const address = asObject(cart?.address);
+  const timeslot = asObject(cart?.timeslot);
+  const shipmentValues = Array.isArray(cart?.shipments) ? cart.shipments : [];
+  const shipments = shipmentValues.map((candidate) => {
+    const shipment = asObject(candidate);
+    return {
+      companyId: shipment?.companyId,
+      branchId: shipment?.branchId,
+    };
+  });
+  if (
+    !address ||
+    typeof cart?.deliveryType !== 'string' ||
+    typeof timeslot?.start !== 'string' ||
+    typeof timeslot?.end !== 'string' ||
+    shipments.length === 0 ||
+    shipments.some(
+      (shipment) => typeof shipment.companyId !== 'string' || typeof shipment.branchId !== 'string',
+    )
+  ) {
+    throw payloadError(
+      'cart update source',
+      [
+        'cart.address',
+        'cart.deliveryType',
+        'cart.timeslot.start',
+        'cart.timeslot.end',
+        'cart.shipments[].companyId',
+        'cart.shipments[].branchId',
+      ],
+      payload,
+    );
+  }
+  return {
+    shoppingCartId,
+    branchId: shipments[0].branchId as string,
+    deliveryType: cart.deliveryType,
+    timeslotStart: timeslot.start,
+    timeslotEnd: timeslot.end,
+    address,
+    shipments: shipments as Array<{ companyId: string; branchId: string }>,
+  };
+}
+
 export function buildTimeSlotArguments(context: SilpoCartContext): Record<string, unknown> {
   return validateCapturedSilpoToolArguments('silpo_get_time_slots', {
     branchId: context.branchId,
@@ -139,6 +196,36 @@ export function isCurrentTimeslotAvailable(result: unknown, context: SilpoCartCo
       slot.start === context.timeslotStart &&
       slot.end === context.timeslotEnd
     );
+  });
+}
+
+export function parseAvailableTimeslots(result: unknown): SilpoTimeslot[] {
+  const payload = unwrapMcpPayload(result, 'time slots');
+  if (!Array.isArray(payload.slots)) throw payloadError('time slots', ['slots[]'], payload);
+  const slots: SilpoTimeslot[] = [];
+  for (const candidate of payload.slots) {
+    const slot = asObject(candidate);
+    if (slot?.available !== true) continue;
+    if (typeof slot.start !== 'string' || typeof slot.end !== 'string') {
+      throw payloadError('time slots', ['slots[].start', 'slots[].end'], payload);
+    }
+    if (!slots.some((existing) => existing.start === slot.start && existing.end === slot.end)) {
+      slots.push({ start: slot.start, end: slot.end });
+    }
+  }
+  return slots;
+}
+
+export function buildTimeslotUpdateArguments(
+  source: SilpoCartUpdateSource,
+  timeslot: SilpoTimeslot,
+): Record<string, unknown> {
+  return validateCapturedSilpoToolArguments('silpo_update_shopping_cart', {
+    shoppingCartId: source.shoppingCartId,
+    deliveryType: source.deliveryType,
+    timeslot,
+    address: source.address,
+    shipments: source.shipments,
   });
 }
 

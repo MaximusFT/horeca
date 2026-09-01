@@ -31,6 +31,8 @@ Safe MCP observability is implemented at the server boundary. `/debug/mcp` shows
 
 The one-click Stage 9 read orchestrator is implemented at `POST /api/silpo/stage9/read`. It parses only documented response paths, validates all next-call inputs against the live capture, normalizes express delivery searches to `DeliveryHome` as required by the tool description, validates the current slot, and searches eggs/tomatoes/salmon. It returns a sanitized report and stops before writes for `cart_creation_required` or `timeslot_update_required`.
 
+The `timeslot_update_required` branch now has a guarded vertical slice. `POST /api/silpo/stage9/timeslot/preview` rereads the cart, fetches available slots, and stores an encrypted 15-minute approval containing cart-owned address/shipments and the offered slots. `POST /api/silpo/stage9/timeslot/apply` atomically claims that approval, permits only `silpo_update_shopping_cart`, and immediately rereads the cart to verify the exact approved slot. The generic tool runner remains read-only. In deployed mode approvals are durable in Turso; raw cart context is AES-256-GCM encrypted and never returned to the browser.
+
 Because the corporate proxy blocks `*.vercel.app`, deployed MCP behavior can also be inspected through the manual GitHub Actions workflow `Inspect Silpo MCP trace`, which prints the same sanitized durable trace from Turso. The user performs OAuth and clicks from a personal browser; the coding agent inspects the server-side sequence through GitHub.
 
 Stage 9 requires the user to complete the Silpo login/OTP flow. Durable encrypted OAuth storage is implemented through `TursoSilpoOAuthStore`: configure `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and `SILPO_OAUTH_ENCRYPTION_KEY` before using OAuth across serverless instances. With no Turso env, local development intentionally falls back to process memory. If authorization or MCP connectivity is unavailable, report the concrete blocker. Do not pretend that live connectivity was proven.
@@ -187,7 +189,7 @@ Use a dedicated `/debug/mcp` route or server-side script. The first spike should
 At handoff, all checks pass:
 
 ```text
-npm test          → 71 tests passed in 21 files, plus 1 remote smoke test skipped locally without secrets
+npm test          → 82 tests passed in 24 files, plus 1 remote smoke test skipped locally without secrets
 npm run typecheck → passed
 npm run lint      → passed
 npm run build     → passed
