@@ -1,11 +1,11 @@
-import type { BaseUnit } from "./units";
+import type { BaseUnit } from './units';
 
 export interface SupplierContext {
   supplierId: string;
   name: string;
   cartId: string;
-  currency: "UAH";
-  mode: "mock" | "live";
+  currency: 'UAH';
+  mode: 'mock' | 'live';
 }
 
 export interface SupplierSearchRequest {
@@ -29,14 +29,14 @@ export interface SupplierProduct {
   packageSize: number;
   unit: BaseUnit;
   priceMinor: number;
-  currency: "UAH";
+  currency: 'UAH';
   available: boolean;
   description: string;
 }
 
 export interface SupplierSearchResult {
   request: SupplierSearchRequest;
-  status: "matched" | "unavailable" | "not_found";
+  status: 'matched' | 'unavailable' | 'not_found';
   product?: SupplierProduct;
 }
 
@@ -45,7 +45,7 @@ export interface SupplierDeliveryOption {
   label: string;
   deliveryAt: string;
   feeMinor: number;
-  currency: "UAH";
+  currency: 'UAH';
 }
 
 export interface SupplierOrderDraftLine {
@@ -81,7 +81,7 @@ export interface SupplierCartPreview {
   subtotalMinor: number;
   feeMinor: number;
   totalMinor: number;
-  currency: "UAH";
+  currency: 'UAH';
 }
 
 export interface SupplierCart extends SupplierCartPreview {

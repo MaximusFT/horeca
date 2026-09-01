@@ -56,9 +56,7 @@ export function createSupplierGateway(configuration = readSupplierRuntimeConfigu
   return new UnconfiguredSilpoMcpGateway(configuration.silpo);
 }
 
-export function getSupplierRuntimeStatus(
-  configuration = readSupplierRuntimeConfiguration(),
-): SupplierRuntimeStatus {
+export function getSupplierRuntimeStatus(configuration = readSupplierRuntimeConfiguration()): SupplierRuntimeStatus {
   return configuration.mode === 'mock'
     ? { mode: 'mock', state: 'demo' }
     : { mode: 'silpo', state: 'connection_required' };
