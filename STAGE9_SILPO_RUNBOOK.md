@@ -2,6 +2,8 @@
 
 Эта инструкция предназначена для проверки deployed-приложения с личного компьютера. WSL, локальный Node.js, Turso CLI и Vercel CLI не требуются.
 
+Для пошагового прохода с активной корзиной, ожидаемыми результатами и готовым шаблоном отчёта используй [PERSONAL_MACHINE_SILPO_STAGE9_CHECKLIST.md](PERSONAL_MACHINE_SILPO_STAGE9_CHECKLIST.md).
+
 ## 1. Одноразовая настройка Vercel
 
 В Vercel создай access token в **Account Settings → Tokens**. Затем в GitHub открой:
