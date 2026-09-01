@@ -26,6 +26,7 @@ export async function POST(request: Request) {
             phase: error.phase,
             expectedPaths: error.expectedPaths,
             observedKeys: error.observedKeys,
+            observedShape: error.observedShape,
           },
         },
         { status: 422 },

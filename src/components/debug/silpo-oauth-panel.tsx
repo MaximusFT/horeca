@@ -69,11 +69,16 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
       const result = (await response.json()) as {
         report?: SilpoStage9ReadReport;
         error?: string;
-        diagnostic?: { phase: string; expectedPaths: string[]; observedKeys: string[] };
+        diagnostic?: {
+          phase: string;
+          expectedPaths: string[];
+          observedKeys: string[];
+          observedShape: string[];
+        };
       };
       if (!response.ok || !result.report) {
         const diagnostic = result.diagnostic
-          ? ` (${result.diagnostic.phase}; expected ${result.diagnostic.expectedPaths.join(', ')}; observed ${result.diagnostic.observedKeys.join(', ') || 'none'})`
+          ? ` (${result.diagnostic.phase}; expected ${result.diagnostic.expectedPaths.join(', ')}; shape ${result.diagnostic.observedShape.join(', ') || 'none'})`
           : '';
         throw new Error(`${result.error ?? 'Stage 9 read sequence failed'}${diagnostic}`);
       }

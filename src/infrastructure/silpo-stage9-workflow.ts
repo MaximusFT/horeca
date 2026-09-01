@@ -43,6 +43,7 @@ export class SilpoStage9PayloadError extends Error {
     readonly phase: string,
     readonly expectedPaths: string[],
     readonly observedKeys: string[],
+    readonly observedShape: string[],
   ) {
     super(
       `${phase} response is missing documented fields (${expectedPaths.join(', ')}); observed keys: ${observedKeys.join(', ') || 'none'}`,
@@ -173,7 +174,7 @@ export function parseProductSearchSummary(result: unknown): SilpoSearchSummary {
 
 export function unwrapMcpPayload(result: unknown, phase: string): Record<string, unknown> {
   const envelope = asObject(result);
-  if (!envelope) throw new SilpoStage9PayloadError(phase, ['object payload'], []);
+  if (!envelope) throw new SilpoStage9PayloadError(phase, ['object payload'], [], describeJsonShape(result));
   const structuredContent = asObject(envelope.structuredContent);
   if (structuredContent) return structuredContent;
   if (Array.isArray(envelope.content)) {
@@ -201,11 +202,43 @@ function payloadError(
   expectedPaths: string[],
   payload: Record<string, unknown>,
 ): SilpoStage9PayloadError {
-  return new SilpoStage9PayloadError(phase, expectedPaths, Object.keys(payload).sort());
+  return new SilpoStage9PayloadError(
+    phase,
+    expectedPaths,
+    Object.keys(payload).sort(),
+    describeJsonShape(payload),
+  );
 }
 
 function asObject(value: unknown): Record<string, unknown> | undefined {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : undefined;
+}
+
+export function describeJsonShape(value: unknown, maxDepth = 4): string[] {
+  const paths: string[] = [];
+  visitShape(value, '$', 0, maxDepth, paths);
+  return paths;
+}
+
+function visitShape(value: unknown, path: string, depth: number, maxDepth: number, paths: string[]): void {
+  const type = jsonType(value);
+  paths.push(`${path}:${type}`);
+  if (depth >= maxDepth) return;
+  if (Array.isArray(value)) {
+    if (value.length > 0) visitShape(value[0], `${path}[0]`, depth + 1, maxDepth, paths);
+    return;
+  }
+  const object = asObject(value);
+  if (!object) return;
+  for (const key of Object.keys(object).sort()) {
+    visitShape(object[key], `${path}.${key}`, depth + 1, maxDepth, paths);
+  }
+}
+
+function jsonType(value: unknown): string {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  return typeof value;
 }

@@ -189,9 +189,10 @@ Live response не совпал с документированным path. Со
 phase
 expectedPaths
 observedKeys
+observedShape
 ```
 
-Не отправляй raw response.
+`observedShape` содержит только JSON paths и типы, без значений. Не отправляй raw response.
 
 ### Stage 9 reads: 502
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildProductSearchArguments,
   buildTimeSlotArguments,
+  describeJsonShape,
   isCurrentTimeslotAvailable,
   parseCartContext,
   parseCartReference,
@@ -115,6 +116,7 @@ describe('Silpo Stage 9 read workflow', () => {
         phase: 'cart reference',
         expectedPaths: ['exists'],
         observedKeys: ['unexpected'],
+        observedShape: ['$:object', '$.unexpected:string'],
       }),
     );
     try {
@@ -122,6 +124,14 @@ describe('Silpo Stage 9 read workflow', () => {
     } catch (error) {
       expect(String(error)).not.toContain('private-value');
     }
+    expect(describeJsonShape({ cart: { shipments: [{ branchId: 'private-branch-id' }] } })).toEqual([
+      '$:object',
+      '$.cart:object',
+      '$.cart.shipments:array',
+      '$.cart.shipments[0]:object',
+      '$.cart.shipments[0].branchId:string',
+    ]);
+    expect(describeJsonShape({ token: 'secret-token' }).join(' ')).not.toContain('secret-token');
   });
 
   it('runs the four documented reads in order and returns a sanitized report', async () => {
