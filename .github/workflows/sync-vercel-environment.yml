@@ -28,6 +28,27 @@ jobs:
 
       - name: Validate Vercel access token
         run: |
+          length=${#VERCEL_TOKEN}
+          if [ "$length" -lt 20 ]; then
+            length_class="too-short"
+          elif [ "$length" -le 80 ]; then
+            length_class="plausible"
+          else
+            length_class="too-long"
+          fi
+          case "$VERCEL_TOKEN" in
+            \"*|*\"|'*|*') has_quotes=yes ;;
+            *) has_quotes=no ;;
+          esac
+          if printf '%s' "$VERCEL_TOKEN" | grep -q '[[:space:]]'; then
+            has_whitespace=yes
+          else
+            has_whitespace=no
+          fi
+          echo "VERCEL_TOKEN format: length=$length_class, quotes=$has_quotes, whitespace=$has_whitespace"
+          test "$length_class" = "plausible" || exit 1
+          test "$has_quotes" = "no" || exit 1
+          test "$has_whitespace" = "no" || exit 1
           status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
             --header "Authorization: Bearer $VERCEL_TOKEN" \
             https://api.vercel.com/v2/user)
