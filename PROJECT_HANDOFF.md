@@ -29,6 +29,8 @@ The spike UI compiles the captured draft-07 schemas and validates arguments serv
 
 Safe MCP observability is implemented at the server boundary. `/debug/mcp` shows operation name, argument keys, status, duration, and a structural result summary. It never persists token values, raw arguments, profile/address data, or cart contents. Trace uses Turso when deployment secrets are configured and process memory locally.
 
+The one-click Stage 9 read orchestrator is implemented at `POST /api/silpo/stage9/read`. It parses only documented response paths, validates all next-call inputs against the live capture, normalizes express delivery searches to `DeliveryHome` as required by the tool description, validates the current slot, and searches eggs/tomatoes/salmon. It returns a sanitized report and stops before writes for `cart_creation_required` or `timeslot_update_required`.
+
 Because the corporate proxy blocks `*.vercel.app`, deployed MCP behavior can also be inspected through the manual GitHub Actions workflow `Inspect Silpo MCP trace`, which prints the same sanitized durable trace from Turso. The user performs OAuth and clicks from a personal browser; the coding agent inspects the server-side sequence through GitHub.
 
 Stage 9 requires the user to complete the Silpo login/OTP flow. Durable encrypted OAuth storage is implemented through `TursoSilpoOAuthStore`: configure `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and `SILPO_OAUTH_ENCRYPTION_KEY` before using OAuth across serverless instances. With no Turso env, local development intentionally falls back to process memory. If authorization or MCP connectivity is unavailable, report the concrete blocker. Do not pretend that live connectivity was proven.
@@ -173,7 +175,9 @@ Use a dedicated `/debug/mcp` route or server-side script. The first spike should
 - `PERSONAL_MACHINE_ACTIONS.md` — authoritative queue for all external cloud/CLI actions.
 - `src/infrastructure/silpo-tool-policy.ts` — server-enforced Stage 9 read-only allowlist.
 - `src/infrastructure/silpo-live-schema.ts` — Ajv validation against the captured live schemas.
+- `src/infrastructure/silpo-stage9-workflow.ts` — pure response parsers and read-only Stage 9 state machine.
 - `src/infrastructure/silpo-mcp-trace.ts` — sanitized session-scoped MCP trace contract.
+- `STAGE9_SILPO_RUNBOOK.md` — personal-browser verification and debugging instructions.
 - `src/components/debug/silpo-oauth-panel.tsx` — OAuth, schema capture, and read-only spike UI.
 - `src/components/agent/agent-launcher.tsx` — Ask Misto UI.
 - `src/application/demo-runtime.ts` — shared in-memory demo composition root.
@@ -183,7 +187,7 @@ Use a dedicated `/debug/mcp` route or server-side script. The first spike should
 At handoff, all checks pass:
 
 ```text
-npm test          → 59 tests passed in 19 files, plus 1 remote smoke test skipped locally without secrets
+npm test          → 71 tests passed in 21 files, plus 1 remote smoke test skipped locally without secrets
 npm run typecheck → passed
 npm run lint      → passed
 npm run build     → passed
@@ -202,6 +206,7 @@ Browser QA completed:
 - Ask Misto supplier preparation → salmon replacement approval → cart preview → explicit cart apply → reread/verify.
 - Tablet/mobile navigation at 850 px and 390 px; all four primary sections and Reset remain available with no page-level horizontal overflow.
 - Procurement batch search (`лосось`) and expiry-risk filter; localized quantities (`кг`, `г`, `л`, `шт`).
+- Stage 9 pure workflow fixtures cover existing/missing cart, documented cart paths, express-delivery normalization, slot availability, product-search summaries, safe mismatch diagnostics, call order, and stop-before-write behavior.
 
 ## Working-tree and Git notes
 

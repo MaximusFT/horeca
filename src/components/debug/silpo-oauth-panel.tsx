@@ -4,12 +4,14 @@ import { useState } from 'react';
 import type { SilpoOAuthStartResult, SilpoToolDefinition } from '@/infrastructure/silpo-oauth-client';
 import { isSilpoReadToolName } from '@/infrastructure/silpo-tool-policy';
 import type { SilpoMcpTraceEntry } from '@/infrastructure/silpo-mcp-trace';
+import type { SilpoStage9ReadReport } from '@/infrastructure/silpo-stage9-workflow';
 
 export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string; detail?: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [tools, setTools] = useState<SilpoToolDefinition[]>();
   const [trace, setTrace] = useState<Array<Omit<SilpoMcpTraceEntry, 'sessionId'>>>([]);
+  const [stage9Report, setStage9Report] = useState<SilpoStage9ReadReport>();
 
   async function connect() {
     setBusy(true);
@@ -56,6 +58,32 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
     };
     if (!response.ok) throw new Error(result.error ?? 'Unable to load Silpo MCP trace');
     setTrace(result.entries ?? []);
+  }
+
+  async function runStage9Reads() {
+    setBusy(true);
+    setError(undefined);
+    setStage9Report(undefined);
+    try {
+      const response = await fetch('/api/silpo/stage9/read', { method: 'POST' });
+      const result = (await response.json()) as {
+        report?: SilpoStage9ReadReport;
+        error?: string;
+        diagnostic?: { phase: string; expectedPaths: string[]; observedKeys: string[] };
+      };
+      if (!response.ok || !result.report) {
+        const diagnostic = result.diagnostic
+          ? ` (${result.diagnostic.phase}; expected ${result.diagnostic.expectedPaths.join(', ')}; observed ${result.diagnostic.observedKeys.join(', ') || 'none'})`
+          : '';
+        throw new Error(`${result.error ?? 'Stage 9 read sequence failed'}${diagnostic}`);
+      }
+      setStage9Report(result.report);
+      await loadTrace();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Stage 9 read sequence failed');
+    } finally {
+      setBusy(false);
+    }
   }
 
   function downloadSchemas() {
@@ -116,7 +144,35 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
         >
           Refresh trace
         </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={runStage9Reads}
+          className="rounded-lg bg-blue-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          Run Stage 9 reads
+        </button>
       </div>
+
+      {stage9Report && (
+        <section className="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
+          <h3 className="font-semibold">Stage 9 read-only report</h3>
+          {stage9Report.status === 'cart_creation_required' && (
+            <p className="mt-2">No active cart exists. The workflow stopped before the approved cart-creation branch.</p>
+          )}
+          {stage9Report.status === 'timeslot_update_required' && (
+            <p className="mt-2">The current {stage9Report.deliveryType} slot is unavailable. The workflow stopped before product search.</p>
+          )}
+          {stage9Report.status === 'complete' && (
+            <p className="mt-2">
+              Cart context read · {stage9Report.deliveryType} slot validated · searched{' '}
+              {stage9Report.requestedProducts.join(', ')} · {stage9Report.search.returnedProductCount} products returned
+              across {stage9Report.search.queryCount} queries ({stage9Report.search.totalFound} total matches).
+            </p>
+          )}
+          <p className="mt-2 text-xs text-blue-800">No cart mutation was executed.</p>
+        </section>
+      )}
 
       {trace.length > 0 && (
         <section className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
