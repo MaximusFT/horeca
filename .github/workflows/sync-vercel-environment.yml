@@ -26,6 +26,16 @@ jobs:
           test -n "$TURSO_AUTH_TOKEN" || { echo "Missing TURSO_AUTH_TOKEN"; exit 1; }
           test -n "$SILPO_OAUTH_ENCRYPTION_KEY" || { echo "Missing SILPO_OAUTH_ENCRYPTION_KEY"; exit 1; }
 
+      - name: Validate Vercel access token
+        run: |
+          status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+            --header "Authorization: Bearer $VERCEL_TOKEN" \
+            https://api.vercel.com/v2/user)
+          test "$status" = "200" || {
+            echo "VERCEL_TOKEN was rejected by the Vercel API (HTTP $status). Create an Access Token in Vercel Account Settings → Tokens and replace the GitHub Production environment secret."
+            exit 1
+          }
+
       - name: Check out repository
         uses: actions/checkout@v4
 
