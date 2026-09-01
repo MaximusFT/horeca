@@ -73,7 +73,11 @@ The public documentation and unauthenticated well-known metadata establish:
 - cart verification reads `validations[]`, totals, loyalty state, `checkoutWebLink`, and `checkoutMobileLink`;
 - cart writes require a separate `silpo_add_or_update_cart_products` call and a subsequent full cart reread.
 
-Exact input and output JSON Schemas are deliberately not copied or inferred here: the official documentation states that the current schemas are returned by authenticated `tools/list`. `/debug/mcp` captures and downloads those live schemas, and its spike runner permits only server-allowlisted read tools before the separate approved write stage.
+The authenticated `tools/list` capture from 2026-09-01 contains 40 unique tools and is stored in `silpo-tools-2026-09-01.json`. The newer `silpo_create_shopping_cart` explains the difference from the earlier public count of 39. `src/infrastructure/silpo-live-schema.ts` compiles these draft-07 input schemas with Ajv, so server-side spike calls are rejected before MCP when required fields, enums, formats, or limits are wrong. Output shapes are not invented: application mappers remain pending until representative live read results are captured.
+
+Seven captured tools change state: cart creation, cart add/update/remove/clear, cart settings update, favorite update, and certificate update. They are excluded from the Stage 9 read-only runner. If no cart exists, creation becomes a separate approved workflow after address, delivery type, branch, and available timeslot are resolved.
+
+Server-side MCP calls are recorded in a sanitized trace containing only operation name, argument-key names, completion status, duration, and a structural result summary. Raw arguments/results, tokens, addresses, profile data, and cart contents are not persisted. The trace is displayed by `/debug/mcp` and uses Turso in deployed mode.
 
 ## Development
 

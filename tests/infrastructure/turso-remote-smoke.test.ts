@@ -1,6 +1,7 @@
 import { createClient } from '@libsql/client';
 import { describe, expect, it } from 'vitest';
 import { TursoSilpoOAuthStore } from '@/infrastructure/turso-silpo-oauth-store';
+import { TursoSilpoMcpTraceStore } from '@/infrastructure/turso-silpo-mcp-trace-store';
 
 const configuration = {
   url: process.env.TURSO_DATABASE_URL,
@@ -18,6 +19,7 @@ remoteDescribe('remote Turso OAuth storage smoke test', () => {
       authToken: configuration.authToken!,
     });
     const store = new TursoSilpoOAuthStore(client, configuration.encryptionKey!);
+    const traceStore = new TursoSilpoMcpTraceStore(client);
     const sessionId = `github-smoke-${crypto.randomUUID()}`;
     const marker = `oauth-secret-${crypto.randomUUID()}`;
     const record = {
@@ -41,7 +43,20 @@ remoteDescribe('remote Turso OAuth storage smoke test', () => {
       const encryptedRecord = String(persisted.rows[0]?.encrypted_record);
       expect(encryptedRecord).toMatch(/^v1\./);
       expect(encryptedRecord).not.toContain(marker);
+
+      await traceStore.append({
+        id: `trace-${crypto.randomUUID()}`,
+        sessionId,
+        operation: 'tools/list',
+        status: 'completed',
+        durationMs: 10,
+        requestKeys: [],
+        resultSummary: '40 tools',
+        createdAt: new Date().toISOString(),
+      });
+      expect(await traceStore.list(sessionId)).toHaveLength(1);
     } finally {
+      await traceStore.clear(sessionId);
       await store.delete(sessionId);
       expect(await store.get(sessionId)).toBeUndefined();
       client.close();

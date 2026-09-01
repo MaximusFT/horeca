@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import type { SilpoOAuthStartResult, SilpoToolDefinition } from '@/infrastructure/silpo-oauth-client';
 import { isSilpoReadToolName } from '@/infrastructure/silpo-tool-policy';
+import type { SilpoMcpTraceEntry } from '@/infrastructure/silpo-mcp-trace';
 
 export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string; detail?: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [tools, setTools] = useState<SilpoToolDefinition[]>();
+  const [trace, setTrace] = useState<Array<Omit<SilpoMcpTraceEntry, 'sessionId'>>>([]);
 
   async function connect() {
     setBusy(true);
@@ -38,11 +40,22 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
       const result = (await response.json()) as { tools?: SilpoToolDefinition[]; error?: string };
       if (!response.ok || !result.tools) throw new Error(result.error ?? 'Unable to list Silpo MCP tools');
       setTools(result.tools);
+      await loadTrace();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to list Silpo MCP tools');
     } finally {
       setBusy(false);
     }
+  }
+
+  async function loadTrace() {
+    const response = await fetch('/api/silpo/trace');
+    const result = (await response.json()) as {
+      entries?: Array<Omit<SilpoMcpTraceEntry, 'sessionId'>>;
+      error?: string;
+    };
+    if (!response.ok) throw new Error(result.error ?? 'Unable to load Silpo MCP trace');
+    setTrace(result.entries ?? []);
   }
 
   function downloadSchemas() {
@@ -95,7 +108,38 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
         >
           Load live tools
         </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void loadTrace()}
+          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
+        >
+          Refresh trace
+        </button>
       </div>
+
+      {trace.length > 0 && (
+        <section className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <h3 className="text-sm font-semibold text-slate-900">Safe server-side MCP trace</h3>
+          <p className="mt-1 text-xs text-slate-600">Tool names, argument keys, status and duration only. No raw values or tokens.</p>
+          <div className="mt-3 space-y-2">
+            {trace.map((entry) => (
+              <div key={entry.id} className="flex items-start gap-3 text-xs">
+                <span className={`mt-1 size-2 shrink-0 rounded-full ${entry.status === 'completed' ? 'bg-green-600' : 'bg-red-600'}`} />
+                <div>
+                  <p className="font-mono font-semibold text-slate-800">
+                    {entry.operation} · {entry.durationMs} ms
+                  </p>
+                  <p className="mt-0.5 text-slate-600">
+                    {entry.requestKeys.length > 0 ? `keys: ${entry.requestKeys.join(', ')} · ` : ''}
+                    {entry.resultSummary}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {tools && (
         <div className="mt-5 space-y-3">
@@ -116,7 +160,7 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
               <pre className="mt-2 overflow-x-auto rounded bg-slate-900 p-3 text-xs text-slate-100">
                 {JSON.stringify(tool.inputSchema, null, 2)}
               </pre>
-              {isSilpoReadToolName(tool.name) && <ReadToolRunner tool={tool} />}
+              {isSilpoReadToolName(tool.name) && <ReadToolRunner tool={tool} onComplete={loadTrace} />}
             </details>
           ))}
         </div>
@@ -125,7 +169,7 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
   );
 }
 
-function ReadToolRunner({ tool }: { tool: SilpoToolDefinition }) {
+function ReadToolRunner({ tool, onComplete }: { tool: SilpoToolDefinition; onComplete: () => Promise<void> }) {
   const [argumentsText, setArgumentsText] = useState('{}');
   const [result, setResult] = useState<unknown>();
   const [error, setError] = useState<string>();
@@ -146,6 +190,7 @@ function ReadToolRunner({ tool }: { tool: SilpoToolDefinition }) {
       const payload = (await response.json()) as { result?: unknown; error?: string };
       if (!response.ok) throw new Error(payload.error ?? 'Silpo MCP tool call failed');
       setResult(payload.result);
+      await onComplete();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Silpo MCP tool call failed');
     } finally {

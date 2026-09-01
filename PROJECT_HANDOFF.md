@@ -23,9 +23,11 @@ Stages 0–8 are complete. A first Stage 11-compatible mock supplier-agent verti
 
 Recommended Codex setting for Stage 9: **sol high**. The spike involves OAuth, discovery of live `tools/list` schemas, uncertain weighted-product semantics, and a carefully bounded real-cart mutation. Do not invent Silpo arguments or schemas.
 
-Prepared in advance: `src/infrastructure/mcp-client.ts` remains a generic protocol test client. The preferred Stage 9 path now uses official `@modelcontextprotocol/sdk` `Client` + `StreamableHTTPClientTransport` and a session-scoped OAuth provider in `src/infrastructure/silpo-oauth-client.ts`. `/debug/mcp` explicitly starts OAuth 2.1/DCR/PKCE and renders live `tools/list` schemas after authorization. No external Silpo request has been executed yet.
+Prepared in advance: `src/infrastructure/mcp-client.ts` remains a generic protocol test client. The preferred Stage 9 path uses official `@modelcontextprotocol/sdk` `Client` + `StreamableHTTPClientTransport` and a session-scoped OAuth provider in `src/infrastructure/silpo-oauth-client.ts`. A real `tools/list` capture was obtained on 2026-09-01 and committed as `silpo-tools-2026-09-01.json`: 40 unique tools, including the newer `silpo_create_shopping_cart` branch absent from the earlier 39-tool documentation.
 
-The complete local spike UI is ready before access opens: live schemas can be downloaded as JSON, and only the documented Stage 9 read tools can be executed through `/api/silpo/tools/call`. The same allowlist is enforced in the browser and server; all cart mutations are blocked in spike mode. On September 1 the first action is therefore an explicit click on `Connect Silpo`, followed by login/OTP completed by the user.
+The spike UI compiles the captured draft-07 schemas and validates arguments server-side before every call. Only allowlisted Stage 9 reads can execute through `/api/silpo/tools/call`; all seven state-changing tools remain blocked. If `silpo_get_my_shopping_cart` returns `exists=false`, do not call cart reads with a null ID: collect address/delivery/slot context and require explicit approval before `silpo_create_shopping_cart`.
+
+Safe MCP observability is implemented at the server boundary. `/debug/mcp` shows operation name, argument keys, status, duration, and a structural result summary. It never persists token values, raw arguments, profile/address data, or cart contents. Trace uses Turso when deployment secrets are configured and process memory locally.
 
 Stage 9 requires the user to complete the Silpo login/OTP flow. Durable encrypted OAuth storage is implemented through `TursoSilpoOAuthStore`: configure `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and `SILPO_OAUTH_ENCRYPTION_KEY` before using OAuth across serverless instances. With no Turso env, local development intentionally falls back to process memory. If authorization or MCP connectivity is unavailable, report the concrete blocker. Do not pretend that live connectivity was proven.
 
@@ -142,7 +144,7 @@ Never commit `.env.local`, OAuth tokens, MCP tokens, cart identifiers containing
 Follow the implementation handoff plan exactly:
 
 1. Establish OAuth/connectivity.
-2. Click `Load live tools`, inspect the result, and download the actual schemas from `/debug/mcp`.
+2. `tools/list` is captured; verify the deployed connection still returns 40 unique tools.
 3. Read active cart context.
 4. Read the full cart/context and delivery options.
 5. Batch-search eggs, tomatoes, and salmon.
@@ -168,6 +170,8 @@ Use a dedicated `/debug/mcp` route or server-side script. The first spike should
 - `src/infrastructure/turso-silpo-oauth-store.ts` — AES-256-GCM encrypted durable OAuth store.
 - `PERSONAL_MACHINE_ACTIONS.md` — authoritative queue for all external cloud/CLI actions.
 - `src/infrastructure/silpo-tool-policy.ts` — server-enforced Stage 9 read-only allowlist.
+- `src/infrastructure/silpo-live-schema.ts` — Ajv validation against the captured live schemas.
+- `src/infrastructure/silpo-mcp-trace.ts` — sanitized session-scoped MCP trace contract.
 - `src/components/debug/silpo-oauth-panel.tsx` — OAuth, schema capture, and read-only spike UI.
 - `src/components/agent/agent-launcher.tsx` — Ask Misto UI.
 - `src/application/demo-runtime.ts` — shared in-memory demo composition root.

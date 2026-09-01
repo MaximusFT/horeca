@@ -2,6 +2,11 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { SilpoOAuthClientProvider } from '@/infrastructure/silpo-oauth-client';
 import { MemorySilpoOAuthStore } from '@/infrastructure/silpo-oauth-store';
 import { isSilpoReadToolName } from '@/infrastructure/silpo-tool-policy';
+import {
+  capturedSilpoSchemaMetadata,
+  getCapturedSilpoTool,
+  validateCapturedSilpoToolArguments,
+} from '@/infrastructure/silpo-live-schema';
 
 describe('Silpo OAuth client provider', () => {
   const sessionId = 'oauth-test-session';
@@ -52,7 +57,31 @@ describe('Silpo OAuth client provider', () => {
   it('allows required Stage 9 reads and blocks cart mutations', () => {
     expect(isSilpoReadToolName('silpo_get_my_shopping_cart')).toBe(true);
     expect(isSilpoReadToolName('silpo_find_products_batch')).toBe(true);
+    expect(isSilpoReadToolName('silpo_find_address')).toBe(true);
     expect(isSilpoReadToolName('silpo_add_or_update_cart_products')).toBe(false);
+    expect(isSilpoReadToolName('silpo_create_shopping_cart')).toBe(false);
     expect(isSilpoReadToolName('silpo_clear_shopping_cart')).toBe(false);
+  });
+
+  it('uses the unique 40-tool live capture and validates exact Stage 9 inputs', () => {
+    expect(capturedSilpoSchemaMetadata).toEqual({
+      capturedAt: '2026-09-01T14:14:25.057Z',
+      toolCount: 40,
+      uniqueToolCount: 40,
+    });
+    expect(getCapturedSilpoTool('silpo_create_shopping_cart')).toBeDefined();
+    expect(validateCapturedSilpoToolArguments('silpo_get_my_shopping_cart', {})).toEqual({});
+    expect(() => validateCapturedSilpoToolArguments('silpo_get_shopping_cart_by_id', {})).toThrow(
+      /shoppingCartId/,
+    );
+    expect(() =>
+      validateCapturedSilpoToolArguments('silpo_find_products_batch', {
+        branchId: 'branch',
+        deliveryType: 'B2B',
+        timeslotStart: '2026-09-01T10:00:00Z',
+        timeslotEnd: '2026-09-01T12:00:00Z',
+        products: Array.from({ length: 31 }, (_, index) => `product-${index}`),
+      }),
+    ).toThrow(/30/);
   });
 });

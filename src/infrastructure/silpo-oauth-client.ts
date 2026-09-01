@@ -9,6 +9,9 @@ import type {
 import { type SilpoOAuthRecord, type SilpoOAuthStore } from './silpo-oauth-store';
 import { isSilpoReadToolName, type SilpoReadToolName } from './silpo-tool-policy';
 import { getSilpoOAuthStore } from './create-silpo-oauth-store';
+import { validateCapturedSilpoToolArguments } from './silpo-live-schema';
+import { getSilpoMcpTraceStore } from './create-silpo-mcp-trace-store';
+import type { SilpoMcpTraceStore } from './silpo-mcp-trace';
 
 export const SILPO_MCP_ENDPOINT = 'https://mcp.silpo.ua/mcp';
 
@@ -107,6 +110,7 @@ export class SilpoOAuthCoordinator {
   constructor(
     private readonly store: SilpoOAuthStore = getSilpoOAuthStore(),
     private readonly endpoint = SILPO_MCP_ENDPOINT,
+    private readonly traceStore: SilpoMcpTraceStore = getSilpoMcpTraceStore(),
   ) {}
 
   async start(sessionId: string, redirectUrl: URL): Promise<SilpoOAuthStartResult> {
@@ -114,7 +118,9 @@ export class SilpoOAuthCoordinator {
     const connection = this.connection(provider);
     try {
       await connection.client.connect(connection.transport);
+      const startedAt = performance.now();
       const { tools } = await connection.client.listTools();
+      await this.recordTrace(sessionId, 'tools/list', [], 'completed', startedAt, `${tools.length} tools`);
       return { status: 'connected', toolCount: tools.length };
     } catch (error) {
       if (!(error instanceof UnauthorizedError)) throw error;
@@ -132,7 +138,9 @@ export class SilpoOAuthCoordinator {
     try {
       await connection.transport.finishAuth(authorizationCode);
       await connection.client.connect(connection.transport);
+      const startedAt = performance.now();
       const { tools } = await connection.client.listTools();
+      await this.recordTrace(sessionId, 'tools/list', [], 'completed', startedAt, `${tools.length} tools`);
       return tools.map((tool) => ({
         name: tool.name,
         description: tool.description,
@@ -149,7 +157,9 @@ export class SilpoOAuthCoordinator {
     const connection = this.connection(provider);
     try {
       await connection.client.connect(connection.transport);
+      const startedAt = performance.now();
       const { tools } = await connection.client.listTools();
+      await this.recordTrace(sessionId, 'tools/list', [], 'completed', startedAt, `${tools.length} tools`);
       return tools.map((tool) => ({
         name: tool.name,
         description: tool.description,
@@ -167,15 +177,60 @@ export class SilpoOAuthCoordinator {
     args: Record<string, unknown>,
   ): Promise<unknown> {
     if (!isSilpoReadToolName(name)) throw new Error(`Silpo tool ${name} is not allowed in read-only spike mode`);
+    const validatedArguments = validateCapturedSilpoToolArguments(name, args);
     if (!(await this.store.get(sessionId))?.tokens)
       throw new UnauthorizedError('Silpo OAuth authorization is required');
     const provider = new SilpoOAuthClientProvider(sessionId, redirectUrl, this.store);
     const connection = this.connection(provider);
+    const startedAt = performance.now();
     try {
       await connection.client.connect(connection.transport);
-      return await connection.client.callTool({ name, arguments: args });
+      const result = await connection.client.callTool({ name, arguments: validatedArguments });
+      await this.recordTrace(
+        sessionId,
+        name,
+        Object.keys(validatedArguments).sort(),
+        'completed',
+        startedAt,
+        summarizeToolResult(result),
+      );
+      return result;
+    } catch (error) {
+      await this.recordTrace(
+        sessionId,
+        name,
+        Object.keys(validatedArguments).sort(),
+        'failed',
+        startedAt,
+        error instanceof Error ? error.name : 'Unknown error',
+      );
+      throw error;
     } finally {
       await connection.transport.close();
+    }
+  }
+
+  private async recordTrace(
+    sessionId: string,
+    operation: string,
+    requestKeys: string[],
+    status: 'completed' | 'failed',
+    startedAt: number,
+    resultSummary: string,
+  ): Promise<void> {
+    try {
+      await this.traceStore.append({
+        id: crypto.randomUUID(),
+        sessionId,
+        operation,
+        status,
+        durationMs: Math.max(0, Math.round(performance.now() - startedAt)),
+        requestKeys,
+        resultSummary,
+        createdAt: new Date().toISOString(),
+      });
+    } catch {
+      // Observability must never break the supplier operation.
     }
   }
 
@@ -185,4 +240,17 @@ export class SilpoOAuthCoordinator {
       transport: new StreamableHTTPClientTransport(new URL(this.endpoint), { authProvider: provider }),
     };
   }
+}
+
+function summarizeToolResult(result: unknown): string {
+  if (!result || typeof result !== 'object') return typeof result;
+  const value = result as { isError?: unknown; content?: unknown; structuredContent?: unknown };
+  const contentCount = Array.isArray(value.content) ? value.content.length : 0;
+  return [
+    value.isError === true ? 'MCP error result' : 'MCP result',
+    `${contentCount} content items`,
+    value.structuredContent !== undefined ? 'structured content' : undefined,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }
