@@ -287,6 +287,10 @@ export function summarizeToolResult(operation: string, result: unknown): string 
   ]
     .filter(Boolean)
     .join(' · ');
+  if (operation === 'silpo_get_replacements') {
+    const resultShape = describeJsonShape(result, 8).filter((path) => path.startsWith('$.structuredContent'));
+    return resultShape.length > 0 ? `${summary} · result shape: ${resultShape.join(', ')}` : summary;
+  }
   if (operation !== 'silpo_find_products_batch') return summary;
   const candidateShape = describeJsonShape(result, 7).filter((path) =>
     path.startsWith('$.structuredContent.queries[0].products[0]'),

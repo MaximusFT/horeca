@@ -377,6 +377,18 @@ export function buildProductAddArguments(
   });
 }
 
+export function buildReplacementArguments(
+  context: SilpoCartContext,
+  candidate: SilpoProductCandidate,
+): Record<string, unknown> {
+  return validateCapturedSilpoToolArguments('silpo_get_replacements', {
+    branchId: context.branchId,
+    companyId: candidate.companyId,
+    productIds: [candidate.id],
+    deliveryType: searchDeliveryType(context.deliveryType),
+  });
+}
+
 export function unwrapMcpPayload(result: unknown, phase: string): Record<string, unknown> {
   const envelope = asObject(result);
   if (!envelope) throw new SilpoStage9PayloadError(phase, ['object payload'], [], describeJsonShape(result));

@@ -7,6 +7,7 @@ import type { SilpoMcpTraceEntry } from '@/infrastructure/silpo-mcp-trace';
 import type { SilpoStage9ReadReport } from '@/infrastructure/silpo-stage9-workflow';
 import type { SilpoTimeslotApplyResult, SilpoTimeslotPreview } from '@/infrastructure/silpo-stage9-timeslot-service';
 import type { SilpoProductApplyResult, SilpoProductPreview } from '@/infrastructure/silpo-stage9-product-service';
+import type { SilpoReplacementProbeReport } from '@/infrastructure/silpo-stage10-replacement-probe';
 
 export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string; detail?: string }) {
   const [busy, setBusy] = useState(false);
@@ -19,6 +20,7 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
   const [timeslotResult, setTimeslotResult] = useState<SilpoTimeslotApplyResult>();
   const [productPreview, setProductPreview] = useState<SilpoProductPreview>();
   const [productResult, setProductResult] = useState<SilpoProductApplyResult>();
+  const [replacementReport, setReplacementReport] = useState<SilpoReplacementProbeReport>();
 
   async function connect() {
     setBusy(true);
@@ -190,6 +192,23 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
     }
   }
 
+  async function inspectReplacements() {
+    setBusy(true);
+    setError(undefined);
+    setReplacementReport(undefined);
+    try {
+      const response = await fetch('/api/silpo/stage10/replacements/read', { method: 'POST' });
+      const payload = (await response.json()) as { report?: SilpoReplacementProbeReport; error?: string };
+      if (!response.ok || !payload.report) throw new Error(payload.error ?? 'Unable to inspect replacements');
+      setReplacementReport(payload.report);
+      await loadTrace();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Unable to inspect replacements');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function downloadSchemas() {
     if (!tools) return;
     const blob = new Blob([JSON.stringify({ capturedAt: new Date().toISOString(), tools }, null, 2)], {
@@ -255,6 +274,14 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
           className="rounded-lg bg-blue-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
           Run Stage 9 reads
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={inspectReplacements}
+          className="rounded-lg border border-blue-300 px-4 py-2 text-sm font-semibold text-blue-800 disabled:opacity-50"
+        >
+          Inspect live replacements
         </button>
       </div>
 
@@ -431,6 +458,18 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
             Cart validations: {productResult.validations.errors} errors · {productResult.validations.warnings} warnings ·{' '}
             {productResult.validations.other} other.
           </p>
+        </section>
+      )}
+
+      {replacementReport && (
+        <section className="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
+          <h3 className="font-semibold">Replacement read-only report</h3>
+          <p className="mt-2">Status: {replacementReport.status}. No cart mutation was executed.</p>
+          {replacementReport.resultShape && (
+            <pre className="mt-3 max-h-64 overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-100">
+              {replacementReport.resultShape.join('\n')}
+            </pre>
+          )}
         </section>
       )}
 
