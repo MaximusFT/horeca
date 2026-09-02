@@ -5,10 +5,7 @@ import type { SilpoOAuthStartResult, SilpoToolDefinition } from '@/infrastructur
 import { isSilpoReadToolName } from '@/infrastructure/silpo-tool-policy';
 import type { SilpoMcpTraceEntry } from '@/infrastructure/silpo-mcp-trace';
 import type { SilpoStage9ReadReport } from '@/infrastructure/silpo-stage9-workflow';
-import type {
-  SilpoTimeslotApplyResult,
-  SilpoTimeslotPreview,
-} from '@/infrastructure/silpo-stage9-timeslot-service';
+import type { SilpoTimeslotApplyResult, SilpoTimeslotPreview } from '@/infrastructure/silpo-stage9-timeslot-service';
 
 export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string; detail?: string }) {
   const [busy, setBusy] = useState(false);
@@ -71,6 +68,9 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
     setBusy(true);
     setError(undefined);
     setStage9Report(undefined);
+    setTimeslotPreview(undefined);
+    setSelectedTimeslot(undefined);
+    setTimeslotResult(undefined);
     try {
       const response = await fetch('/api/silpo/stage9/read', { method: 'POST' });
       const result = (await response.json()) as {
@@ -217,11 +217,15 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
         <section className="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
           <h3 className="font-semibold">Stage 9 read-only report</h3>
           {stage9Report.status === 'cart_creation_required' && (
-            <p className="mt-2">No active cart exists. The workflow stopped before the approved cart-creation branch.</p>
+            <p className="mt-2">
+              No active cart exists. The workflow stopped before the approved cart-creation branch.
+            </p>
           )}
           {stage9Report.status === 'timeslot_update_required' && (
             <div className="mt-2">
-              <p>The current {stage9Report.deliveryType} slot is unavailable. The workflow stopped before product search.</p>
+              <p>
+                The current {stage9Report.deliveryType} slot is unavailable. The workflow stopped before product search.
+              </p>
               <button
                 type="button"
                 disabled={busy}
@@ -247,7 +251,8 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
         <section className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
           <h3 className="font-semibold">No available delivery slots</h3>
           <p className="mt-2">
-            Silpo returned no available slots for {timeslotPreview.deliveryType}. No approval or cart mutation was created.
+            Silpo returned no available slots for {timeslotPreview.deliveryType}. No approval or cart mutation was
+            created.
           </p>
         </section>
       )}
@@ -262,13 +267,17 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
         <section className="mt-5 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
           <h3 className="font-semibold">Approve delivery slot update</h3>
           <p className="mt-1 text-xs text-amber-800">
-            Select one Silpo slot. Approval expires at {formatTimeslotDate(timeslotPreview.expiresAt)}. Applying it will update delivery settings and immediately reread the cart.
+            Select one Silpo slot. Approval expires at {formatTimeslotDate(timeslotPreview.expiresAt)}. Applying it will
+            update delivery settings and immediately reread the cart.
           </p>
           <div className="mt-3 space-y-2">
             {timeslotPreview.slots.map((slot) => {
               const key = timeslotKey(slot);
               return (
-                <label key={key} className="flex cursor-pointer items-center gap-3 rounded border border-amber-200 bg-white p-3">
+                <label
+                  key={key}
+                  className="flex cursor-pointer items-center gap-3 rounded border border-amber-200 bg-white p-3"
+                >
                   <input
                     type="radio"
                     name="silpo-timeslot"
@@ -296,7 +305,8 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
         <section className="mt-5 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-950">
           <h3 className="font-semibold">Timeslot update verified</h3>
           <p className="mt-2">
-            {formatTimeslotRange(timeslotResult.timeslot.start, timeslotResult.timeslot.end)} · cart reread completed · {timeslotResult.validations.errors} errors · {timeslotResult.validations.warnings} warnings.
+            {formatTimeslotRange(timeslotResult.timeslot.start, timeslotResult.timeslot.end)} · cart reread completed ·{' '}
+            {timeslotResult.validations.errors} errors · {timeslotResult.validations.warnings} warnings.
           </p>
           <button
             type="button"
@@ -312,11 +322,15 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
       {trace.length > 0 && (
         <section className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
           <h3 className="text-sm font-semibold text-slate-900">Safe server-side MCP trace</h3>
-          <p className="mt-1 text-xs text-slate-600">Tool names, argument keys, status and duration only. No raw values or tokens.</p>
+          <p className="mt-1 text-xs text-slate-600">
+            Tool names, argument keys, status and duration only. No raw values or tokens.
+          </p>
           <div className="mt-3 space-y-2">
             {trace.map((entry) => (
               <div key={entry.id} className="flex items-start gap-3 text-xs">
-                <span className={`mt-1 size-2 shrink-0 rounded-full ${entry.status === 'completed' ? 'bg-green-600' : 'bg-red-600'}`} />
+                <span
+                  className={`mt-1 size-2 shrink-0 rounded-full ${entry.status === 'completed' ? 'bg-green-600' : 'bg-red-600'}`}
+                />
                 <div>
                   <p className="font-mono font-semibold text-slate-800">
                     {entry.operation} · {entry.durationMs} ms
