@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildProductAddArguments,
   buildProductSearchArguments,
   buildTimeSlotArguments,
   buildTimeslotUpdateArguments,
@@ -10,7 +11,10 @@ import {
   parseCartReference,
   parseCartUpdateSource,
   parseProductSearchSummary,
+  parseCartProductIds,
+  parseProductCandidates,
   runSilpoStage9ReadSequence,
+  selectTestProductCandidate,
 } from '@/infrastructure/silpo-stage9-workflow';
 import type { SilpoReadToolName } from '@/infrastructure/silpo-tool-policy';
 
@@ -60,9 +64,7 @@ describe('Silpo Stage 9 read workflow', () => {
       deliveryTypes: ['DeliveryHome'],
       limit: 10,
     });
-    expect(
-      buildProductSearchArguments({ ...cartContext, deliveryType: 'DeliveryExpressByPromise' }),
-    ).toEqual({
+    expect(buildProductSearchArguments({ ...cartContext, deliveryType: 'DeliveryExpressByPromise' })).toEqual({
       branchId: cartContext.branchId,
       deliveryType: 'DeliveryHome',
       timeslotStart: cartContext.timeslotStart,
@@ -77,9 +79,7 @@ describe('Silpo Stage 9 read workflow', () => {
       isCurrentTimeslotAvailable(
         {
           structuredContent: {
-            slots: [
-              { start: cartContext.timeslotStart, end: cartContext.timeslotEnd, available: true },
-            ],
+            slots: [{ start: cartContext.timeslotStart, end: cartContext.timeslotEnd, available: true }],
           },
         },
         cartContext,
@@ -89,9 +89,7 @@ describe('Silpo Stage 9 read workflow', () => {
       isCurrentTimeslotAvailable(
         {
           structuredContent: {
-            slots: [
-              { start: cartContext.timeslotStart, end: cartContext.timeslotEnd, available: false },
-            ],
+            slots: [{ start: cartContext.timeslotStart, end: cartContext.timeslotEnd, available: false }],
           },
         },
         cartContext,
@@ -154,6 +152,52 @@ describe('Silpo Stage 9 read workflow', () => {
         },
       }),
     ).toEqual({ queryCount: 3, returnedProductCount: 4, totalFound: 6 });
+  });
+
+  it('selects a new in-stock candidate and builds a schema-valid additive cart write', () => {
+    const existingId = '33333333-3333-4333-8333-333333333333';
+    const selectedId = '44444444-4444-4444-8444-444444444444';
+    const companyId = '55555555-5555-4555-8555-555555555555';
+    const candidates = parseProductCandidates({
+      structuredContent: {
+        queries: [
+          {
+            products: [
+              productCandidate({ id: existingId, companyId }),
+              productCandidate({ id: selectedId, companyId }),
+            ],
+          },
+        ],
+      },
+    });
+    const cartProductIds = parseCartProductIds({
+      structuredContent: {
+        cart: { shipments: [{ products: [{ productId: existingId }] }] },
+      },
+    });
+    const selected = selectTestProductCandidate(candidates, cartProductIds);
+
+    expect(selected?.id).toBe(selectedId);
+    expect(buildProductAddArguments(cartContext.shoppingCartId, selected!)).toEqual({
+      shoppingCartId: cartContext.shoppingCartId,
+      products: [
+        {
+          productId: selectedId,
+          companyId,
+          branchId: cartContext.branchId,
+          quantity: 1,
+          addQuantity: true,
+        },
+      ],
+    });
+  });
+
+  it('never selects plastic bags as a test product', () => {
+    const companyId = '55555555-5555-4555-8555-555555555555';
+    const bag = productCandidate({ id: '66666666-6666-4666-8666-666666666666', companyId });
+    const eggs = productCandidate({ id: '77777777-7777-4777-8777-777777777777', companyId });
+
+    expect(selectTestProductCandidate([{ ...bag, name: 'Пакет-майка' }, eggs], [])?.id).toBe(eggs.id);
   });
 
   it('reports only expected paths and observed key names for parser mismatches', () => {
@@ -269,10 +313,20 @@ describe('Silpo Stage 9 read workflow', () => {
     });
 
     expect(report).toEqual({ status: 'timeslot_update_required', deliveryType: 'DeliveryHome' });
-    expect(calls).toEqual([
-      'silpo_get_my_shopping_cart',
-      'silpo_get_shopping_cart_by_id',
-      'silpo_get_time_slots',
-    ]);
+    expect(calls).toEqual(['silpo_get_my_shopping_cart', 'silpo_get_shopping_cart_by_id', 'silpo_get_time_slots']);
   });
 });
+
+function productCandidate(overrides: { id: string; companyId: string }) {
+  return {
+    ...overrides,
+    branchId: cartContext.branchId,
+    name: 'Яйця курячі',
+    displayRatio: '10 шт',
+    price: 89.99,
+    step: 1,
+    stock: 10,
+    weighted: false,
+    available: true,
+  };
+}

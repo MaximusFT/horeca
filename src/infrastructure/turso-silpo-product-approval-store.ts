@@ -1,9 +1,9 @@
 import type { Client } from '@libsql/client';
-import type { SilpoTimeslotApproval, SilpoTimeslotApprovalStore } from './silpo-timeslot-approval-store';
+import type { SilpoProductApproval, SilpoProductApprovalStore } from './silpo-product-approval-store';
 
-const TABLE_NAME = 'silpo_timeslot_approvals';
+const TABLE_NAME = 'silpo_product_approvals';
 
-export class TursoSilpoTimeslotApprovalStore implements SilpoTimeslotApprovalStore {
+export class TursoSilpoProductApprovalStore implements SilpoProductApprovalStore {
   private schemaReady?: Promise<void>;
   private readonly encryptionKey: Promise<CryptoKey>;
 
@@ -14,7 +14,7 @@ export class TursoSilpoTimeslotApprovalStore implements SilpoTimeslotApprovalSto
     this.encryptionKey = importEncryptionKey(encryptionKeyBase64);
   }
 
-  async save(sessionId: string, approval: SilpoTimeslotApproval): Promise<void> {
+  async save(sessionId: string, approval: SilpoProductApproval): Promise<void> {
     await this.ensureSchema();
     const encryptedPayload = await encryptApproval(approval, await this.encryptionKey);
     await this.client.execute({
@@ -27,7 +27,7 @@ export class TursoSilpoTimeslotApprovalStore implements SilpoTimeslotApprovalSto
     });
   }
 
-  async claim(sessionId: string, approvalId: string, now: string): Promise<SilpoTimeslotApproval | undefined> {
+  async claim(sessionId: string, approvalId: string, now: string): Promise<SilpoProductApproval | undefined> {
     await this.ensureSchema();
     const result = await this.client.execute({
       sql: `
@@ -57,8 +57,7 @@ export class TursoSilpoTimeslotApprovalStore implements SilpoTimeslotApprovalSto
 
   private async ensureSchema(): Promise<void> {
     this.schemaReady ??= this.client
-      .execute(
-        `
+      .execute(`
         CREATE TABLE IF NOT EXISTS ${TABLE_NAME} (
           approval_id TEXT PRIMARY KEY,
           session_id TEXT NOT NULL,
@@ -67,8 +66,7 @@ export class TursoSilpoTimeslotApprovalStore implements SilpoTimeslotApprovalSto
           encrypted_payload TEXT NOT NULL,
           updated_at TEXT NOT NULL
         )
-      `,
-      )
+      `)
       .then(() => undefined);
     await this.schemaReady;
   }
@@ -82,14 +80,14 @@ async function importEncryptionKey(value: string): Promise<CryptoKey> {
   return crypto.subtle.importKey('raw', bytes, 'AES-GCM', false, ['encrypt', 'decrypt']);
 }
 
-async function encryptApproval(approval: SilpoTimeslotApproval, key: CryptoKey): Promise<string> {
+async function encryptApproval(approval: SilpoProductApproval, key: CryptoKey): Promise<string> {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const plaintext = new TextEncoder().encode(JSON.stringify(approval));
   const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plaintext);
   return `v1.${Buffer.from(iv).toString('base64url')}.${Buffer.from(encrypted).toString('base64url')}`;
 }
 
-async function decryptApproval(value: string, key: CryptoKey): Promise<SilpoTimeslotApproval> {
+async function decryptApproval(value: string, key: CryptoKey): Promise<SilpoProductApproval> {
   const [version, ivValue, encryptedValue] = value.split('.');
   if (version !== 'v1' || !ivValue || !encryptedValue) throw new Error('Unsupported Silpo approval format');
   const decrypted = await crypto.subtle.decrypt(
@@ -97,5 +95,5 @@ async function decryptApproval(value: string, key: CryptoKey): Promise<SilpoTime
     key,
     Buffer.from(encryptedValue, 'base64url'),
   );
-  return JSON.parse(new TextDecoder().decode(decrypted)) as SilpoTimeslotApproval;
+  return JSON.parse(new TextDecoder().decode(decrypted)) as SilpoProductApproval;
 }

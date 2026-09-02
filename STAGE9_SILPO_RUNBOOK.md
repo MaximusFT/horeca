@@ -81,6 +81,18 @@ No cart mutation was executed
 
 После этого Stage 9 read spike выполнен.
 
+Для bounded write spike нажми **Prepare one-product cart preview**. Приложение выберет один новый доступный результат поиска `яйця`, покажет название, упаковку, цену и минимальный шаг. Только после нажатия **Approve and add this product** выполняется additive cart mutation. Затем приложение немедленно перечитывает корзину, проверяет присутствие выбранного product и `cart.calculation.validations[]`.
+
+Успешный результат:
+
+```text
+Product write verified
+cart reread found the added product
+0 errors
+```
+
+Если показано **Product added with cart errors**, товар был записан и найден при reread, но корзина содержит error-level validations. Не повторяй write и передай агенту только counts из карточки и sanitized trace.
+
 ### Результат B: cart_creation_required
 
 `silpo_get_my_shopping_cart` вернул `exists=false`. Workflow правильно остановился до write.
@@ -233,12 +245,10 @@ observedShape
 
 ```text
 silpo_create_shopping_cart
-silpo_add_or_update_cart_products
 silpo_remove_cart_products
 silpo_clear_shopping_cart
-silpo_update_shopping_cart
 silpo_add_or_update_favorite_products
 silpo_add_or_update_certificates
 ```
 
-Первый write в Stage 9 будет добавлять только один явно подтверждённый тестовый товар, после чего приложение обязательно перечитает корзину и проверит `validations[]`.
+`silpo_update_shopping_cart` и `silpo_add_or_update_cart_products` разрешены только через отдельные server-stored preview/approval flows. Generic read-only runner по-прежнему блокирует их. Product flow добавляет ровно один явно подтверждённый тестовый товар, после чего обязательно перечитывает корзину и проверяет `validations[]`.

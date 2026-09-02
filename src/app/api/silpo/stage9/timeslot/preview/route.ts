@@ -6,6 +6,10 @@ import { SilpoStage9TimeslotService } from '@/infrastructure/silpo-stage9-timesl
 import { SILPO_OAUTH_SESSION_COOKIE } from '../../../oauth/start/route';
 
 export async function POST(request: Request) {
+  const origin = request.headers.get('origin');
+  if (!origin || origin !== new URL(request.url).origin) {
+    return Response.json({ error: 'Timeslot preview requires a same-origin request' }, { status: 403 });
+  }
   const sessionId = (await cookies()).get(SILPO_OAUTH_SESSION_COOKIE)?.value;
   if (!sessionId) return Response.json({ error: 'Silpo OAuth session is missing' }, { status: 401 });
 

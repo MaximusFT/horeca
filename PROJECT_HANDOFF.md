@@ -1,6 +1,6 @@
 # HoReCa Procurement Agent — Project Handoff
 
-Last updated: 2026-08-30. This file is the starting point for the next coding agent.
+Last updated: 2026-09-02. This file is the starting point for the next coding agent.
 
 ## Read first
 
@@ -32,6 +32,8 @@ Safe MCP observability is implemented at the server boundary. `/debug/mcp` shows
 The one-click Stage 9 read orchestrator is implemented at `POST /api/silpo/stage9/read`. It parses only documented response paths, validates all next-call inputs against the live capture, normalizes express delivery searches to `DeliveryHome` as required by the tool description, validates the current slot, and searches eggs/tomatoes/salmon. It returns a sanitized report and stops before writes for `cart_creation_required` or `timeslot_update_required`.
 
 The `timeslot_update_required` branch now has a guarded vertical slice. `POST /api/silpo/stage9/timeslot/preview` rereads the cart, fetches available slots, and stores an encrypted 15-minute approval containing cart-owned address/shipments and the offered slots. `POST /api/silpo/stage9/timeslot/apply` atomically claims that approval, permits only `silpo_update_shopping_cart`, and immediately rereads the cart to verify the exact approved slot. The generic tool runner remains read-only. In deployed mode approvals are durable in Turso; raw cart context is AES-256-GCM encrypted and never returned to the browser.
+
+The bounded Stage 9 product-write spike is implemented behind separate preview/apply routes. Preview validates the active cart and slot, searches only `яйця`, excludes products already present in the cart, and stores one eligible in-stock candidate in an encrypted 15-minute approval. The browser receives only its name, display ratio, price, and proposed step quantity. Apply atomically claims the approval, permits one additive `silpo_add_or_update_cart_products` call, then immediately rereads the cart and requires both the approved product ID and `cart.calculation.validations[]`. Existing cart lines are never cleared or replaced. Error-level validations produce a warning state rather than a false verified result.
 
 Because the corporate proxy blocks `*.vercel.app`, deployed MCP behavior can also be inspected through the manual GitHub Actions workflow `Inspect Silpo MCP trace`, which prints the same sanitized durable trace from Turso. The user performs OAuth and clicks from a personal browser; the coding agent inspects the server-side sequence through GitHub.
 
@@ -189,7 +191,7 @@ Use a dedicated `/debug/mcp` route or server-side script. The first spike should
 At handoff, all checks pass:
 
 ```text
-npm test          → 82 tests passed in 24 files, plus 1 remote smoke test skipped locally without secrets
+npm test          → 92 tests passed in 27 files, plus 1 remote smoke test skipped locally without secrets
 npm run typecheck → passed
 npm run lint      → passed
 npm run build     → passed

@@ -32,6 +32,19 @@ export interface SilpoSearchSummary {
   totalFound: number;
 }
 
+export interface SilpoProductCandidate {
+  id: string;
+  companyId: string;
+  branchId: string;
+  name: string;
+  displayRatio: string;
+  price: number;
+  step: number;
+  stock: number;
+  weighted: boolean;
+  available: boolean;
+}
+
 export type SilpoStage9ReadReport =
   | { status: 'cart_creation_required' }
   | { status: 'timeslot_update_required'; deliveryType: string }
@@ -43,10 +56,7 @@ export type SilpoStage9ReadReport =
       search: SilpoSearchSummary;
     };
 
-export type SilpoReadToolCaller = (
-  name: SilpoReadToolName,
-  args: Record<string, unknown>,
-) => Promise<unknown>;
+export type SilpoReadToolCaller = (name: SilpoReadToolName, args: Record<string, unknown>) => Promise<unknown>;
 
 export class SilpoStage9PayloadError extends Error {
   constructor(
@@ -62,9 +72,7 @@ export class SilpoStage9PayloadError extends Error {
   }
 }
 
-export async function runSilpoStage9ReadSequence(
-  call: SilpoReadToolCaller,
-): Promise<SilpoStage9ReadReport> {
+export async function runSilpoStage9ReadSequence(call: SilpoReadToolCaller): Promise<SilpoStage9ReadReport> {
   const cartReference = parseCartReference(await call('silpo_get_my_shopping_cart', {}));
   if (!cartReference.exists || !cartReference.shoppingCartId) {
     return { status: 'cart_creation_required' };
@@ -150,9 +158,7 @@ export function parseCartUpdateSource(result: unknown, shoppingCartId: string): 
     typeof timeslot?.start !== 'string' ||
     typeof timeslot?.end !== 'string' ||
     shipments.length === 0 ||
-    shipments.some(
-      (shipment) => typeof shipment.companyId !== 'string' || typeof shipment.branchId !== 'string',
-    )
+    shipments.some((shipment) => typeof shipment.companyId !== 'string' || typeof shipment.branchId !== 'string')
   ) {
     throw payloadError(
       'cart update source',
@@ -191,11 +197,7 @@ export function isCurrentTimeslotAvailable(result: unknown, context: SilpoCartCo
   if (!Array.isArray(payload.slots)) throw payloadError('time slots', ['slots[]'], payload);
   return payload.slots.some((candidate) => {
     const slot = asObject(candidate);
-    return (
-      slot?.available === true &&
-      slot.start === context.timeslotStart &&
-      slot.end === context.timeslotEnd
-    );
+    return slot?.available === true && slot.start === context.timeslotStart && slot.end === context.timeslotEnd;
   });
 }
 
@@ -259,6 +261,111 @@ export function parseProductSearchSummary(result: unknown): SilpoSearchSummary {
   return { queryCount: payload.queries.length, returnedProductCount, totalFound };
 }
 
+export function parseProductCandidates(result: unknown): SilpoProductCandidate[] {
+  const payload = unwrapMcpPayload(result, 'product candidates');
+  if (!Array.isArray(payload.queries)) throw payloadError('product candidates', ['queries[]'], payload);
+  const firstQuery = asObject(payload.queries[0]);
+  if (!firstQuery || !Array.isArray(firstQuery.products)) {
+    throw payloadError('product candidates', ['queries[0].products[]'], payload);
+  }
+  return firstQuery.products.map((value) => {
+    const product = asObject(value);
+    if (
+      typeof product?.id !== 'string' ||
+      typeof product.companyId !== 'string' ||
+      typeof product.branchId !== 'string' ||
+      typeof product.name !== 'string' ||
+      typeof product.displayRatio !== 'string' ||
+      typeof product.price !== 'number' ||
+      typeof product.step !== 'number' ||
+      typeof product.stock !== 'number' ||
+      typeof product.weighted !== 'boolean' ||
+      typeof product.available !== 'boolean'
+    ) {
+      throw payloadError(
+        'product candidates',
+        [
+          'queries[0].products[].id',
+          'queries[0].products[].companyId',
+          'queries[0].products[].branchId',
+          'queries[0].products[].name',
+          'queries[0].products[].displayRatio',
+          'queries[0].products[].price',
+          'queries[0].products[].step',
+          'queries[0].products[].stock',
+          'queries[0].products[].weighted',
+          'queries[0].products[].available',
+        ],
+        payload,
+      );
+    }
+    return {
+      id: product.id,
+      companyId: product.companyId,
+      branchId: product.branchId,
+      name: product.name,
+      displayRatio: product.displayRatio,
+      price: product.price,
+      step: product.step,
+      stock: product.stock,
+      weighted: product.weighted,
+      available: product.available,
+    };
+  });
+}
+
+export function parseCartProductIds(result: unknown): string[] {
+  const payload = unwrapMcpPayload(result, 'cart products');
+  const cart = asObject(payload.cart);
+  const shipments = Array.isArray(cart?.shipments) ? cart.shipments : [];
+  const productIds: string[] = [];
+  for (const shipmentValue of shipments) {
+    const shipment = asObject(shipmentValue);
+    const products = Array.isArray(shipment?.products) ? shipment.products : [];
+    for (const productValue of products) {
+      const product = asObject(productValue);
+      if (typeof product?.productId !== 'string') {
+        throw payloadError('cart products', ['cart.shipments[].products[].productId'], payload);
+      }
+      productIds.push(product.productId);
+    }
+  }
+  return productIds;
+}
+
+export function selectTestProductCandidate(
+  candidates: SilpoProductCandidate[],
+  existingProductIds: readonly string[],
+): SilpoProductCandidate | undefined {
+  const existing = new Set(existingProductIds);
+  return candidates.find(
+    (candidate) =>
+      candidate.available &&
+      candidate.step > 0 &&
+      candidate.stock >= candidate.step &&
+      !existing.has(candidate.id) &&
+      !/пакет|пакет-майка/i.test(candidate.name),
+  );
+}
+
+export function buildProductAddArguments(
+  shoppingCartId: string,
+  candidate: SilpoProductCandidate,
+): Record<string, unknown> {
+  return validateCapturedSilpoToolArguments('silpo_add_or_update_cart_products', {
+    shoppingCartId,
+    products: [
+      {
+        productId: candidate.id,
+        companyId: candidate.companyId,
+        branchId: candidate.branchId,
+        quantity: candidate.step,
+        addQuantity: true,
+      },
+    ],
+  });
+}
+
 export function unwrapMcpPayload(result: unknown, phase: string): Record<string, unknown> {
   const envelope = asObject(result);
   if (!envelope) throw new SilpoStage9PayloadError(phase, ['object payload'], [], describeJsonShape(result));
@@ -289,12 +396,7 @@ function payloadError(
   expectedPaths: string[],
   payload: Record<string, unknown>,
 ): SilpoStage9PayloadError {
-  return new SilpoStage9PayloadError(
-    phase,
-    expectedPaths,
-    Object.keys(payload).sort(),
-    describeJsonShape(payload),
-  );
+  return new SilpoStage9PayloadError(phase, expectedPaths, Object.keys(payload).sort(), describeJsonShape(payload));
 }
 
 function asObject(value: unknown): Record<string, unknown> | undefined {

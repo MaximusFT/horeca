@@ -15,8 +15,9 @@ https://horeca-nine-alpha.vercel.app/debug/mcp
 - OAuth работает;
 - `tools/list` возвращает 40 tools;
 - `silpo_get_my_shopping_cart` выполняется успешно;
-- активной корзины пока нет;
-- ни одна MCP mutation не выполнялась.
+- активная корзина и delivery context читаются;
+- approved timeslot mutation и обязательный reread подтверждены;
+- batch search возвращает реальные результаты для `яйця`, `помідори`, `лосось`.
 
 ## Что нужно пройти
 
@@ -24,9 +25,10 @@ https://horeca-nine-alpha.vercel.app/debug/mcp
 
 - [x] A. OAuth и загрузка 40 tools.
 - [x] B. Read при отсутствии активной корзины: `cart_creation_required`.
-- [ ] C. Ручное создание активной корзины в официальном интерфейсе Silpo.
-- [ ] D. Полный Stage 9 read sequence с корзиной, доступным слотом и поиском продуктов.
-- [ ] E. Финальный sanitized trace и короткий текстовый отчёт.
+- [x] C. Ручное создание активной корзины в официальном интерфейсе Silpo.
+- [x] D. Полный Stage 9 read sequence с корзиной, доступным слотом и поиском продуктов.
+- [ ] E. Preview, approval и verified write одного тестового товара.
+- [ ] J. Финальный sanitized trace и короткий текстовый отчёт.
 
 Условные сценарии выполняются только если соответствующая ошибка появилась сама:
 
@@ -140,7 +142,19 @@ silpo_find_products_batch
 
 Все четыре entries должны иметь зелёную точку или status `completed`.
 
-## E. Финальный отчёт агенту
+## E. Один approved product write
+
+Этот шаг выполняй только после успешного status `complete` в D.
+
+1. Нажми **Prepare one-product cart preview**.
+2. Проверь название товара, упаковку, цену и quantity в amber-карточке.
+3. Если товар подходит для теста, нажми **Approve and add this product** один раз.
+4. Дождись результата reread.
+5. Успех: зелёная карточка **Product write verified**, `0 errors`.
+6. Если показано **Product added with cart errors**, не повторяй write и запиши только counts errors/warnings/other.
+7. Не удаляй и не очищай остальные товары через MCP.
+
+## J. Финальный отчёт агенту
 
 Скриншот не нужен. Пришли этот заполненный текст:
 
@@ -152,6 +166,8 @@ Report status: complete/cart_creation_required/timeslot_update_required/error
 Delivery type: <type shown in report, or not shown>
 Product query count: <number shown, or not shown>
 Returned product count: <number shown, or not shown>
+Product write: verified/added_with_cart_errors/not_run
+Cart validation counts: <errors/warnings/other>
 Trace operations completed: <comma-separated operation names>
 HTTP status: <only if an error occurred>
 Error type: <only the short error name, without raw response>

@@ -192,6 +192,16 @@ export class SilpoOAuthCoordinator {
     return this.callTool(sessionId, redirectUrl, name, validatedArguments, true);
   }
 
+  async callApprovedProductAdd(
+    sessionId: string,
+    redirectUrl: URL,
+    args: Record<string, unknown>,
+  ): Promise<unknown> {
+    const name = 'silpo_add_or_update_cart_products';
+    const validatedArguments = validateCapturedSilpoToolArguments(name, args);
+    return this.callTool(sessionId, redirectUrl, name, validatedArguments, true);
+  }
+
   private async callTool(
     sessionId: string,
     redirectUrl: URL,

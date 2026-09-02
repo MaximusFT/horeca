@@ -6,6 +6,7 @@ import { isSilpoReadToolName } from '@/infrastructure/silpo-tool-policy';
 import type { SilpoMcpTraceEntry } from '@/infrastructure/silpo-mcp-trace';
 import type { SilpoStage9ReadReport } from '@/infrastructure/silpo-stage9-workflow';
 import type { SilpoTimeslotApplyResult, SilpoTimeslotPreview } from '@/infrastructure/silpo-stage9-timeslot-service';
+import type { SilpoProductApplyResult, SilpoProductPreview } from '@/infrastructure/silpo-stage9-product-service';
 
 export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string; detail?: string }) {
   const [busy, setBusy] = useState(false);
@@ -16,6 +17,8 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
   const [timeslotPreview, setTimeslotPreview] = useState<SilpoTimeslotPreview>();
   const [selectedTimeslot, setSelectedTimeslot] = useState<string>();
   const [timeslotResult, setTimeslotResult] = useState<SilpoTimeslotApplyResult>();
+  const [productPreview, setProductPreview] = useState<SilpoProductPreview>();
+  const [productResult, setProductResult] = useState<SilpoProductApplyResult>();
 
   async function connect() {
     setBusy(true);
@@ -71,6 +74,8 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
     setTimeslotPreview(undefined);
     setSelectedTimeslot(undefined);
     setTimeslotResult(undefined);
+    setProductPreview(undefined);
+    setProductResult(undefined);
     try {
       const response = await fetch('/api/silpo/stage9/read', { method: 'POST' });
       const result = (await response.json()) as {
@@ -140,6 +145,46 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
       await loadTrace();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to apply timeslot update');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function prepareProductWrite() {
+    setBusy(true);
+    setError(undefined);
+    setProductPreview(undefined);
+    setProductResult(undefined);
+    try {
+      const response = await fetch('/api/silpo/stage9/product/preview', { method: 'POST' });
+      const payload = (await response.json()) as { preview?: SilpoProductPreview; error?: string };
+      if (!response.ok || !payload.preview) throw new Error(payload.error ?? 'Unable to prepare product write');
+      setProductPreview(payload.preview);
+      await loadTrace();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Unable to prepare product write');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function applyProductWrite() {
+    if (productPreview?.status !== 'approval_required') return;
+    setBusy(true);
+    setError(undefined);
+    try {
+      const response = await fetch('/api/silpo/stage9/product/apply', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approvalId: productPreview.approvalId }),
+      });
+      const payload = (await response.json()) as { result?: SilpoProductApplyResult; error?: string };
+      if (!response.ok || !payload.result) throw new Error(payload.error ?? 'Unable to add product');
+      setProductResult(payload.result);
+      setProductPreview(undefined);
+      await loadTrace();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Unable to add product');
     } finally {
       setBusy(false);
     }
@@ -237,11 +282,22 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
             </div>
           )}
           {stage9Report.status === 'complete' && (
-            <p className="mt-2">
-              Cart context read · {stage9Report.deliveryType} slot validated · searched{' '}
-              {stage9Report.requestedProducts.join(', ')} · {stage9Report.search.returnedProductCount} products returned
-              across {stage9Report.search.queryCount} queries ({stage9Report.search.totalFound} total matches).
-            </p>
+            <div className="mt-2">
+              <p>
+                Cart context read · {stage9Report.deliveryType} slot validated · searched{' '}
+                {stage9Report.requestedProducts.join(', ')} · {stage9Report.search.returnedProductCount} products
+                returned across {stage9Report.search.queryCount} queries ({stage9Report.search.totalFound} total
+                matches).
+              </p>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={prepareProductWrite}
+                className="mt-3 rounded bg-blue-800 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+              >
+                Prepare one-product cart preview
+              </button>
+            </div>
           )}
           <p className="mt-2 text-xs text-blue-800">No cart mutation was executed.</p>
         </section>
@@ -316,6 +372,65 @@ export function SilpoOAuthPanel({ oauthStatus, detail }: { oauthStatus?: string;
           >
             Continue Stage 9 reads
           </button>
+        </section>
+      )}
+
+      {productPreview?.status === 'approval_required' && (
+        <section className="mt-5 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          <h3 className="font-semibold">Approve one test product</h3>
+          <p className="mt-2 font-semibold">{productPreview.product.name}</p>
+          <p className="mt-1 text-xs text-amber-800">
+            {productPreview.product.displayRatio} · quantity {productPreview.product.quantity} ·{' '}
+            {formatPrice(productPreview.product.price)}. This approval expires at{' '}
+            {formatTimeslotDate(productPreview.expiresAt)}.
+          </p>
+          <p className="mt-2 text-xs text-amber-800">
+            Only this click mutates the Silpo cart. Existing cart products are preserved, and the cart is reread
+            immediately after the write.
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={applyProductWrite}
+            className="mt-3 rounded bg-amber-800 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+          >
+            Approve and add this product
+          </button>
+        </section>
+      )}
+
+      {productPreview?.status === 'no_candidate' && (
+        <p className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          No new in-stock egg product was available for this bounded test. No cart mutation was created.
+        </p>
+      )}
+
+      {productPreview?.status === 'cart_creation_required' && (
+        <p className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          No active cart exists. Product write was not prepared.
+        </p>
+      )}
+
+      {productPreview?.status === 'timeslot_update_required' && (
+        <p className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          The current {productPreview.deliveryType} slot is unavailable. Product write was not prepared.
+        </p>
+      )}
+
+      {productResult && (
+        <section
+          className={`mt-5 rounded-lg border p-4 text-sm ${productResult.status === 'product_added' ? 'border-green-200 bg-green-50 text-green-950' : 'border-amber-200 bg-amber-50 text-amber-950'}`}
+        >
+          <h3 className="font-semibold">
+            {productResult.status === 'product_added' ? 'Product write verified' : 'Product added with cart errors'}
+          </h3>
+          <p className="mt-2">
+            {productResult.product.name} · {productResult.product.displayRatio} · cart reread found the added product.
+          </p>
+          <p className="mt-1 text-xs">
+            Cart validations: {productResult.validations.errors} errors · {productResult.validations.warnings} warnings ·{' '}
+            {productResult.validations.other} other.
+          </p>
         </section>
       )}
 
@@ -398,6 +513,10 @@ function formatTimeslotRange(start: string, end: string): string {
     timeZone: 'Europe/Kyiv',
   });
   return `${date}, ${time.format(new Date(start))}–${time.format(new Date(end))}`;
+}
+
+function formatPrice(price: number): string {
+  return new Intl.NumberFormat('uk-UA', { style: 'currency', currency: 'UAH' }).format(price);
 }
 
 function ReadToolRunner({ tool, onComplete }: { tool: SilpoToolDefinition; onComplete: () => Promise<void> }) {
