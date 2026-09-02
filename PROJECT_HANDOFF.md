@@ -19,7 +19,7 @@ Demand → Procurement → Explainability → Wedding Change → Product UI
 
 ## Exact continuation point
 
-Stages 0–9 are complete. A first Stage 11-compatible mock supplier-agent vertical slice is also complete. Continue with **Stage 10 — Silpo Supplier Gateway** from section 16 of the implementation handoff plan.
+Stages 0–9 are complete, and the primary bounded Stage 10 Silpo Supplier Gateway flow is proven in production. Continue Stage 10 with live replacement response capture/mapping, then complete Stage 11 agent demo reliability and polish.
 
 Recommended Codex setting for Stage 9: **sol high**. The spike involves OAuth, discovery of live `tools/list` schemas, uncertain weighted-product semantics, and a carefully bounded real-cart mutation. Do not invent Silpo arguments or schemas.
 
@@ -46,6 +46,8 @@ Stage 9 requires the user to complete the Silpo login/OTP flow. Durable encrypte
 The Stage 10 application boundary is now supplier-neutral: domain session types live in `src/domain/supplier.ts`, agent tools depend on a narrow preparer contract, UI calls `/api/suppliers/*`, and `SupplierOrderService`/`SupplierOrderFlow` are stable facades. Existing `/api/suppliers/mock/*` routes remain compatibility aliases. The live Silpo implementation should replace `SupplierGateway` without changing agent or UI contracts.
 
 The first bounded Stage 10 adapter is implemented in `src/infrastructure/silpo-supplier-gateway.ts`. In `SUPPLIER_MODE=silpo`, neutral supplier routes and `/api/agent/messages` resolve the OAuth session and use this gateway while mock compatibility routes remain unchanged. The gateway rolls out up to five procurement lines, maps confirmed live `displayRatio`, `step`, `price`, and `stock` fields into deterministic package rounding, creates a read-only cart preview, performs one approved additive batch write, and rereads the cart to verify every expected product ID and reject error-level validations. Supplier order sessions and opaque execution metadata are AES-256-GCM encrypted in Turso and scoped by OAuth session, so prepare, preview, and apply can execute on different Vercel workers. Cart apply uses an atomic `cart_preview → cart_applying` claim to prevent duplicate writes. Live replacement output mapping remains intentionally unimplemented until its response shape is captured.
+
+Production Stage 10 verification completed on 2026-09-02 through the normal Procurement Agent UI, not `/debug/mcp`. Stock-aware matching skipped insufficient SKUs and produced a three-line Silpo cart preview. The user explicitly approved the write; sanitized trace confirmed exactly one `silpo_add_or_update_cart_products` call (1073 ms) immediately followed by `silpo_get_shopping_cart_by_id` (1127 ms), and the UI reported that the cart reread matched. Existing cart lines were preserved.
 
 Procurement pages show a configuration-derived supplier mode without network probing. Mock mode is visibly labelled as demo; Silpo mode is labelled `Silpo MCP`, while actual operations still require a valid session-scoped OAuth cookie. Merely configuring legacy endpoint/token values never produces a false connected operation.
 
