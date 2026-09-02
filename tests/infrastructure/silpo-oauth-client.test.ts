@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { SilpoOAuthClientProvider } from '@/infrastructure/silpo-oauth-client';
+import { SilpoOAuthClientProvider, summarizeToolResult } from '@/infrastructure/silpo-oauth-client';
 import { MemorySilpoOAuthStore } from '@/infrastructure/silpo-oauth-store';
 import { isSilpoReadToolName } from '@/infrastructure/silpo-tool-policy';
 import {
@@ -71,9 +71,7 @@ describe('Silpo OAuth client provider', () => {
     });
     expect(getCapturedSilpoTool('silpo_create_shopping_cart')).toBeDefined();
     expect(validateCapturedSilpoToolArguments('silpo_get_my_shopping_cart', {})).toEqual({});
-    expect(() => validateCapturedSilpoToolArguments('silpo_get_shopping_cart_by_id', {})).toThrow(
-      /shoppingCartId/,
-    );
+    expect(() => validateCapturedSilpoToolArguments('silpo_get_shopping_cart_by_id', {})).toThrow(/shoppingCartId/);
     expect(() =>
       validateCapturedSilpoToolArguments('silpo_find_products_batch', {
         branchId: 'branch',
@@ -83,5 +81,32 @@ describe('Silpo OAuth client provider', () => {
         products: Array.from({ length: 31 }, (_, index) => `product-${index}`),
       }),
     ).toThrow(/30/);
+  });
+
+  it('records product candidate key paths and types without values', () => {
+    const summary = summarizeToolResult('silpo_find_products_batch', {
+      structuredContent: {
+        queries: [
+          {
+            products: [
+              {
+                productId: 'private-product-id',
+                companyId: 'private-company-id',
+                name: 'private-product-name',
+                stock: 12,
+                step: 1,
+              },
+            ],
+          },
+        ],
+      },
+      content: [{ type: 'text', text: 'private-raw-result' }],
+    });
+
+    expect(summary).toContain('$.structuredContent.queries[0].products[0].productId:string');
+    expect(summary).toContain('$.structuredContent.queries[0].products[0].stock:number');
+    expect(summary).not.toContain('private-product-id');
+    expect(summary).not.toContain('private-product-name');
+    expect(summary).not.toContain('private-raw-result');
   });
 });

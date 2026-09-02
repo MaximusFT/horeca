@@ -12,6 +12,7 @@ import { getSilpoOAuthStore } from './create-silpo-oauth-store';
 import { validateCapturedSilpoToolArguments } from './silpo-live-schema';
 import { getSilpoMcpTraceStore } from './create-silpo-mcp-trace-store';
 import type { SilpoMcpTraceStore } from './silpo-mcp-trace';
+import { describeJsonShape } from './silpo-stage9-workflow';
 
 export const SILPO_MCP_ENDPOINT = 'https://mcp.silpo.ua/mcp';
 
@@ -215,7 +216,7 @@ export class SilpoOAuthCoordinator {
         Object.keys(validatedArguments).sort(),
         'completed',
         startedAt,
-        summarizeToolResult(result),
+        summarizeToolResult(name, result),
       );
       return result;
     } catch (error) {
@@ -265,15 +266,20 @@ export class SilpoOAuthCoordinator {
   }
 }
 
-function summarizeToolResult(result: unknown): string {
+export function summarizeToolResult(operation: string, result: unknown): string {
   if (!result || typeof result !== 'object') return typeof result;
   const value = result as { isError?: unknown; content?: unknown; structuredContent?: unknown };
   const contentCount = Array.isArray(value.content) ? value.content.length : 0;
-  return [
+  const summary = [
     value.isError === true ? 'MCP error result' : 'MCP result',
     `${contentCount} content items`,
     value.structuredContent !== undefined ? 'structured content' : undefined,
   ]
     .filter(Boolean)
     .join(' · ');
+  if (operation !== 'silpo_find_products_batch') return summary;
+  const candidateShape = describeJsonShape(result, 7).filter((path) =>
+    path.startsWith('$.structuredContent.queries[0].products[0]'),
+  );
+  return candidateShape.length > 0 ? `${summary} · candidate shape: ${candidateShape.join(', ')}` : summary;
 }
