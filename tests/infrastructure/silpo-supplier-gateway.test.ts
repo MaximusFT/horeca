@@ -34,7 +34,7 @@ describe('Silpo supplier gateway', () => {
         request('cream', 'ml'),
         request('sugar', 'g'),
       ]),
-    ).resolves.toHaveLength(5);
+    ).resolves.toHaveLength(3);
   });
 
   it('previews, applies additively, and verifies expected product IDs on reread', async () => {
@@ -68,6 +68,17 @@ describe('Silpo supplier gateway', () => {
     await expect(gateway.prepareCart(draft(result.product))).resolves.toBeDefined();
   });
 
+  it('keeps an insufficient line visible as unavailable when Silpo reports no replacement', async () => {
+    const gateway = new SilpoSupplierGateway(createReadCaller({ candidateStocks: [1] }), vi.fn(), demoIngredients);
+    await gateway.initializeContext();
+
+    const [result] = await gateway.searchProducts([request('eggs', 'pcs')]);
+
+    expect(result.status).toBe('unavailable');
+    expect(result.product?.id).toBe(`${productId}-0`);
+    await expect(gateway.findReplacements(result.product!.id)).resolves.toEqual([]);
+  });
+
   it('runs the bounded procurement batch through preview, one write, and verified reread', async () => {
     const productIds: string[] = [];
     const read = createReadCaller({ verifiedProductIds: productIds, dynamicRatios: true });
@@ -86,7 +97,8 @@ describe('Silpo supplier gateway', () => {
 
     const prepared = await service.prepareBatch(batch.id);
     expect(prepared.supplier.mode).toBe('live');
-    expect(prepared.lines).toHaveLength(5);
+    expect(prepared.lines).toHaveLength(3);
+    expect(prepared.sourceLineCount).toBe(batch.lines.length);
     expect(prepared.status).toBe('ready_for_cart');
     expect(write).not.toHaveBeenCalled();
 
@@ -254,6 +266,9 @@ function createReadCaller({
           })),
         },
       };
+    }
+    if (name === 'silpo_get_replacements') {
+      return { structuredContent: { success: true, summary: 'No known picking risk', items: [] } };
     }
     throw new Error(`Unexpected read ${name}`);
   });

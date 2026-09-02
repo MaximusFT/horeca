@@ -322,13 +322,16 @@ export interface Dictionary {
     matching: string;
     productMatching: string;
     linesResolved: (matched: number, total: number) => string;
+    liveRollout: (selected: number, source: number) => string;
     decisions: (n: number) => string;
     complete: string;
     approvalSubstitution: string;
     need: (quantity: string) => string;
     unavailable: string;
     preferred: (name: string, quantity: string) => string;
+    noCompatibleProduct: string;
     availableReplacement: string;
+    noAvailableReplacement: string;
     replacementSupplies: (packages: number, packageSize: string, supplied: string) => string;
     syntheticPrice: string;
     livePrice: string;

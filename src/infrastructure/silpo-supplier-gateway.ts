@@ -16,17 +16,21 @@ import { roundToPackages } from '@/engine/package-rounding';
 import { mapSilpoProduct, type SilpoMappedProduct } from './silpo-supplier-mapper';
 import {
   buildProductSearchArguments,
+  buildReplacementBatchArguments,
   buildTimeSlotArguments,
   isCurrentTimeslotAvailable,
   parseCartContext,
   parseCartProductIds,
   parseCartReference,
   parseProductCandidateGroups,
+  parseReplacementRiskSummary,
   unwrapMcpPayload,
   type SilpoReadToolCaller,
 } from './silpo-stage9-workflow';
 
-const MAX_ROLLOUT_LINES = 5;
+const SEARCH_WINDOW_LINES = 10;
+const TARGET_ROLLOUT_LINES = 3;
+const MAX_BLOCKED_ROLLOUT_LINES = 5;
 
 export type SilpoSupplierWriteCaller = (
   name: 'silpo_add_or_update_cart_products',
@@ -65,7 +69,7 @@ export class SilpoSupplierGateway implements SupplierGateway {
 
   async searchProducts(requests: SupplierSearchRequest[]): Promise<SupplierSearchResult[]> {
     const context = this.requireContext();
-    const boundedRequests = requests.slice(0, MAX_ROLLOUT_LINES);
+    const boundedRequests = requests.slice(0, SEARCH_WINDOW_LINES);
     const queries = boundedRequests.map((request) => {
       const ingredient = this.ingredientById.get(request.ingredientId);
       if (!ingredient) throw new Error(`Unknown ingredient ${request.ingredientId}`);
@@ -77,17 +81,40 @@ export class SilpoSupplierGateway implements SupplierGateway {
     if (groups.length !== boundedRequests.length) {
       throw new Error(`Silpo product search returned ${groups.length} groups for ${boundedRequests.length} requests`);
     }
-    const results = boundedRequests.flatMap((request, index): SupplierSearchResult[] => {
+    const results = boundedRequests.map((request, index): SupplierSearchResult => {
       const mapped = (groups[index] ?? [])
         .map((candidate) => mapSilpoProduct(candidate, request.ingredientId, request.unit))
         .filter((candidate): candidate is SilpoMappedProduct => Boolean(candidate));
       const match = mapped.find((candidate) => canFulfillRequest(candidate, request));
-      if (!match) return [];
-      this.products.set(match.product.id, match);
-      return [{ request, status: 'matched', product: structuredClone(match.product) }];
+      if (match) {
+        this.products.set(match.product.id, match);
+        return { request, status: 'matched', product: structuredClone(match.product) };
+      }
+      const unavailable = mapped[0];
+      if (!unavailable) return { request, status: 'not_found' };
+      this.products.set(unavailable.product.id, unavailable);
+      return { request, status: 'unavailable', product: structuredClone(unavailable.product) };
     });
-    if (results.length === 0) throw new Error('Silpo did not return a compatible product for the bounded rollout');
-    return results;
+    const matchedResults = results.filter((result) => result.status === 'matched');
+    const rolloutResults =
+      matchedResults.length >= TARGET_ROLLOUT_LINES
+        ? matchedResults.slice(0, TARGET_ROLLOUT_LINES)
+        : results.slice(0, MAX_BLOCKED_ROLLOUT_LINES);
+    const selectedCandidates = rolloutResults.flatMap((result) => {
+      if (result.status !== 'matched' || !result.product) return [];
+      return [this.products.get(result.product.id)!.candidate];
+    });
+    for (const candidates of groupReplacementCandidates(selectedCandidates)) {
+      const replacementRisk = parseReplacementRiskSummary(
+        await this.callRead('silpo_get_replacements', buildReplacementBatchArguments(context, candidates)),
+      );
+      if (replacementRisk.itemCount > 0) {
+        throw new Error(
+          'Silpo reported picking-risk replacement items; mapping requires a captured non-empty response shape',
+        );
+      }
+    }
+    return rolloutResults;
   }
 
   async getProductDetails(productId: string): Promise<SupplierProduct> {
@@ -97,7 +124,7 @@ export class SilpoSupplierGateway implements SupplierGateway {
   }
 
   async findReplacements(_productId: string): Promise<SupplierProduct[]> {
-    throw new Error('Live Silpo replacement mapping is not implemented until its response shape is captured');
+    return [];
   }
 
   async getDeliveryOptions(_deliveryOn: string): Promise<SupplierDeliveryOption[]> {
@@ -189,6 +216,17 @@ export class SilpoSupplierGateway implements SupplierGateway {
     if (!this.context) throw new Error('Silpo supplier context is not initialized');
     return this.context;
   }
+}
+
+function groupReplacementCandidates(candidates: SilpoMappedProduct['candidate'][]): SilpoMappedProduct['candidate'][][] {
+  const groups = new Map<string, SilpoMappedProduct['candidate'][]>();
+  for (const candidate of candidates) {
+    const key = `${candidate.companyId}:${candidate.branchId}`;
+    const group = groups.get(key) ?? [];
+    group.push(candidate);
+    groups.set(key, group);
+  }
+  return [...groups.values()];
 }
 
 function canFulfillRequest(candidate: SilpoMappedProduct, request: SupplierSearchRequest): boolean {

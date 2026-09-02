@@ -7,6 +7,7 @@ export interface SilpoMappedProduct {
   companyId: string;
   branchId: string;
   stock: number;
+  candidate: SilpoProductCandidate;
 }
 
 export function mapSilpoProduct(
@@ -39,6 +40,7 @@ export function mapSilpoProduct(
     companyId: candidate.companyId,
     branchId: candidate.branchId,
     stock: candidate.stock,
+    candidate,
   };
 }
 

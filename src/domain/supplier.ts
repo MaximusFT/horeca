@@ -107,7 +107,7 @@ export interface SupplierOrderLine {
   ingredientName: string;
   requiredQuantity: number;
   unit: BaseUnit;
-  preferredProduct: SupplierProduct;
+  preferredProduct?: SupplierProduct;
   selectedProduct?: SupplierProduct;
   replacements: SupplierProduct[];
   packageCount?: number;
@@ -126,6 +126,7 @@ export interface SupplierOrderSession {
   id: string;
   batchId: string;
   planVersion: number;
+  sourceLineCount: number;
   status: SupplierOrderStatus;
   supplier: SupplierContext;
   delivery: SupplierDeliveryOption;

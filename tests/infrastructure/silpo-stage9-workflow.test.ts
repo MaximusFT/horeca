@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildProductAddArguments,
+  buildReplacementBatchArguments,
   buildProductSearchArguments,
   buildTimeSlotArguments,
   buildTimeslotUpdateArguments,
@@ -11,6 +12,7 @@ import {
   parseCartReference,
   parseCartUpdateSource,
   parseProductSearchSummary,
+  parseReplacementRiskSummary,
   parseCartProductIds,
   parseProductCandidates,
   runSilpoStage9ReadSequence,
@@ -198,6 +200,24 @@ describe('Silpo Stage 9 read workflow', () => {
     const eggs = productCandidate({ id: '77777777-7777-4777-8777-777777777777', companyId });
 
     expect(selectTestProductCandidate([{ ...bag, name: 'Пакет-майка' }, eggs], [])?.id).toBe(eggs.id);
+  });
+
+  it('builds a schema-valid replacement risk batch and accepts the confirmed empty live result', () => {
+    const companyId = '55555555-5555-4555-8555-555555555555';
+    const candidates = [
+      productCandidate({ id: '66666666-6666-4666-8666-666666666666', companyId }),
+      productCandidate({ id: '77777777-7777-4777-8777-777777777777', companyId }),
+    ];
+
+    expect(buildReplacementBatchArguments(cartContext, candidates)).toEqual({
+      branchId: cartContext.branchId,
+      companyId,
+      productIds: candidates.map(({ id }) => id),
+      deliveryType: 'DeliveryHome',
+    });
+    expect(parseReplacementRiskSummary({ structuredContent: { success: true, summary: 'ok', items: [] } })).toEqual({
+      itemCount: 0,
+    });
   });
 
   it('reports only expected paths and observed key names for parser mismatches', () => {

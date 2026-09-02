@@ -66,10 +66,10 @@ export class SupplierOrderService {
     for (const result of results) {
       const ingredient = this.ingredientById.get(result.request.ingredientId);
       if (!ingredient) throw new Error(`Unknown ingredient ${result.request.ingredientId}`);
-      if (!result.product) throw new Error(`No supplier product found for ${ingredient.name}`);
-
       const replacements =
-        result.status === 'unavailable' ? await this.dependencies.gateway.findReplacements(result.product.id) : [];
+        result.status === 'unavailable' && result.product
+          ? await this.dependencies.gateway.findReplacements(result.product.id)
+          : [];
       const selectedProduct = result.status === 'matched' ? result.product : undefined;
       const rounded = selectedProduct
         ? roundToPackages(result.request.requiredQuantity, selectedProduct.packageSize, selectedProduct.priceMinor)
@@ -80,7 +80,7 @@ export class SupplierOrderService {
         ingredientName: localizedIngredientName(ingredient.id, ingredient.name, locale),
         requiredQuantity: result.request.requiredQuantity,
         unit: result.request.unit,
-        preferredProduct: localizeProduct(result.product, locale),
+        preferredProduct: result.product ? localizeProduct(result.product, locale) : undefined,
         selectedProduct: selectedProduct ? localizeProduct(selectedProduct, locale) : undefined,
         replacements: replacements.map((product) => localizeProduct(product, locale)),
         packageCount: rounded?.packageCount,
@@ -96,6 +96,7 @@ export class SupplierOrderService {
       id: this.generateId(),
       batchId,
       planVersion: state.activePlan.version,
+      sourceLineCount: requests.length,
       status: unavailableCount > 0 ? 'needs_substitution' : 'ready_for_cart',
       supplier,
       delivery,
@@ -122,6 +123,7 @@ export class SupplierOrderService {
   async getSession(sessionId: string): Promise<SupplierOrderSession> {
     const session = await this.sessionStore.get(this.sessionScope, sessionId);
     if (!session) throw new Error(`Unknown supplier order session ${sessionId}`);
+    session.sourceLineCount ??= session.lines.length;
     return structuredClone(session);
   }
 
@@ -173,7 +175,7 @@ export class SupplierOrderService {
           packageCount: line.packageCount!,
           suppliedQuantity: line.suppliedQuantity!,
           surplusQuantity: line.surplusQuantity!,
-          substitutedForProductId: line.substituted ? line.preferredProduct.id : undefined,
+          substitutedForProductId: line.substituted ? line.preferredProduct?.id : undefined,
           productName: line.selectedProduct!.name,
           packageSize: line.selectedProduct!.packageSize,
           unitPriceMinor: line.selectedProduct!.priceMinor,

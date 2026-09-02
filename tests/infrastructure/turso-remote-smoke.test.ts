@@ -62,6 +62,7 @@ remoteDescribe('remote Turso OAuth storage smoke test', () => {
         id: `order-${crypto.randomUUID()}`,
         batchId: 'smoke-batch',
         planVersion: 1,
+        sourceLineCount: 0,
         status: 'ready_for_cart' as const,
         supplier: {
           supplierId: 'silpo',

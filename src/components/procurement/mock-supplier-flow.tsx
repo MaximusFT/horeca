@@ -122,6 +122,11 @@ export function SupplierOrderFlow({ batchId, locale }: { batchId: string; locale
                         <p className="mt-1 text-sm font-semibold text-[#344138]">
                           {dictionary.mockSupplier.linesResolved(matchedCount, session.lines.length)}
                         </p>
+                        {live && session.sourceLineCount > session.lines.length && (
+                          <p className="mt-1 text-[10px] text-[#718078]">
+                            {dictionary.mockSupplier.liveRollout(session.lines.length, session.sourceLineCount)}
+                          </p>
+                        )}
                       </div>
                       <span
                         className={`rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide ${unresolved.length ? 'bg-[#fff0e7] text-[#a65e3f]' : 'bg-[#e9f3ec] text-[#477258]'}`}
@@ -163,16 +168,27 @@ export function SupplierOrderFlow({ batchId, locale }: { batchId: string; locale
                           </span>
                         </div>
                         <p className="mt-3 text-xs text-[#7f6b61]">
-                          {dictionary.mockSupplier.preferred(
-                            line.preferredProduct.name,
-                            formatLocalizedQuantity(line.preferredProduct.packageSize, line.unit, dictionary.locale),
-                          )}
+                          {line.preferredProduct
+                            ? dictionary.mockSupplier.preferred(
+                                line.preferredProduct.name,
+                                formatLocalizedQuantity(
+                                  line.preferredProduct.packageSize,
+                                  line.unit,
+                                  dictionary.locale,
+                                ),
+                              )
+                            : dictionary.mockSupplier.noCompatibleProduct}
                         </p>
                       </div>
                       <div className="p-4">
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-[#849087]">
                           {dictionary.mockSupplier.availableReplacement}
                         </p>
+                        {line.replacements.length === 0 && (
+                          <p className="mt-3 text-xs leading-5 text-[#7f6b61]">
+                            {dictionary.mockSupplier.noAvailableReplacement}
+                          </p>
+                        )}
                         {line.replacements.map((replacement) => {
                           const packages = Math.ceil(line.requiredQuantity / replacement.packageSize);
                           return (

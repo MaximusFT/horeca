@@ -389,6 +389,31 @@ export function buildReplacementArguments(
   });
 }
 
+export function buildReplacementBatchArguments(
+  context: SilpoCartContext,
+  candidates: readonly SilpoProductCandidate[],
+): Record<string, unknown> {
+  const first = candidates[0];
+  if (!first) throw new Error('At least one Silpo product is required for replacement risk check');
+  if (candidates.some((candidate) => candidate.companyId !== first.companyId || candidate.branchId !== first.branchId)) {
+    throw new Error('Silpo replacement risk batch requires products from one company and branch');
+  }
+  return validateCapturedSilpoToolArguments('silpo_get_replacements', {
+    branchId: first.branchId,
+    companyId: first.companyId,
+    productIds: candidates.map((candidate) => candidate.id),
+    deliveryType: searchDeliveryType(context.deliveryType),
+  });
+}
+
+export function parseReplacementRiskSummary(result: unknown): { itemCount: number } {
+  const payload = unwrapMcpPayload(result, 'replacement risk');
+  if (payload.success !== true || !Array.isArray(payload.items)) {
+    throw payloadError('replacement risk', ['success', 'items[]'], payload);
+  }
+  return { itemCount: payload.items.length };
+}
+
 export function unwrapMcpPayload(result: unknown, phase: string): Record<string, unknown> {
   const envelope = asObject(result);
   if (!envelope) throw new SilpoStage9PayloadError(phase, ['object payload'], [], describeJsonShape(result));

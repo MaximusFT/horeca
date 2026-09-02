@@ -313,6 +313,11 @@ function SupplierOrderCard({
             <p className="mt-1 text-sm font-semibold text-[#304b38]">
               {dictionary.mockSupplier.linesResolved(matched, session.lines.length)}
             </p>
+            {live && session.sourceLineCount > session.lines.length && (
+              <p className="mt-1 text-[10px] text-[#6e8174]">
+                {dictionary.mockSupplier.liveRollout(session.lines.length, session.sourceLineCount)}
+              </p>
+            )}
             <p className="mt-1 text-[10px] text-[#6e8174]">{session.delivery.label}</p>
           </div>
           <span
@@ -368,6 +373,11 @@ function SupplierOrderCard({
               </button>
             </div>
           ))}
+          {line.replacements.length === 0 && (
+            <p className="mt-3 text-[10px] leading-4 text-[#8a6658]">
+              {dictionary.mockSupplier.noAvailableReplacement}
+            </p>
+          )}
         </div>
       ))}
 
