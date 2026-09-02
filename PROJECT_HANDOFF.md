@@ -202,7 +202,7 @@ npm run build     → passed
 npm audit         → 0 vulnerabilities after installing `@modelcontextprotocol/sdk`
 ```
 
-GitHub-hosted `Turso storage smoke test` completed successfully: Node.js connected through `@libsql/client`, created the OAuth table, performed encrypted write/read verification, confirmed no plaintext marker in storage, and removed the temporary record. The remote smoke test is intentionally skipped in local runs without secrets.
+GitHub-hosted `Turso storage smoke test` completed successfully after Stage 10: Node.js connected through `@libsql/client`, verified encrypted OAuth storage and sanitized trace, created the scoped supplier-session table, round-tripped an encrypted supplier order session, confirmed no plaintext marker in storage, and removed all temporary records. The remote smoke test is intentionally skipped in local runs without secrets.
 
 Browser QA completed:
 
