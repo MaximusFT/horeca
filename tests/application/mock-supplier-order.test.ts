@@ -6,6 +6,24 @@ import { preferredMockProductByIngredient } from '@/data/demo/mock-supplier-cata
 import { MockSupplierGateway } from '@/infrastructure/mock-supplier-gateway';
 
 describe('mock supplier order approvals', () => {
+  it('does not attribute current supplier slot capacity to the procurement batch date', async () => {
+    const planning = createDemoPlanning();
+    const gateway = new MockSupplierGateway();
+    vi.spyOn(gateway, 'getDeliveryOptions').mockResolvedValue([]);
+    const service = new SupplierOrderService({
+      repository: planning.repository,
+      gateway,
+      ingredients: demoIngredients,
+      preferredProductByIngredient: preferredMockProductByIngredient,
+    });
+    const batch = planning.repository.getState().activePlan.batches[0];
+
+    await expect(service.prepareBatch(batch.id)).rejects.toThrow(
+      'The current supplier cart delivery slot is no longer available',
+    );
+    await expect(service.prepareBatch(batch.id)).rejects.not.toThrow(batch.deliveryOn);
+  });
+
   it('keeps substitution and cart mutation as two explicit human approvals', async () => {
     const planning = createDemoPlanning();
     const gateway = new MockSupplierGateway();

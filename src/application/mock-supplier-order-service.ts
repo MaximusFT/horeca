@@ -49,7 +49,9 @@ export class SupplierOrderService {
     const supplier = await this.dependencies.gateway.initializeContext();
     const delivery = (await this.dependencies.gateway.getDeliveryOptions(batch.deliveryOn))[0];
     if (!delivery) {
-      throw new Error(`The current supplier cart has no available delivery slot for batch ${batch.deliveryOn}`);
+      throw new Error(
+        'The current supplier cart delivery slot is no longer available. Select a new available slot and retry the supplier order.',
+      );
     }
 
     const requests = batch.lines.map((line) => ({
