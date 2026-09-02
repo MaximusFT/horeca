@@ -6,6 +6,7 @@ import { demoDataset } from '@/data/demo/dataset';
 import { getDictionary, getServerLocale, type Dictionary, type Locale } from '@/i18n';
 import { localizedEventName } from '@/i18n/demo-names';
 import { formatDemoPeriod, unitLabel } from '@/i18n/format';
+import { DEMO_PERIOD } from '@/lib/demo-clock';
 
 export const dynamic = 'force-dynamic';
 
@@ -337,7 +338,7 @@ function TimelineLanes({ days, dictionary, locale }: { days: OverviewDay[]; dict
         {days.map((day) => (
           <div
             key={day.date}
-            className={`border-r border-[#eef0ed] px-2 py-3 ${day.date === '2026-09-01' ? 'bg-[#f1f8f3]' : 'bg-[#f8f9f7]'}`}
+            className={`border-r border-[#eef0ed] px-2 py-3 ${day.date === DEMO_PERIOD.startsOn ? 'bg-[#f1f8f3]' : 'bg-[#f8f9f7]'}`}
           >
             <p className="text-[9px] font-bold uppercase tracking-wide text-[#929c95]">{day.weekday}</p>
             <p className="mt-1 text-sm font-semibold text-[#344138]">{monthDay(day.date, dictionary.locale)}</p>
@@ -353,7 +354,7 @@ function TimelineLanes({ days, dictionary, locale }: { days: OverviewDay[]; dict
           return (
             <div
               key={`restaurant-${day.date}`}
-              className={`border-r border-t border-[#eef0ed] px-2 py-4 ${day.date === '2026-09-01' ? 'bg-[#f5faf6]' : 'bg-white'}`}
+              className={`border-r border-t border-[#eef0ed] px-2 py-4 ${day.date === DEMO_PERIOD.startsOn ? 'bg-[#f5faf6]' : 'bg-white'}`}
             >
               <p className={`text-[10px] font-bold uppercase ${style.text}`}>{label}</p>
               <p className="mt-1 text-[9px] text-[#929c95]">×{day.loadFactor.toFixed(2)}</p>
@@ -370,7 +371,7 @@ function TimelineLanes({ days, dictionary, locale }: { days: OverviewDay[]; dict
         {days.map((day) => (
           <div
             key={`events-${day.date}`}
-            className={`min-h-[82px] border-r border-t border-[#eef0ed] px-1.5 py-3 ${day.date === '2026-09-01' ? 'bg-[#f5faf6]' : 'bg-white'}`}
+            className={`min-h-[82px] border-r border-t border-[#eef0ed] px-1.5 py-3 ${day.date === DEMO_PERIOD.startsOn ? 'bg-[#f5faf6]' : 'bg-white'}`}
           >
             {day.events.map((event) => (
               <Link
@@ -393,7 +394,7 @@ function TimelineLanes({ days, dictionary, locale }: { days: OverviewDay[]; dict
         {days.map((day) => (
           <div
             key={`procurement-${day.date}`}
-            className={`min-h-[68px] border-r border-t border-[#eef0ed] px-1.5 py-3 ${day.date === '2026-09-01' ? 'bg-[#f5faf6]' : 'bg-white'}`}
+            className={`min-h-[68px] border-r border-t border-[#eef0ed] px-1.5 py-3 ${day.date === DEMO_PERIOD.startsOn ? 'bg-[#f5faf6]' : 'bg-white'}`}
           >
             {day.batchId ? (
               <Link

@@ -166,7 +166,7 @@ Example:
 COMBINED PROCUREMENT
 
 13 planned deliveries
-Next: Sep 1
+Next: Sep 15
 
 32 ingredients in next batch
 ```
@@ -259,7 +259,7 @@ The viewer has to decode which piece of text represents which concept.
 Create three clearly labelled horizontal lanes:
 
 ```text
-                     SEP 1  SEP 2  SEP 3  SEP 4 ... SEP 13
+                     SEP 15 SEP 16 SEP 17 SEP 18 ... SEP 27
 
 RESTAURANT
 OPERATIONS           Normal Normal Normal Busy  ... Busy
@@ -307,7 +307,7 @@ Show:
 - status;
 - click through to batch.
 
-## Sep 13
+## Sep 27
 
 The Wedding day should be a visually understandable demand peak:
 
@@ -571,7 +571,7 @@ The logic is correct, but the page reads more like event configuration than a pr
 Event:
 ```text
 Wedding
-Sep 13 · 16:00
+Sep 27 · 16:00
 Prep starts 08:00
 ```
 
@@ -628,7 +628,7 @@ PROCUREMENT IMPACT
 37 ingredients affected
 
 Next fresh-goods need
-Sep 12 / before prep
+Sep 26 / before prep
 
 Largest demand drivers
 Chicken
@@ -794,7 +794,7 @@ is available in one click.
 
 ## Observation
 
-The current draft creates procurement delivery batches for almost every day from Sep 1 through Sep 13, often with approximately 20–30 ingredient lines.
+The current draft creates procurement delivery batches for almost every day from Sep 15 through Sep 27, often with approximately 20–30 ingredient lines.
 
 This may be correct, but it needs a deliberate sanity check.
 
@@ -872,10 +872,10 @@ Prefer:
 
 ```text
 PROCUREMENT PLAN
-Sep 1–14
+Sep 15–28
 
 13 planned deliveries
-Next delivery: Sep 1
+Next delivery: Sep 15
 3 issues require attention
 Supplier matching pending / connected
 ```
@@ -894,7 +894,7 @@ Estimated purchasing
 Show business context:
 
 ```text
-SEP 4
+SEP 18
 
 Restaurant + Office Lunch
 20 ingredients

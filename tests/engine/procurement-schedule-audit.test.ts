@@ -8,6 +8,8 @@ describe('demo procurement schedule audit', () => {
     const plan = calculateDemoProcurementPlan(demoDataset, new DemoClock());
     const ingredientById = new Map(demoDataset.ingredients.map((ingredient) => [ingredient.id, ingredient]));
 
+    expect(plan.horizon.startsOn).toBe('2026-09-15');
+    expect(plan.batches[0].deliveryOn).toBe('2026-09-15');
     expect(plan.batches).toHaveLength(13);
     expect(
       plan.batches.every((batch) =>
@@ -23,14 +25,14 @@ describe('demo procurement schedule audit', () => {
     expect(purchasesFor('flour')).toHaveLength(1);
     expect(purchasesFor('sugar')).toHaveLength(1);
     expect(
-      purchasesFor('salmon').find((line) => line.coveredRequiredAt.includes('2026-09-13T08:00:00+03:00'))?.deliveryAt,
-    ).toBe('2026-09-12T05:00:00.000Z');
+      purchasesFor('salmon').find((line) => line.coveredRequiredAt.includes('2026-09-27T08:00:00+03:00'))?.deliveryAt,
+    ).toBe('2026-09-26T05:00:00.000Z');
     expect(
-      purchasesFor('chicken').find((line) => line.coveredRequiredAt.includes('2026-09-13T08:00:00+03:00'))?.deliveryAt,
-    ).toBe('2026-09-12T05:00:00.000Z');
+      purchasesFor('chicken').find((line) => line.coveredRequiredAt.includes('2026-09-27T08:00:00+03:00'))?.deliveryAt,
+    ).toBe('2026-09-26T05:00:00.000Z');
     expect(
-      purchasesFor('tomato').find((line) => line.coveredRequiredAt.includes('2026-09-13T08:00:00+03:00'))?.deliveryAt,
-    ).toBe('2026-09-11T05:00:00.000Z');
+      purchasesFor('tomato').find((line) => line.coveredRequiredAt.includes('2026-09-27T08:00:00+03:00'))?.deliveryAt,
+    ).toBe('2026-09-25T05:00:00.000Z');
     expect(
       plan.lines.every((line) =>
         line.coveredRequiredAt.every(

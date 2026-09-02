@@ -8,13 +8,13 @@ describe('Overview summary', () => {
   it('derives the baseline metrics and 14-day operating timeline', () => {
     const plan = calculateDemoProcurementPlan(demoDataset, new DemoClock());
     const summary = buildOverviewSummary(demoDataset, plan);
-    const weddingDay = summary.timeline.find((day) => day.date === '2026-09-13');
+    const weddingDay = summary.timeline.find((day) => day.date === '2026-09-27');
 
     expect(summary.guestTotal).toBe(445);
     expect(summary.eventCount).toBe(5);
     expect(summary.operatingDayCount).toBe(14);
     expect(summary.largestEvent).toMatchObject({ id: 'wedding', guestCount: 180 });
-    expect(summary.nextPeakDay).toMatchObject({ date: '2026-09-05', loadFactor: 1.55 });
+    expect(summary.nextPeakDay).toMatchObject({ date: '2026-09-19', loadFactor: 1.55 });
     expect(summary.batchCount).toBe(plan.batches.length);
     expect(summary.attention.filter((item) => item.actionable)).toHaveLength(2);
     expect(summary.attention.find((item) => item.id === 'supplier-ready')).toMatchObject({

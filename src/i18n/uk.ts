@@ -40,7 +40,7 @@ export const uk: Dictionary = {
     demoStatusTitle: 'Демо-план активний',
     demoStatusSubtitle: 'Попит ресторану й подій оновлений',
     operationsEyebrow: 'Операції',
-    demoClock: 'Демо · 1 вер, 08:00',
+    demoClock: 'Демо · 15 вер, 08:00',
   },
   resetDemo: {
     idle: 'Скинути демо',

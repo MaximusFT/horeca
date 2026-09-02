@@ -9,11 +9,11 @@ export const RESTAURANT_LOAD_FACTORS: Record<RestaurantLoad, number> = {
 };
 
 export const demoRestaurantCalendar: z.infer<typeof restaurantDaySchema>[] = [
-  ["2026-09-01", "normal"], ["2026-09-02", "normal"], ["2026-09-03", "normal"],
-  ["2026-09-04", "busy"], ["2026-09-05", "peak"], ["2026-09-06", "busy"],
-  ["2026-09-07", "quiet"], ["2026-09-08", "normal"], ["2026-09-09", "normal"],
-  ["2026-09-10", "normal"], ["2026-09-11", "busy"], ["2026-09-12", "peak"],
-  ["2026-09-13", "busy"], ["2026-09-14", "quiet"],
+  ["2026-09-15", "normal"], ["2026-09-16", "normal"], ["2026-09-17", "normal"],
+  ["2026-09-18", "busy"], ["2026-09-19", "peak"], ["2026-09-20", "busy"],
+  ["2026-09-21", "quiet"], ["2026-09-22", "normal"], ["2026-09-23", "normal"],
+  ["2026-09-24", "normal"], ["2026-09-25", "busy"], ["2026-09-26", "peak"],
+  ["2026-09-27", "busy"], ["2026-09-28", "quiet"],
 ].map(([date, load]) => ({ date, load })) as z.infer<typeof restaurantDaySchema>[];
 
 export const demoNormalRestaurantDemand: z.infer<typeof restaurantDemandLineSchema>[] = [

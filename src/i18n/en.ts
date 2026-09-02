@@ -23,7 +23,7 @@ export const en: Dictionary = {
     demoStatusTitle: 'Demo plan active',
     demoStatusSubtitle: 'Restaurant and event demand are up to date',
     operationsEyebrow: 'Operations',
-    demoClock: 'Demo · Sep 1, 08:00',
+    demoClock: 'Demo · Sep 15, 08:00',
   },
   resetDemo: {
     idle: 'Reset demo',

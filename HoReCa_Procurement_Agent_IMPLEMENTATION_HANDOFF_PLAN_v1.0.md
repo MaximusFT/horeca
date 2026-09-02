@@ -193,7 +193,7 @@ Clean deterministic project foundation.
 Demo clock:
 
 ```text
-2026-09-01 08:00
+2026-09-15 08:00
 Europe/Kyiv
 ```
 
@@ -1188,7 +1188,7 @@ Wedding 180
 
 +
 
-Restaurant Sep 1–14
+Restaurant Sep 15–28
 → regular demand
 
 =

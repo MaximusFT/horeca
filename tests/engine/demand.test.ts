@@ -59,7 +59,7 @@ describe("event demand", () => {
 describe("restaurant demand", () => {
   it("applies the PEAK factor of 1.55", () => {
     const result = calculateRestaurantDemand(demoRestaurantCalendar, demoNormalRestaurantDemand);
-    const peakChicken = result.find((line) => line.requiredAt.startsWith("2026-09-05") && line.ingredientId === "chicken");
+    const peakChicken = result.find((line) => line.requiredAt.startsWith("2026-09-19") && line.ingredientId === "chicken");
 
     expect(peakChicken?.quantity).toBe(7_440);
     expect(peakChicken?.source).toMatchObject({ type: "restaurant", load: "peak" });
@@ -73,8 +73,8 @@ describe("14-day demand plan", () => {
       .flatMap((requirement) => requirement.contributions)
       .find((line) => line.source.type === "event" && line.source.eventId === "wedding");
 
-    expect(plan.startsOn).toBe("2026-09-01");
-    expect(plan.endsOn).toBe("2026-09-14");
+    expect(plan.startsOn).toBe("2026-09-15");
+    expect(plan.endsOn).toBe("2026-09-28");
     expect(plan.requirements.length).toBeGreaterThan(14 * 30);
     expect(eventContribution).toBeDefined();
   });

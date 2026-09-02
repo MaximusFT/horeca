@@ -17,6 +17,8 @@ Demand → Procurement → Explainability → Wedding Change → Product UI
 → Mock Supplier → Agent → MCP → Demo
 ```
 
+The complete deterministic demo calendar was shifted by 14 days on 2026-09-02. The fixed clock and planning horizon are now **15–28 September 2026**; all restaurant days, events, inventory expiries, incoming supplies, schedule assertions, UI labels, and demo documentation moved together. Historical MCP capture and production verification timestamps from 1–2 September remain unchanged. Generic engine fixtures use their own local clock and are intentionally independent of the product demo clock.
+
 ## Exact continuation point
 
 Stages 0–9 are complete, and the primary bounded Stage 10 Silpo Supplier Gateway flow is proven in production. Continue Stage 10 with live replacement response capture/mapping, then complete Stage 11 agent demo reliability and polish.
@@ -58,7 +60,7 @@ Procurement pages show a configuration-derived supplier mode without network pro
 ### Stages 0–4 — deterministic domain and application core
 
 - Next.js 16.3.3, React 19, TypeScript, Tailwind, Zod, Vitest.
-- Fixed demo clock: 2026-09-01 08:00 Europe/Kyiv.
+- Fixed demo clock: 2026-09-15 08:00 Europe/Kyiv.
 - Complete Misto Kitchen demo dataset.
 - Recursive BOM expansion and separate restaurant/event demand provenance.
 - Chronological procurement projection with FEFO, expiry, confirmed incoming timing, safety targets, dated batches, and planned-supply injection.
@@ -82,7 +84,7 @@ Procurement pages show a configuration-derived supplier mode without network pro
 - CR-07 concluded that the 13-batch cadence is justified for the current deterministic heuristic; no engine change was retained.
 - Every dated batch contains at least one ingredient with shelf life ≤7 days and active daily restaurant demand.
 - Flour and sugar consolidate to one purchase each.
-- Wedding salmon and chicken arrive Sep 12; tomato arrives Sep 11; all covered requirements remain within planned-lot expiry.
+- Wedding salmon and chicken arrive Sep 26; tomato arrives Sep 25; all covered requirements remain within planned-lot expiry.
 - `tests/engine/procurement-schedule-audit.test.ts` protects these conclusions.
 
 ### Stage 7 — mock supplier
@@ -199,7 +201,7 @@ Use a dedicated `/debug/mcp` route or server-side script. The first spike should
 At handoff, all checks pass:
 
 ```text
-npm test          → 113 tests passed in 32 files, plus 1 remote smoke test skipped locally without secrets
+npm test          → 114 tests passed in 32 files, plus 1 remote smoke test skipped locally without secrets
 npm run typecheck → passed
 npm run lint      → passed
 npm run build     → passed

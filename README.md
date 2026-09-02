@@ -23,7 +23,7 @@ Product routes:
 ## Demo business
 
 - Misto Kitchen, one shared kitchen and approximately 55 seats
-- Planning horizon: 1–14 September 2026
+- Planning horizon: 15–28 September 2026
 - Business timezone: Europe/Kyiv
 - Five confirmed events and 445 baseline guests
 - Hero change: Wedding from 180 to 200 guests

@@ -1,4 +1,5 @@
 import type { BaseUnit } from '@/domain/units';
+import { DEMO_PERIOD } from '@/lib/demo-clock';
 import { intlTag, type Locale } from './locale';
 
 export function formatLocalizedQuantity(quantity: number, unit: BaseUnit, locale: Locale): string {
@@ -8,11 +9,16 @@ export function formatLocalizedQuantity(quantity: number, unit: BaseUnit, locale
 }
 
 export function formatDemoPeriod(locale: Locale): string {
+  const startsOn = new Date(`${DEMO_PERIOD.startsOn}T12:00:00+03:00`);
+  const endsOn = new Date(`${DEMO_PERIOD.endsOn}T12:00:00+03:00`);
   const month = new Intl.DateTimeFormat(intlTag(locale), {
     month: 'long',
     timeZone: 'Europe/Kyiv',
-  }).format(new Date('2026-09-01T12:00:00+03:00'));
-  return locale === 'uk' ? `1–14 ${month} 2026` : `${month} 1–14, 2026`;
+  }).format(startsOn);
+  const startDay = startsOn.getDate();
+  const endDay = endsOn.getDate();
+  const year = startsOn.getFullYear();
+  return locale === 'uk' ? `${startDay}–${endDay} ${month} ${year}` : `${month} ${startDay}–${endDay}, ${year}`;
 }
 
 export function formatMonthShort(value: string, locale: Locale): string {

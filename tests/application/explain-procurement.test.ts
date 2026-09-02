@@ -8,7 +8,7 @@ describe('explainProcurementLine', () => {
   it('returns deterministic demand provenance and coverage for a purchase line', () => {
     const plan = calculateDemoProcurementPlan(demoDataset, new DemoClock());
     const line = plan.lines.find(
-      (item) => item.ingredientId === 'chicken' && item.coveredRequiredAt.some((date) => date.startsWith('2026-09-13')),
+      (item) => item.ingredientId === 'chicken' && item.coveredRequiredAt.some((date) => date.startsWith('2026-09-27')),
     )!;
     const ingredient = demoDataset.ingredients.find((item) => item.id === 'chicken')!;
     const explanation = explainProcurementLine(plan, line, ingredient, 'en');

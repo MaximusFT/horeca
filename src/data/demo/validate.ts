@@ -112,8 +112,8 @@ export function validateDemoDataset(input: DemoDataset = demoDataset): DemoDatas
   }
 
   const calendarDates = dataset.restaurantCalendar.map((day) => day.date);
-  if (new Set(calendarDates).size !== 14 || calendarDates[0] !== "2026-09-01" || calendarDates[13] !== "2026-09-14") {
-    throw new Error("Restaurant calendar must cover 1–14 September 2026 exactly once");
+  if (new Set(calendarDates).size !== 14 || calendarDates[0] !== "2026-09-15" || calendarDates[13] !== "2026-09-28") {
+    throw new Error("Restaurant calendar must cover 15–28 September 2026 exactly once");
   }
 
   return dataset;

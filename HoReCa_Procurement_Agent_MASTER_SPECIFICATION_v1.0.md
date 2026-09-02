@@ -3,7 +3,7 @@
 **Status:** Source of truth for the hackathon MVP  
 **Date:** 2026-08-29  
 **Working demo business:** Misto Kitchen  
-**Planning horizon:** 1–14 September 2026  
+**Planning horizon:** 15–28 September 2026
 **Business timezone:** Europe/Kyiv  
 **Hackathon supplier:** Silpo via the official Silpo MCP
 
@@ -209,15 +209,15 @@ The core decides **what/when to buy**. Supplier adapters decide **which actual p
 
 # 7. Demo period and events
 
-Planning period: **1–14 September 2026**
+Planning period: **15–28 September 2026**
 
 | Date | Event | Guests |
 |---|---|---:|
-| Sep 2 | Birthday Breakfast | 20 |
-| Sep 4 | Office Lunch | 55 |
-| Sep 6 | Private Anniversary | 70 |
-| Sep 10 | Tech Conference | 120 |
-| Sep 13 | Wedding | 180 initially → 200 |
+| Sep 16 | Birthday Breakfast | 20 |
+| Sep 18 | Office Lunch | 55 |
+| Sep 20 | Private Anniversary | 70 |
+| Sep 24 | Tech Conference | 120 |
+| Sep 27 | Wedding | 180 initially → 200 |
 
 Guest totals:
 - baseline: **445**
@@ -246,20 +246,20 @@ Calendar:
 
 | Date | Load | Event |
 |---|---|---|
-| Sep 1 | NORMAL | — |
-| Sep 2 | NORMAL | Birthday 20 |
-| Sep 3 | NORMAL | — |
-| Sep 4 | BUSY | Office Lunch 55 |
-| Sep 5 | PEAK | — |
-| Sep 6 | BUSY | Anniversary 70 |
-| Sep 7 | QUIET | — |
-| Sep 8 | NORMAL | — |
-| Sep 9 | NORMAL | — |
-| Sep 10 | NORMAL | Conference 120 |
-| Sep 11 | BUSY | — |
-| Sep 12 | PEAK | — |
-| Sep 13 | BUSY | Wedding 180→200 |
-| Sep 14 | QUIET | — |
+| Sep 15 | NORMAL | — |
+| Sep 16 | NORMAL | Birthday 20 |
+| Sep 17 | NORMAL | — |
+| Sep 18 | BUSY | Office Lunch 55 |
+| Sep 19 | PEAK | — |
+| Sep 20 | BUSY | Anniversary 70 |
+| Sep 21 | QUIET | — |
+| Sep 22 | NORMAL | — |
+| Sep 23 | NORMAL | — |
+| Sep 24 | NORMAL | Conference 120 |
+| Sep 25 | BUSY | — |
+| Sep 26 | PEAK | — |
+| Sep 27 | BUSY | Wedding 180→200 |
+| Sep 28 | QUIET | — |
 
 ---
 
@@ -645,21 +645,21 @@ interface Event {
 
 Ingredients must be available by `prepStartsAt`.
 
-## Birthday Breakfast — Sep 2, 20 guests
+## Birthday Breakfast — Sep 16, 20 guests
 
 ```text
 2 × Breakfast Box
 1 × Mini Croissant Box
 ```
 
-## Office Lunch — Sep 4, 55 guests
+## Office Lunch — Sep 18, 55 guests
 
 ```text
 35 × Chicken Lunch Set
 20 × Vegetarian Lunch Set
 ```
 
-## Private Anniversary — Sep 6, 70 guests
+## Private Anniversary — Sep 20, 70 guests
 
 ```text
 4 × Premium Croissant Box
@@ -667,7 +667,7 @@ Ingredients must be available by `prepStartsAt`.
 70 × Berry Dessert Cup
 ```
 
-## Tech Conference — Sep 10, 120 guests
+## Tech Conference — Sep 24, 120 guests
 
 ```text
 75 × Chicken Lunch Set
@@ -675,7 +675,7 @@ Ingredients must be available by `prepStartsAt`.
 6 × Fruit Box
 ```
 
-## Wedding — Sep 13, initial 180 guests
+## Wedding — Sep 27, initial 180 guests
 
 Menu per guest:
 
@@ -727,19 +727,19 @@ Allocation: **FEFO — First Expire, First Out**.
 Important demo lots:
 
 ```text
-Chicken 6 kg expires Sep 2
-Chicken 8 kg expires Sep 4
+Chicken 6 kg expires Sep 16
+Chicken 8 kg expires Sep 18
 
-Salmon 3 kg expires Sep 2
-Salmon 2 kg expires Sep 4
+Salmon 3 kg expires Sep 16
+Salmon 2 kg expires Sep 18
 
-Cream cheese 4 kg expires Sep 6
-Tomato 8 kg expires Sep 3
-Cucumber 6 kg expires Sep 4
-Lettuce 4 kg expires Sep 2
+Cream cheese 4 kg expires Sep 20
+Tomato 8 kg expires Sep 17
+Cucumber 6 kg expires Sep 18
+Lettuce 4 kg expires Sep 16
 
-Raspberry 1.5 kg expires Sep 2
-Strawberry 4 kg expires Sep 3
+Raspberry 1.5 kg expires Sep 16
+Strawberry 4 kg expires Sep 17
 
 Eggs 120 pcs
 Croissants 90 pcs
@@ -753,7 +753,7 @@ Orange juice 16 L
 
 Confirmed incoming:
 
-### Sep 2 · 06:30 — Fresh produce
+### Sep 16 · 06:30 — Fresh produce
 
 ```text
 Tomato 10 kg
@@ -763,7 +763,7 @@ Avocado 3 kg
 Bell pepper 4 kg
 ```
 
-### Sep 3 · 07:00 — Protein
+### Sep 17 · 07:00 — Protein
 
 ```text
 Chicken 12 kg
@@ -771,7 +771,7 @@ Ham 5 kg
 Turkey 4 kg
 ```
 
-### Sep 5 · 07:00 — Dairy / breakfast
+### Sep 19 · 07:00 — Dairy / breakfast
 
 ```text
 Cream cheese 4 kg
@@ -933,7 +933,7 @@ for:
 # 20. Hero scenario
 
 Initial:
-- Sep 1;
+- Sep 15;
 - Wedding = 180;
 - normal restaurant operations;
 - five events;
@@ -1187,7 +1187,7 @@ interface Clock {
 
 Demo:
 ```text
-Sep 1, 2026
+Sep 15, 2026
 Europe/Kyiv
 ```
 

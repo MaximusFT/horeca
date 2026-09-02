@@ -4,8 +4,8 @@ export const demoEvents: Event[] = [
   {
     id: "birthday-breakfast",
     name: "Birthday Breakfast",
-    startsAt: "2026-09-02T09:00:00+03:00",
-    prepStartsAt: "2026-09-02T07:00:00+03:00",
+    startsAt: "2026-09-16T09:00:00+03:00",
+    prepStartsAt: "2026-09-16T07:00:00+03:00",
     guestCount: 20,
     menu: [
       { menuItemId: "breakfast-box", mode: "fixed", quantity: 2 },
@@ -16,8 +16,8 @@ export const demoEvents: Event[] = [
   {
     id: "office-lunch",
     name: "Office Lunch",
-    startsAt: "2026-09-04T13:00:00+03:00",
-    prepStartsAt: "2026-09-04T08:00:00+03:00",
+    startsAt: "2026-09-18T13:00:00+03:00",
+    prepStartsAt: "2026-09-18T08:00:00+03:00",
     guestCount: 55,
     menu: [
       { menuItemId: "chicken-lunch-set", mode: "fixed", quantity: 35 },
@@ -28,8 +28,8 @@ export const demoEvents: Event[] = [
   {
     id: "private-anniversary",
     name: "Private Anniversary",
-    startsAt: "2026-09-06T18:00:00+03:00",
-    prepStartsAt: "2026-09-06T11:00:00+03:00",
+    startsAt: "2026-09-20T18:00:00+03:00",
+    prepStartsAt: "2026-09-20T11:00:00+03:00",
     guestCount: 70,
     menu: [
       { menuItemId: "premium-croissant-box", mode: "fixed", quantity: 4 },
@@ -41,8 +41,8 @@ export const demoEvents: Event[] = [
   {
     id: "tech-conference",
     name: "Tech Conference",
-    startsAt: "2026-09-10T10:00:00+03:00",
-    prepStartsAt: "2026-09-10T06:00:00+03:00",
+    startsAt: "2026-09-24T10:00:00+03:00",
+    prepStartsAt: "2026-09-24T06:00:00+03:00",
     guestCount: 120,
     menu: [
       { menuItemId: "chicken-lunch-set", mode: "fixed", quantity: 75 },
@@ -54,8 +54,8 @@ export const demoEvents: Event[] = [
   {
     id: "wedding",
     name: "Wedding",
-    startsAt: "2026-09-13T16:00:00+03:00",
-    prepStartsAt: "2026-09-13T08:00:00+03:00",
+    startsAt: "2026-09-27T16:00:00+03:00",
+    prepStartsAt: "2026-09-27T08:00:00+03:00",
     guestCount: 180,
     menu: [
       { menuItemId: "salmon-croissant", mode: "per_guest", quantityPerGuest: 0.35 },

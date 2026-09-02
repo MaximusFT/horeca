@@ -24,7 +24,7 @@ describe('Silpo supplier gateway', () => {
       cartId: shoppingCartId,
       mode: 'live',
     });
-    await expect(gateway.getDeliveryOptions('2026-09-02')).resolves.toHaveLength(1);
+    await expect(gateway.getDeliveryOptions('2026-09-15')).resolves.toHaveLength(1);
     await expect(
       gateway.searchProducts([
         request('eggs', 'pcs'),

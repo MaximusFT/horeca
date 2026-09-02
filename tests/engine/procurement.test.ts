@@ -129,7 +129,7 @@ function calculate(fixture: Fixture) {
     inventoryLots: fixture.inventory ?? [],
     incomingSupply: fixture.incoming ?? [],
     demandPlan,
-    clock: new DemoClock(),
+    clock: { now: () => new Date('2026-09-01T08:00:00+03:00') },
   });
 }
 
