@@ -6,7 +6,7 @@ An AI-assisted procurement cockpit for a small restaurant and catering business.
 
 Stage 8 is complete and the first Stage 11 vertical slice is working: one procurement agent now orchestrates six guarded application tools, including `prepare_supplier_order`. Ask Misto supports Wedding 180→220, chicken provenance, and preparation of the next supplier order. The supplier action returns a structured order card, exposes unavailable salmon, keeps substitution and cart write behind separate human clicks, and rereads/verifies the cart after mutation.
 
-Stage 9 OAuth groundwork uses the official `@modelcontextprotocol/sdk` with Streamable HTTP, Dynamic Client Registration, PKCE, refresh-token support, and the fixed official endpoint `https://mcp.silpo.ua/mcp`. `/debug/mcp` starts OAuth only after an explicit click and can display the live `tools/list` schemas after authorization. Live Silpo connectivity has not yet been claimed or tested.
+Stage 9 is proven end to end against the official Silpo MCP: OAuth, 40 live tools, cart context, approved timeslot update, batch product search, one explicitly approved additive product write, and immediate cart reread/validation. Stage 10 now provides a bounded `SilpoSupplierGateway` rollout for up to five procurement lines behind the same supplier-neutral application contract used by the mock flow.
 
 Debug views:
 

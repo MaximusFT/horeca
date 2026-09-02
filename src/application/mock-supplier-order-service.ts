@@ -1,5 +1,6 @@
 import type { Ingredient } from '@/domain/ingredient';
 import type {
+  SupplierCart,
   SupplierCartPreview,
   SupplierGateway,
   SupplierOrderDraftLine,
@@ -12,23 +13,32 @@ import type { PlanningRepository } from './planning-repository';
 import { getDictionary } from '@/i18n/get-dictionary';
 import type { Locale } from '@/i18n/locale';
 import { localizedIngredientName, localizedSupplierProductName } from '@/i18n/demo-names';
+import {
+  MemorySupplierOrderSessionStore,
+  type SupplierOrderSessionStore,
+} from './supplier-order-session-store';
 
 interface Dependencies {
   repository: PlanningRepository;
   gateway: SupplierGateway;
   ingredients: Ingredient[];
   preferredProductByIngredient: Record<string, string>;
+  sessionStore?: SupplierOrderSessionStore;
+  sessionScope?: string;
   generateId?: () => string;
 }
 
 export class SupplierOrderService {
-  private readonly sessions = new Map<string, SupplierOrderSession>();
   private readonly ingredientById: Map<string, Ingredient>;
   private readonly generateId: () => string;
+  private readonly sessionStore: SupplierOrderSessionStore;
+  private readonly sessionScope: string;
 
   constructor(private readonly dependencies: Dependencies) {
     this.ingredientById = new Map(dependencies.ingredients.map((ingredient) => [ingredient.id, ingredient]));
     this.generateId = dependencies.generateId ?? (() => crypto.randomUUID());
+    this.sessionStore = dependencies.sessionStore ?? new MemorySupplierOrderSessionStore();
+    this.sessionScope = dependencies.sessionScope ?? 'demo';
   }
 
   async prepareBatch(batchId: string, locale: Locale = 'uk'): Promise<SupplierOrderSession> {
@@ -106,12 +116,11 @@ export class SupplierOrderService {
       ],
       cartVerified: false,
     };
-    this.sessions.set(session.id, structuredClone(session));
-    return structuredClone(session);
+    return this.save(session);
   }
 
-  getSession(sessionId: string): SupplierOrderSession {
-    const session = this.sessions.get(sessionId);
+  async getSession(sessionId: string): Promise<SupplierOrderSession> {
+    const session = await this.sessionStore.get(this.sessionScope, sessionId);
     if (!session) throw new Error(`Unknown supplier order session ${sessionId}`);
     return structuredClone(session);
   }
@@ -122,7 +131,7 @@ export class SupplierOrderService {
     productId: string,
     locale: Locale = 'uk',
   ): Promise<SupplierOrderSession> {
-    const session = this.getSession(sessionId);
+    const session = await this.getSession(sessionId);
     this.assertCurrentPlan(session);
     if (session.status !== 'needs_substitution') throw new Error('Supplier order does not need a substitution');
     const line = session.lines.find((item) => item.ingredientId === ingredientId && !item.selectedProduct);
@@ -147,10 +156,11 @@ export class SupplierOrderService {
   }
 
   async previewCart(sessionId: string, locale: Locale = 'uk'): Promise<SupplierOrderSession> {
-    const session = this.getSession(sessionId);
+    const session = await this.getSession(sessionId);
     this.assertCurrentPlan(session);
     if (session.status !== 'ready_for_cart') throw new Error('Resolve substitutions before reviewing the cart');
     const preview = await this.dependencies.gateway.prepareCart({
+      cartId: session.supplier.cartId,
       reference: `plan-v${session.planVersion}:${session.batchId}`,
       deliveryOptionId: session.delivery.id,
       lines: session.lines.map(
@@ -164,6 +174,10 @@ export class SupplierOrderService {
           suppliedQuantity: line.suppliedQuantity!,
           surplusQuantity: line.surplusQuantity!,
           substitutedForProductId: line.substituted ? line.preferredProduct.id : undefined,
+          productName: line.selectedProduct!.name,
+          packageSize: line.selectedProduct!.packageSize,
+          unitPriceMinor: line.selectedProduct!.priceMinor,
+          supplierMetadata: line.selectedProduct!.supplierMetadata,
         }),
       ),
     });
@@ -179,9 +193,10 @@ export class SupplierOrderService {
   }
 
   async applyCart(sessionId: string, locale: Locale = 'uk'): Promise<SupplierOrderSession> {
-    const session = this.getSession(sessionId);
+    const session = await this.sessionStore.claimCartApply(this.sessionScope, sessionId);
+    if (!session) throw new Error('A reviewed cart preview is required before cart apply');
     this.assertCurrentPlan(session);
-    if (session.status !== 'cart_preview' || !session.cartPreview) {
+    if (!session.cartPreview) {
       throw new Error('A reviewed cart preview is required before cart apply');
     }
     const dictionary = getDictionary(locale);
@@ -190,8 +205,14 @@ export class SupplierOrderService {
       type: 'CART_APPLY',
       message: dictionary.supplierActivity.cartApplyApproved,
     });
-    await this.dependencies.gateway.applyCart(session.cartPreview);
-    const cart = await this.dependencies.gateway.getCart();
+    let cart: SupplierCart;
+    try {
+      cart = await this.dependencies.gateway.applyCart(session.cartPreview);
+    } catch (error) {
+      session.status = 'cart_preview';
+      await this.save(session);
+      throw error;
+    }
     const verified =
       cart.reference === session.cartPreview.reference &&
       cart.lines.length >= session.cartPreview.lines.length &&
@@ -214,8 +235,8 @@ export class SupplierOrderService {
     }
   }
 
-  private save(session: SupplierOrderSession): SupplierOrderSession {
-    this.sessions.set(session.id, structuredClone(session));
+  private async save(session: SupplierOrderSession): Promise<SupplierOrderSession> {
+    await this.sessionStore.set(this.sessionScope, session);
     return structuredClone(session);
   }
 }

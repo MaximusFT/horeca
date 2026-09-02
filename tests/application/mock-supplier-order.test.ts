@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createDemoPlanning } from '@/application/demo-planning';
 import { SupplierOrderService } from '@/application/supplier-order-service';
 import { demoIngredients } from '@/data/demo/ingredients';
@@ -103,6 +103,35 @@ describe('mock supplier order approvals', () => {
     expect(applied.cart?.lines.find((line) => line.ingredientId === 'salmon')?.substitutedForProductId).toBe(
       'mock-salmon-premium-500',
     );
+  });
+
+  it('allows only one cart mutation when apply requests race', async () => {
+    const planning = createDemoPlanning();
+    const gateway = new MockSupplierGateway();
+    const applySpy = vi.spyOn(gateway, 'applyCart');
+    const service = new SupplierOrderService({
+      repository: planning.repository,
+      gateway,
+      ingredients: demoIngredients,
+      preferredProductByIngredient: preferredMockProductByIngredient,
+    });
+    const batch = planning.repository
+      .getState()
+      .activePlan.batches.find((candidate) => candidate.lines.some((line) => line.ingredientId === 'salmon'))!;
+    const prepared = await service.prepareBatch(batch.id);
+    const salmon = prepared.lines.find((line) => line.ingredientId === 'salmon')!;
+    const substituted = await service.approveSubstitution(
+      prepared.id,
+      salmon.ingredientId,
+      salmon.replacements[0].id,
+    );
+    const reviewed = await service.previewCart(substituted.id);
+
+    const results = await Promise.allSettled([service.applyCart(reviewed.id), service.applyCart(reviewed.id)]);
+
+    expect(results.filter(({ status }) => status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter(({ status }) => status === 'rejected')).toHaveLength(1);
+    expect(applySpy).toHaveBeenCalledOnce();
   });
 });
 

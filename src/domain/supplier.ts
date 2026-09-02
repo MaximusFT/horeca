@@ -27,6 +27,7 @@ export interface SupplierProduct {
   ingredientId: string;
   name: string;
   packageSize: number;
+  supplierMetadata?: Record<string, string | number | boolean>;
   unit: BaseUnit;
   priceMinor: number;
   currency: 'UAH';
@@ -58,9 +59,14 @@ export interface SupplierOrderDraftLine {
   suppliedQuantity: number;
   surplusQuantity: number;
   substitutedForProductId?: string;
+  productName?: string;
+  packageSize?: number;
+  unitPriceMinor?: number;
+  supplierMetadata?: Record<string, string | number | boolean>;
 }
 
 export interface SupplierOrderDraft {
+  cartId?: string;
   reference: string;
   deliveryOptionId: string;
   lines: SupplierOrderDraftLine[];
@@ -88,7 +94,12 @@ export interface SupplierCart extends SupplierCartPreview {
   updatedAt: string;
 }
 
-export type SupplierOrderStatus = 'needs_substitution' | 'ready_for_cart' | 'cart_preview' | 'cart_applied';
+export type SupplierOrderStatus =
+  | 'needs_substitution'
+  | 'ready_for_cart'
+  | 'cart_preview'
+  | 'cart_applying'
+  | 'cart_applied';
 
 export interface SupplierOrderLine {
   lineId: string;

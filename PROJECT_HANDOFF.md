@@ -19,7 +19,7 @@ Demand → Procurement → Explainability → Wedding Change → Product UI
 
 ## Exact continuation point
 
-Stages 0–8 are complete. A first Stage 11-compatible mock supplier-agent vertical slice is also complete. Continue with **Stage 9 — MCP Spike** from section 15 of the implementation handoff plan.
+Stages 0–9 are complete. A first Stage 11-compatible mock supplier-agent vertical slice is also complete. Continue with **Stage 10 — Silpo Supplier Gateway** from section 16 of the implementation handoff plan.
 
 Recommended Codex setting for Stage 9: **sol high**. The spike involves OAuth, discovery of live `tools/list` schemas, uncertain weighted-product semantics, and a carefully bounded real-cart mutation. Do not invent Silpo arguments or schemas.
 
@@ -41,11 +41,13 @@ Because the corporate proxy blocks `*.vercel.app`, deployed MCP behavior can als
 
 Stage 9 requires the user to complete the Silpo login/OTP flow. Durable encrypted OAuth storage is implemented through `TursoSilpoOAuthStore`: configure `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and `SILPO_OAUTH_ENCRYPTION_KEY` before using OAuth across serverless instances. With no Turso env, local development intentionally falls back to process memory. If authorization or MCP connectivity is unavailable, report the concrete blocker. Do not pretend that live connectivity was proven.
 
-Preparation already in place: `SUPPLIER_MODE=mock` remains the default. The official endpoint is fixed to `https://mcp.silpo.ua/mcp`; static token variables are legacy diagnostics only. Set `SUPPLIER_MODE=silpo` only after OAuth and live schema mapping. Until then this mode intentionally reports an implementation error rather than falling back to mock or pretending to contact Silpo.
+`SUPPLIER_MODE=mock` remains the local default and permanent offline fallback. The official endpoint is fixed to `https://mcp.silpo.ua/mcp`; static token variables are legacy diagnostics only. Deployed Production/Preview use `SUPPLIER_MODE=silpo`, where neutral routes require the browser's OAuth session instead of falling back to mock.
 
 The Stage 10 application boundary is now supplier-neutral: domain session types live in `src/domain/supplier.ts`, agent tools depend on a narrow preparer contract, UI calls `/api/suppliers/*`, and `SupplierOrderService`/`SupplierOrderFlow` are stable facades. Existing `/api/suppliers/mock/*` routes remain compatibility aliases. The live Silpo implementation should replace `SupplierGateway` without changing agent or UI contracts.
 
-Procurement pages now show a configuration-derived supplier status without network probing: mock mode is visibly labelled as demo, while `SUPPLIER_MODE=silpo` remains “connection required” until Stage 9 proves a live session. Merely configuring legacy endpoint/token values never produces a false connected state.
+The first bounded Stage 10 adapter is implemented in `src/infrastructure/silpo-supplier-gateway.ts`. In `SUPPLIER_MODE=silpo`, neutral supplier routes and `/api/agent/messages` resolve the OAuth session and use this gateway while mock compatibility routes remain unchanged. The gateway rolls out up to five procurement lines, maps confirmed live `displayRatio`, `step`, `price`, and `stock` fields into deterministic package rounding, creates a read-only cart preview, performs one approved additive batch write, and rereads the cart to verify every expected product ID and reject error-level validations. Supplier order sessions and opaque execution metadata are AES-256-GCM encrypted in Turso and scoped by OAuth session, so prepare, preview, and apply can execute on different Vercel workers. Cart apply uses an atomic `cart_preview → cart_applying` claim to prevent duplicate writes. Live replacement output mapping remains intentionally unimplemented until its response shape is captured.
+
+Procurement pages show a configuration-derived supplier mode without network probing. Mock mode is visibly labelled as demo; Silpo mode is labelled `Silpo MCP`, while actual operations still require a valid session-scoped OAuth cookie. Merely configuring legacy endpoint/token values never produces a false connected operation.
 
 ## Completed implementation
 
@@ -193,7 +195,7 @@ Use a dedicated `/debug/mcp` route or server-side script. The first spike should
 At handoff, all checks pass:
 
 ```text
-npm test          → 92 tests passed in 27 files, plus 1 remote smoke test skipped locally without secrets
+npm test          → 110 tests passed in 31 files, plus 1 remote smoke test skipped locally without secrets
 npm run typecheck → passed
 npm run lint      → passed
 npm run build     → passed

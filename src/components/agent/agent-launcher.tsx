@@ -278,6 +278,7 @@ function SupplierOrderCard({
   const [error, setError] = useState<string>();
   const unresolved = session.lines.filter((line) => !line.selectedProduct);
   const matched = session.lines.length - unresolved.length;
+  const live = session.supplier.mode === 'live';
 
   async function call(url: string, body?: object) {
     setBusy(true);
@@ -306,7 +307,8 @@ function SupplierOrderCard({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-[9px] font-bold uppercase tracking-wide text-[#4b7658]">
-              {dictionary.mockSupplier.badge} · {dictionary.mockSupplier.planLabel(session.planVersion)}
+              {live ? dictionary.mockSupplier.liveBadge : dictionary.mockSupplier.badge} ·{' '}
+              {dictionary.mockSupplier.planLabel(session.planVersion)}
             </p>
             <p className="mt-1 text-sm font-semibold text-[#304b38]">
               {dictionary.mockSupplier.linesResolved(matched, session.lines.length)}
@@ -347,7 +349,8 @@ function SupplierOrderCard({
                 <p className="text-xs font-semibold text-[#36433a]">{replacement.name}</p>
                 <p className="mt-1 text-[10px] text-[#768279]">
                   {formatLocalizedQuantity(replacement.packageSize, line.unit, dictionary.locale)} ·{' '}
-                  {dictionary.mockSupplier.syntheticPrice} {formatMoney(replacement.priceMinor, dictionary.locale)}
+                  {live ? dictionary.mockSupplier.livePrice : dictionary.mockSupplier.syntheticPrice}{' '}
+                  {formatMoney(replacement.priceMinor, dictionary.locale)}
                 </p>
               </div>
               <button
@@ -384,7 +387,7 @@ function SupplierOrderCard({
       {session.status === 'cart_preview' && session.cartPreview && (
         <div className="border-t border-[#edf0ec] p-3">
           <div className="mb-3 flex items-center justify-between text-xs text-[#56665c]">
-            <span>{dictionary.mockSupplier.cartPreviewTitle}</span>
+            <span>{live ? dictionary.mockSupplier.liveCartPreviewTitle : dictionary.mockSupplier.cartPreviewTitle}</span>
             <strong>{formatMoney(session.cartPreview.totalMinor, dictionary.locale)}</strong>
           </div>
           <button
@@ -393,7 +396,7 @@ function SupplierOrderCard({
             onClick={() => call(`/api/suppliers/orders/${session.id}/apply-cart`)}
             className="w-full rounded-xl bg-[#1d5d38] px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-50"
           >
-            {dictionary.mockSupplier.approveAndApplyCart}
+            {live ? dictionary.mockSupplier.liveApproveAndApplyCart : dictionary.mockSupplier.approveAndApplyCart}
           </button>
           <p className="mt-2 text-center text-[9px] text-[#8b948e]">{dictionary.mockSupplier.onlyThisClickMutates}</p>
         </div>

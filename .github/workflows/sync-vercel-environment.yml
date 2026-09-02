@@ -72,7 +72,7 @@ jobs:
       - name: Link Vercel project
         run: npx --yes vercel@59.10.0 link --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" --project "$VERCEL_PROJECT"
 
-      - name: Sync Turso secrets to Vercel
+      - name: Sync application environment to Vercel
         run: |
           sync_secret() {
             name="$1"
@@ -84,6 +84,7 @@ jobs:
           sync_secret TURSO_DATABASE_URL "$TURSO_DATABASE_URL"
           sync_secret TURSO_AUTH_TOKEN "$TURSO_AUTH_TOKEN"
           sync_secret SILPO_OAUTH_ENCRYPTION_KEY "$SILPO_OAUTH_ENCRYPTION_KEY"
+          sync_secret SUPPLIER_MODE "silpo"
 
       - name: Deploy production with updated environment
         run: npx --yes vercel@59.10.0 deploy --prod --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE"

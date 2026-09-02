@@ -41,6 +41,7 @@ export function SupplierOrderFlow({ batchId, locale }: { batchId: string; locale
 
   const unresolved = session?.lines.filter((line) => !line.selectedProduct) ?? [];
   const matchedCount = session?.lines.filter((line) => line.selectedProduct).length ?? 0;
+  const live = session?.supplier.mode === 'live';
 
   return (
     <>
@@ -65,7 +66,7 @@ export function SupplierOrderFlow({ batchId, locale }: { batchId: string; locale
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="rounded-full bg-[#edf3ef] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-[#42664f]">
-                      {dictionary.mockSupplier.badge}
+                      {live ? dictionary.mockSupplier.liveBadge : dictionary.mockSupplier.badge}
                     </span>
                     {session && (
                       <span className="text-[10px] text-[#859087]">
@@ -76,7 +77,9 @@ export function SupplierOrderFlow({ batchId, locale }: { batchId: string; locale
                   <h2 id="supplier-order-title" className="mt-2 text-xl font-semibold text-[#223028]">
                     {dictionary.mockSupplier.prepareOrder}
                   </h2>
-                  <p className="mt-1 text-xs text-[#7d8981]">{dictionary.mockSupplier.subtitle}</p>
+                  <p className="mt-1 text-xs text-[#7d8981]">
+                    {live ? dictionary.mockSupplier.liveSubtitle : dictionary.mockSupplier.subtitle}
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -192,7 +195,7 @@ export function SupplierOrderFlow({ batchId, locale }: { batchId: string; locale
                                     )}
                                   </p>
                                   <p className="mt-1 text-[10px] text-[#969e98]">
-                                    {dictionary.mockSupplier.syntheticPrice}{' '}
+                                    {live ? dictionary.mockSupplier.livePrice : dictionary.mockSupplier.syntheticPrice}{' '}
                                     {money(replacement.priceMinor, dictionary.locale)}{' '}
                                     {dictionary.mockSupplier.perPackage}
                                   </p>
@@ -227,7 +230,9 @@ export function SupplierOrderFlow({ batchId, locale }: { batchId: string; locale
                         {dictionary.mockSupplier.reviewRoundingTitle}
                       </h3>
                       <p className="mt-1 text-xs leading-5 text-[#67806e]">
-                        {dictionary.mockSupplier.reviewRoundingBody}
+                        {live
+                          ? dictionary.mockSupplier.liveReviewRoundingBody
+                          : dictionary.mockSupplier.reviewRoundingBody}
                       </p>
                       <button
                         type="button"
@@ -247,7 +252,7 @@ export function SupplierOrderFlow({ batchId, locale }: { batchId: string; locale
                           {dictionary.mockSupplier.approvalCartMutation}
                         </p>
                         <h3 className="mt-1 text-sm font-semibold text-[#344138]">
-                          {dictionary.mockSupplier.cartPreviewTitle}
+                          {live ? dictionary.mockSupplier.liveCartPreviewTitle : dictionary.mockSupplier.cartPreviewTitle}
                         </h3>
                       </header>
                       <div className="max-h-72 divide-y divide-[#edf0ec] overflow-y-auto">
@@ -271,7 +276,11 @@ export function SupplierOrderFlow({ batchId, locale }: { batchId: string; locale
                       </div>
                       <div className="border-t border-[#dfe3dc] bg-[#fafbf9] px-4 py-3">
                         <div className="flex justify-between text-xs text-[#748077]">
-                          <span>{dictionary.mockSupplier.productsAndDelivery}</span>
+                          <span>
+                            {live
+                              ? dictionary.mockSupplier.liveProductsAndDelivery
+                              : dictionary.mockSupplier.productsAndDelivery}
+                          </span>
                           <span>
                             {money(session.cartPreview.subtotalMinor, dictionary.locale)} +{' '}
                             {money(session.cartPreview.feeMinor, dictionary.locale)}
@@ -289,7 +298,9 @@ export function SupplierOrderFlow({ batchId, locale }: { batchId: string; locale
                           onClick={() => call(`/api/suppliers/orders/${session.id}/apply-cart`)}
                           className="w-full rounded-xl bg-[#1d5d38] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
                         >
-                          {dictionary.mockSupplier.approveAndApplyCart}
+                          {live
+                            ? dictionary.mockSupplier.liveApproveAndApplyCart
+                            : dictionary.mockSupplier.approveAndApplyCart}
                         </button>
                         <p className="mt-2 text-center text-[10px] text-[#8b948e]">
                           {dictionary.mockSupplier.onlyThisClickMutates}
@@ -304,7 +315,9 @@ export function SupplierOrderFlow({ batchId, locale }: { batchId: string; locale
                         ✓
                       </div>
                       <h3 className="mt-3 text-base font-semibold text-[#2d5439]">
-                        {dictionary.mockSupplier.cartAppliedTitle}
+                        {live
+                          ? dictionary.mockSupplier.liveCartAppliedTitle
+                          : dictionary.mockSupplier.cartAppliedTitle}
                       </h3>
                       <p className="mt-1 text-xs text-[#66816d]">
                         {dictionary.mockSupplier.cartAppliedSummary(

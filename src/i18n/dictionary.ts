@@ -314,8 +314,10 @@ export interface Dictionary {
   mockSupplier: {
     prepareOrder: string;
     badge: string;
+    liveBadge: string;
     planLabel: (version: number) => string;
     subtitle: string;
+    liveSubtitle: string;
     closeAria: string;
     matching: string;
     productMatching: string;
@@ -329,21 +331,27 @@ export interface Dictionary {
     availableReplacement: string;
     replacementSupplies: (packages: number, packageSize: string, supplied: string) => string;
     syntheticPrice: string;
+    livePrice: string;
     perPackage: string;
     approveReplacement: string;
     matchingComplete: string;
     reviewRoundingTitle: string;
     reviewRoundingBody: string;
+    liveReviewRoundingBody: string;
     reviewCartPreview: string;
     approvalCartMutation: string;
     cartPreviewTitle: string;
+    liveCartPreviewTitle: string;
     packages: (n: number) => string;
     suppliedSurplus: (supplied: string, surplus: string) => string;
     productsAndDelivery: string;
+    liveProductsAndDelivery: string;
     total: string;
     approveAndApplyCart: string;
+    liveApproveAndApplyCart: string;
     onlyThisClickMutates: string;
     cartAppliedTitle: string;
+    liveCartAppliedTitle: string;
     cartAppliedSummary: (lines: number, total: string) => string;
     activityTrace: string;
   };

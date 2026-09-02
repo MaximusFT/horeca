@@ -262,56 +262,67 @@ export function parseProductSearchSummary(result: unknown): SilpoSearchSummary {
 }
 
 export function parseProductCandidates(result: unknown): SilpoProductCandidate[] {
+  return parseProductCandidateGroups(result)[0] ?? [];
+}
+
+export function parseProductCandidateGroups(result: unknown): SilpoProductCandidate[][] {
   const payload = unwrapMcpPayload(result, 'product candidates');
   if (!Array.isArray(payload.queries)) throw payloadError('product candidates', ['queries[]'], payload);
-  const firstQuery = asObject(payload.queries[0]);
-  if (!firstQuery || !Array.isArray(firstQuery.products)) {
-    throw payloadError('product candidates', ['queries[0].products[]'], payload);
-  }
-  return firstQuery.products.map((value) => {
-    const product = asObject(value);
-    if (
-      typeof product?.id !== 'string' ||
-      typeof product.companyId !== 'string' ||
-      typeof product.branchId !== 'string' ||
-      typeof product.name !== 'string' ||
-      typeof product.displayRatio !== 'string' ||
-      typeof product.price !== 'number' ||
-      typeof product.step !== 'number' ||
-      typeof product.stock !== 'number' ||
-      typeof product.weighted !== 'boolean' ||
-      typeof product.available !== 'boolean'
-    ) {
-      throw payloadError(
-        'product candidates',
-        [
-          'queries[0].products[].id',
-          'queries[0].products[].companyId',
-          'queries[0].products[].branchId',
-          'queries[0].products[].name',
-          'queries[0].products[].displayRatio',
-          'queries[0].products[].price',
-          'queries[0].products[].step',
-          'queries[0].products[].stock',
-          'queries[0].products[].weighted',
-          'queries[0].products[].available',
-        ],
-        payload,
-      );
+  return payload.queries.map((queryValue) => {
+    const query = asObject(queryValue);
+    if (!query || !Array.isArray(query.products)) {
+      throw payloadError('product candidates', ['queries[].products[]'], payload);
     }
-    return {
-      id: product.id,
-      companyId: product.companyId,
-      branchId: product.branchId,
-      name: product.name,
-      displayRatio: product.displayRatio,
-      price: product.price,
-      step: product.step,
-      stock: product.stock,
-      weighted: product.weighted,
-      available: product.available,
-    };
+    return query.products.map((value) => parseProductCandidate(value, payload));
   });
+}
+
+function parseProductCandidate(
+  value: unknown,
+  payload: Record<string, unknown>,
+): SilpoProductCandidate {
+  const product = asObject(value);
+  if (
+    typeof product?.id !== 'string' ||
+    typeof product.companyId !== 'string' ||
+    typeof product.branchId !== 'string' ||
+    typeof product.name !== 'string' ||
+    typeof product.displayRatio !== 'string' ||
+    typeof product.price !== 'number' ||
+    typeof product.step !== 'number' ||
+    typeof product.stock !== 'number' ||
+    typeof product.weighted !== 'boolean' ||
+    typeof product.available !== 'boolean'
+  ) {
+    throw payloadError(
+      'product candidates',
+      [
+        'queries[0].products[].id',
+        'queries[0].products[].companyId',
+        'queries[0].products[].branchId',
+        'queries[0].products[].name',
+        'queries[0].products[].displayRatio',
+        'queries[0].products[].price',
+        'queries[0].products[].step',
+        'queries[0].products[].stock',
+        'queries[0].products[].weighted',
+        'queries[0].products[].available',
+      ],
+      payload,
+    );
+  }
+  return {
+    id: product.id,
+    companyId: product.companyId,
+    branchId: product.branchId,
+    name: product.name,
+    displayRatio: product.displayRatio,
+    price: product.price,
+    step: product.step,
+    stock: product.stock,
+    weighted: product.weighted,
+    available: product.available,
+  };
 }
 
 export function parseCartProductIds(result: unknown): string[] {
