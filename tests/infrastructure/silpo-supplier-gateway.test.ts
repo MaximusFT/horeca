@@ -54,13 +54,18 @@ describe('Silpo supplier gateway', () => {
     });
   });
 
-  it('rejects a preview whose requested quantity exceeds live stock', async () => {
-    const gateway = new SilpoSupplierGateway(createReadCaller({ stock: 1 }), vi.fn(), demoIngredients);
+  it('selects a sufficient candidate instead of the first available low-stock result', async () => {
+    const gateway = new SilpoSupplierGateway(
+      createReadCaller({ candidateStocks: [1, 10] }),
+      vi.fn(),
+      demoIngredients,
+    );
     await gateway.initializeContext();
     const [result] = await gateway.searchProducts([request('eggs', 'pcs')]);
     if (!result.product) throw new Error('Expected mapped product');
 
-    await expect(gateway.prepareCart(draft(result.product))).rejects.toThrow(/exceeds live stock/);
+    expect(result.product.id).toBe(`${productId}-1`);
+    await expect(gateway.prepareCart(draft(result.product))).resolves.toBeDefined();
   });
 
   it('runs the bounded procurement batch through preview, one write, and verified reread', async () => {
@@ -190,11 +195,13 @@ function createReadCaller({
   stock = 10,
   dynamicRatios = false,
   verifiedOnFirstCartRead = false,
+  candidateStocks,
 }: {
   verifiedProductIds?: string[];
   stock?: number;
   dynamicRatios?: boolean;
   verifiedOnFirstCartRead?: boolean;
+  candidateStocks?: number[];
 } = {}) {
   let cartReads = 0;
   return vi.fn(async (name: SilpoReadToolName, args: Record<string, unknown>): Promise<unknown> => {
@@ -231,15 +238,19 @@ function createReadCaller({
         structuredContent: {
           queries: products.map((query, index) => ({
             totalFound: 1,
-            products: [
+            products: (candidateStocks ?? [dynamicRatios ? 1_000_000 : stock]).map((candidateStock, candidateIndex) =>
               candidate(
-                index === 0 ? productId : `product-${index}`,
+                candidateStocks
+                  ? `${index === 0 ? productId : `product-${index}`}-${candidateIndex}`
+                  : index === 0
+                    ? productId
+                    : `product-${index}`,
                 query,
-                dynamicRatios ? 1_000_000 : stock,
+                candidateStock,
                 index,
                 dynamicRatios,
               ),
-            ],
+            ),
           })),
         },
       };

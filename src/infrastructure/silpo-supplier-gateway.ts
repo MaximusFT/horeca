@@ -12,6 +12,7 @@ import type {
   SupplierSearchResult,
 } from '@/domain/supplier';
 import { localizedIngredientName } from '@/i18n/demo-names';
+import { roundToPackages } from '@/engine/package-rounding';
 import { mapSilpoProduct, type SilpoMappedProduct } from './silpo-supplier-mapper';
 import {
   buildProductSearchArguments,
@@ -80,10 +81,10 @@ export class SilpoSupplierGateway implements SupplierGateway {
       const mapped = (groups[index] ?? [])
         .map((candidate) => mapSilpoProduct(candidate, request.ingredientId, request.unit))
         .filter((candidate): candidate is SilpoMappedProduct => Boolean(candidate));
-      const match = mapped.find(({ product }) => product.available) ?? mapped[0];
+      const match = mapped.find((candidate) => canFulfillRequest(candidate, request));
       if (!match) return [];
       this.products.set(match.product.id, match);
-      return [{ request, status: match.product.available ? 'matched' : 'unavailable', product: structuredClone(match.product) }];
+      return [{ request, status: 'matched', product: structuredClone(match.product) }];
     });
     if (results.length === 0) throw new Error('Silpo did not return a compatible product for the bounded rollout');
     return results;
@@ -188,6 +189,17 @@ export class SilpoSupplierGateway implements SupplierGateway {
     if (!this.context) throw new Error('Silpo supplier context is not initialized');
     return this.context;
   }
+}
+
+function canFulfillRequest(candidate: SilpoMappedProduct, request: SupplierSearchRequest): boolean {
+  if (!candidate.product.available) return false;
+  const packageCount = roundToPackages(
+    request.requiredQuantity,
+    candidate.product.packageSize,
+    candidate.product.priceMinor,
+  ).packageCount;
+  const metadata = parseSupplierMetadata(candidate.product.supplierMetadata);
+  return packageCount * metadata.quantityStep <= metadata.stock;
 }
 
 function parseSupplierMetadata(value: SupplierCartLine['supplierMetadata']) {
