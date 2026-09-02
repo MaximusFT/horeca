@@ -27,8 +27,8 @@ https://horeca-nine-alpha.vercel.app/debug/mcp
 - [x] B. Read при отсутствии активной корзины: `cart_creation_required`.
 - [x] C. Ручное создание активной корзины в официальном интерфейсе Silpo.
 - [x] D. Полный Stage 9 read sequence с корзиной, доступным слотом и поиском продуктов.
-- [ ] E. Preview, approval и verified write одного тестового товара.
-- [ ] J. Финальный sanitized trace и короткий текстовый отчёт.
+- [x] E. Preview, approval и verified write одного тестового товара.
+- [x] J. Финальный sanitized trace и короткий текстовый отчёт.
 
 Условные сценарии выполняются только если соответствующая ошибка появилась сама:
 
