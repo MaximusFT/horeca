@@ -55,6 +55,8 @@ Live `silpo_get_replacements` was verified on 2026-09-02. For the sampled salmon
 
 Production Stage 10 verification completed on 2026-09-02 through the normal Procurement Agent UI, not `/debug/mcp`. Stock-aware matching skipped insufficient SKUs and produced a three-line Silpo cart preview. The user explicitly approved the write; sanitized trace confirmed exactly one `silpo_add_or_update_cart_products` call (1073 ms) immediately followed by `silpo_get_shopping_cart_by_id` (1127 ms), and the UI reported that the cart reread matched. Existing cart lines were preserved.
 
+Repeat live runs are guarded separately from Reset demo. Reset intentionally does not clear or remove real Silpo cart lines. During supplier initialization the gateway reads existing cart product IDs; if the selected live SKU is already present, preparation stops before preview/write instead of using `addQuantity:true` again and increasing the real quantity.
+
 Procurement pages show a configuration-derived supplier mode without network probing. Mock mode is visibly labelled as demo; Silpo mode is labelled `Silpo MCP`, while actual operations still require a valid session-scoped OAuth cookie. Merely configuring legacy endpoint/token values never produces a false connected operation.
 
 ## Completed implementation
@@ -203,7 +205,7 @@ Use a dedicated `/debug/mcp` route or server-side script. The first spike should
 At handoff, all checks pass:
 
 ```text
-npm test          → 116 tests passed in 33 files, plus 1 remote smoke test skipped locally without secrets
+npm test          → 117 tests passed in 33 files, plus 1 remote smoke test skipped locally without secrets
 npm run typecheck → passed
 npm run lint      → passed
 npm run build     → passed

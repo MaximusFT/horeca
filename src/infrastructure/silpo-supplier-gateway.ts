@@ -40,6 +40,7 @@ export type SilpoSupplierWriteCaller = (
 export class SilpoSupplierGateway implements SupplierGateway {
   private readonly ingredientById: Map<string, Ingredient>;
   private readonly products = new Map<string, SilpoMappedProduct>();
+  private existingCartProductIds = new Set<string>();
   private context?: ReturnType<typeof parseCartContext>;
   private pendingPreview?: SupplierCartPreview;
 
@@ -58,6 +59,7 @@ export class SilpoSupplierGateway implements SupplierGateway {
       shoppingCartId: cartReference.shoppingCartId,
     });
     this.context = parseCartContext(detail, cartReference.shoppingCartId);
+    this.existingCartProductIds = new Set(parseCartProductIds(detail));
     return {
       supplierId: 'silpo',
       name: 'Сільпо',
@@ -87,6 +89,11 @@ export class SilpoSupplierGateway implements SupplierGateway {
         .filter((candidate): candidate is SilpoMappedProduct => Boolean(candidate));
       const match = mapped.find((candidate) => canFulfillRequest(candidate, request));
       if (match) {
+        if (this.existingCartProductIds.has(match.product.id)) {
+          throw new Error(
+            'A selected Silpo product is already in the cart. The repeat run was blocked to avoid increasing its quantity.',
+          );
+        }
         this.products.set(match.product.id, match);
         return { request, status: 'matched', product: structuredClone(match.product) };
       }

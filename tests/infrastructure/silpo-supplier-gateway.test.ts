@@ -79,6 +79,19 @@ describe('Silpo supplier gateway', () => {
     await expect(gateway.findReplacements(result.product!.id)).resolves.toEqual([]);
   });
 
+  it('blocks a repeat run when the selected live product is already in the cart', async () => {
+    const gateway = new SilpoSupplierGateway(
+      createReadCaller({ existingProductIds: [productId] }),
+      vi.fn(),
+      demoIngredients,
+    );
+    await gateway.initializeContext();
+
+    await expect(gateway.searchProducts([request('eggs', 'pcs')])).rejects.toThrow(
+      /repeat run was blocked/,
+    );
+  });
+
   it('runs the bounded procurement batch through preview, one write, and verified reread', async () => {
     const productIds: string[] = [];
     const read = createReadCaller({ verifiedProductIds: productIds, dynamicRatios: true });
@@ -204,12 +217,14 @@ function draft(selectedProduct: SupplierProduct): SupplierOrderDraft {
 
 function createReadCaller({
   verifiedProductIds = [],
+  existingProductIds = [],
   stock = 10,
   dynamicRatios = false,
   verifiedOnFirstCartRead = false,
   candidateStocks,
 }: {
   verifiedProductIds?: string[];
+  existingProductIds?: string[];
   stock?: number;
   dynamicRatios?: boolean;
   verifiedOnFirstCartRead?: boolean;
@@ -230,10 +245,9 @@ function createReadCaller({
             shipments: [
               {
                 branchId,
-                products:
-                  verifiedOnFirstCartRead || cartReads > 1
-                    ? verifiedProductIds.map((id) => ({ productId: id }))
-                    : [],
+                products: (
+                  verifiedOnFirstCartRead || cartReads > 1 ? verifiedProductIds : existingProductIds
+                ).map((id) => ({ productId: id })),
               },
             ],
             calculation: { validations: [] },
