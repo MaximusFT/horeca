@@ -9,10 +9,7 @@ import {
   type SilpoReadToolCaller,
   type SilpoTimeslot,
 } from './silpo-stage9-workflow';
-import type {
-  SilpoTimeslotApproval,
-  SilpoTimeslotApprovalStore,
-} from './silpo-timeslot-approval-store';
+import type { SilpoTimeslotApproval, SilpoTimeslotApprovalStore } from './silpo-timeslot-approval-store';
 
 const APPROVAL_LIFETIME_MS = 15 * 60 * 1000;
 
@@ -69,9 +66,7 @@ export class SilpoStage9TimeslotService {
       await callRead('silpo_get_shopping_cart_by_id', { shoppingCartId: cartReference.shoppingCartId }),
       cartReference.shoppingCartId,
     );
-    const slots = parseAvailableTimeslots(
-      await callRead('silpo_get_time_slots', buildTimeSlotArguments(source)),
-    );
+    const slots = parseAvailableTimeslots(await callRead('silpo_get_time_slots', buildTimeSlotArguments(source)));
     if (slots.length === 0) return { status: 'no_available_slots', deliveryType: source.deliveryType };
 
     const createdAt = this.now();
@@ -109,10 +104,7 @@ export class SilpoStage9TimeslotService {
       );
       if (!timeslot) throw new SilpoTimeslotApprovalError('Selected timeslot was not part of the approved preview');
 
-      await callWrite(
-        'silpo_update_shopping_cart',
-        buildTimeslotUpdateArguments(approval.source, timeslot),
-      );
+      await callWrite('silpo_update_shopping_cart', buildTimeslotUpdateArguments(approval.source, timeslot));
       const verification = await callRead('silpo_get_shopping_cart_by_id', {
         shoppingCartId: approval.source.shoppingCartId,
       });

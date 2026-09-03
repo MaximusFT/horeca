@@ -2,10 +2,7 @@ import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { getSilpoTimeslotApprovalStore } from '@/infrastructure/create-silpo-timeslot-approval-store';
 import { SilpoOAuthCoordinator } from '@/infrastructure/silpo-oauth-client';
-import {
-  SilpoStage9TimeslotService,
-  SilpoTimeslotApprovalError,
-} from '@/infrastructure/silpo-stage9-timeslot-service';
+import { SilpoStage9TimeslotService, SilpoTimeslotApprovalError } from '@/infrastructure/silpo-stage9-timeslot-service';
 import { SILPO_OAUTH_SESSION_COOKIE } from '../../../oauth/start/route';
 
 const requestSchema = z.object({

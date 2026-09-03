@@ -1,9 +1,6 @@
 import { createClient } from '@libsql/client';
 import { readTursoOAuthConfiguration } from './create-silpo-oauth-store';
-import {
-  MemorySilpoTimeslotApprovalStore,
-  type SilpoTimeslotApprovalStore,
-} from './silpo-timeslot-approval-store';
+import { MemorySilpoTimeslotApprovalStore, type SilpoTimeslotApprovalStore } from './silpo-timeslot-approval-store';
 import { TursoSilpoTimeslotApprovalStore } from './turso-silpo-timeslot-approval-store';
 
 declare global {

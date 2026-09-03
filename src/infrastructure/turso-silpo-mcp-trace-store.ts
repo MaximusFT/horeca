@@ -61,7 +61,8 @@ export class TursoSilpoMcpTraceStore implements SilpoMcpTraceStore {
 
   private async ensureSchema(): Promise<void> {
     this.schemaReady ??= this.client
-      .execute(`
+      .execute(
+        `
         CREATE TABLE IF NOT EXISTS silpo_mcp_trace (
           id TEXT PRIMARY KEY,
           session_id TEXT NOT NULL,
@@ -72,7 +73,8 @@ export class TursoSilpoMcpTraceStore implements SilpoMcpTraceStore {
           result_summary TEXT NOT NULL,
           created_at TEXT NOT NULL
         )
-      `)
+      `,
+      )
       .then(() => undefined);
     await this.schemaReady;
   }

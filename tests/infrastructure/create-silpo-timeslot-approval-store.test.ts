@@ -9,8 +9,8 @@ describe('Silpo timeslot approval store factory', () => {
   });
 
   it('rejects partial Turso configuration', () => {
-    expect(() =>
-      createSilpoTimeslotApprovalStore({ url: 'libsql://database.example' }, 'test'),
-    ).toThrow(/requires TURSO_DATABASE_URL/);
+    expect(() => createSilpoTimeslotApprovalStore({ url: 'libsql://database.example' }, 'test')).toThrow(
+      /requires TURSO_DATABASE_URL/,
+    );
   });
 });

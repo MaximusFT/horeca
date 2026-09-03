@@ -17,9 +17,7 @@ export function createSilpoMcpTraceStore(): SilpoMcpTraceStore {
       'Turso MCP trace storage requires TURSO_DATABASE_URL, TURSO_AUTH_TOKEN and SILPO_OAUTH_ENCRYPTION_KEY',
     );
   }
-  return new TursoSilpoMcpTraceStore(
-    createClient({ url: configuration.url, authToken: configuration.authToken }),
-  );
+  return new TursoSilpoMcpTraceStore(createClient({ url: configuration.url, authToken: configuration.authToken }));
 }
 
 export function getSilpoMcpTraceStore(): SilpoMcpTraceStore {

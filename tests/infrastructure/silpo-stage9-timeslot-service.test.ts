@@ -65,9 +65,9 @@ describe('Silpo Stage 9 timeslot service', () => {
       timeslot: nextTimeslot,
       validations: { total: 2, errors: 1, warnings: 1, other: 0 },
     });
-    await expect(
-      service.apply(sessionId, preview.approvalId, nextTimeslot, read, write),
-    ).rejects.toThrow(/already used/);
+    await expect(service.apply(sessionId, preview.approvalId, nextTimeslot, read, write)).rejects.toThrow(
+      /already used/,
+    );
     expect(write).toHaveBeenCalledOnce();
   });
 
@@ -102,9 +102,9 @@ describe('Silpo Stage 9 timeslot service', () => {
     now = new Date('2026-09-01T08:16:00Z');
     const write = vi.fn();
 
-    await expect(
-      expiringService.apply(sessionId, preview.approvalId, nextTimeslot, read, write),
-    ).rejects.toThrow(/expired/);
+    await expect(expiringService.apply(sessionId, preview.approvalId, nextTimeslot, read, write)).rejects.toThrow(
+      /expired/,
+    );
     expect(write).not.toHaveBeenCalled();
   });
 
@@ -117,9 +117,9 @@ describe('Silpo Stage 9 timeslot service', () => {
       silpo_get_shopping_cart_by_id: cartDetail(currentTimeslot),
     });
 
-    await expect(
-      service.apply(sessionId, preview.approvalId, nextTimeslot, staleRead, write),
-    ).rejects.toThrow(/did not confirm/);
+    await expect(service.apply(sessionId, preview.approvalId, nextTimeslot, staleRead, write)).rejects.toThrow(
+      /did not confirm/,
+    );
     expect(write).toHaveBeenCalledOnce();
   });
 });

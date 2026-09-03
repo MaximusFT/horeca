@@ -76,8 +76,6 @@ describe('Turso Silpo timeslot approval store', () => {
       slots: [{ start: '2026-09-01T12:00:00Z', end: '2026-09-01T14:00:00Z' }],
     });
 
-    await expect(
-      store.claim('session-1', 'approval-expired', '2026-09-01T08:16:00.000Z'),
-    ).resolves.toBeUndefined();
+    await expect(store.claim('session-1', 'approval-expired', '2026-09-01T08:16:00.000Z')).resolves.toBeUndefined();
   });
 });

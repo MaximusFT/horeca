@@ -42,7 +42,5 @@ export function validateCapturedSilpoToolArguments(name: string, args: unknown):
 }
 
 function formatErrors(errors: ErrorObject[]): string {
-  return errors
-    .map((error) => `${error.instancePath || '/'} ${error.message ?? error.keyword}`)
-    .join('; ');
+  return errors.map((error) => `${error.instancePath || '/'} ${error.message ?? error.keyword}`).join('; ');
 }
