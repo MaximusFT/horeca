@@ -37,12 +37,23 @@ export interface AgentToolTrace {
   durationMs: number;
 }
 
+export interface AgentMcpTrace {
+  id: string;
+  operation: string;
+  status: 'completed' | 'failed';
+  durationMs: number;
+  resultSummary: string;
+  createdAt: string;
+}
+
 export interface AgentTurn {
   id: string;
+  startedAt: string;
   mode: 'openai' | 'local';
   model: string;
   message: string;
   trace: AgentToolTrace[];
+  mcpTrace?: AgentMcpTrace[];
   approval?: AgentApprovalView;
   supplierOrder?: SupplierOrderSession;
 }

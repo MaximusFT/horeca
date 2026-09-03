@@ -7,9 +7,14 @@ declare global {
   var __mistoSilpoMcpTraceStore: SilpoMcpTraceStore | undefined;
 }
 
-export function createSilpoMcpTraceStore(): SilpoMcpTraceStore {
-  const configuration = readTursoOAuthConfiguration();
+export function createSilpoMcpTraceStore(
+  configuration = readTursoOAuthConfiguration(),
+  environmentName = process.env.NODE_ENV,
+): SilpoMcpTraceStore {
   if (!configuration.url && !configuration.authToken && !configuration.encryptionKey) {
+    if (environmentName === 'production') {
+      throw new Error('Production MCP trace requires durable Turso storage');
+    }
     return new MemorySilpoMcpTraceStore();
   }
   if (!configuration.url || !configuration.authToken || !configuration.encryptionKey) {

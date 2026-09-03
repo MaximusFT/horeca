@@ -25,6 +25,7 @@ export class AgentRuntime {
   }
 
   async run(rawMessage: string, locale: Locale = DEFAULT_LOCALE): Promise<AgentTurn> {
+    const startedAt = new Date().toISOString();
     const message = messageSchema.parse(rawMessage);
     const trace: AgentToolTrace[] = [];
     let approval: AgentApprovalView | undefined;
@@ -60,6 +61,7 @@ export class AgentRuntime {
     const result = await this.model.run(message, agentToolDefinitions, invoke, locale);
     return {
       id: this.generateId(),
+      startedAt,
       mode: this.model.mode,
       model: this.model.model,
       message: result.message,

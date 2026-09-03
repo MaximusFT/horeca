@@ -57,6 +57,10 @@ Production Stage 10 verification completed on 2026-09-02 through the normal Proc
 
 Repeat live runs are guarded separately from Reset demo. Reset intentionally does not clear or remove real Silpo cart lines. During supplier initialization the gateway reads existing cart product IDs; if the selected live SKU is already present, preparation stops before preview/write instead of using `addQuantity:true` again and increasing the real quantity.
 
+Stage 11 agent visualization now projects each request's sanitized server-side MCP trace into the normal chat response. The open **Agent request execution** timeline distinguishes application decisions from official Silpo MCP calls, numbers the combined sequence, and shows real durations/statuses. While the agent request is running, the client polls only the sanitized trace endpoint so completed MCP calls appear progressively; supplier preview/apply actions refresh the same run timeline through cart write and reread. Chrome DevTools can show browser-to-Next requests but cannot directly show Vercel-to-Silpo MCP transport as page WebMCP activity.
+
+Local browser QA in offline mock mode passed at the desktop drawer viewport: the user command, agent result, supplier approval card, and open numbered execution timeline render in one scrollable surface without horizontal overflow. Reset rebuilt the shifted Sep 15 plan before the run. In mock mode the timeline truthfully showed only two application steps; deployed Silpo mode will add blue `Silpo MCP` entries from the same sanitized trace projection.
+
 Procurement pages show a configuration-derived supplier mode without network probing. Mock mode is visibly labelled as demo; Silpo mode is labelled `Silpo MCP`, while actual operations still require a valid session-scoped OAuth cookie. Merely configuring legacy endpoint/token values never produces a false connected operation.
 
 ## Completed implementation
@@ -205,7 +209,7 @@ Use a dedicated `/debug/mcp` route or server-side script. The first spike should
 At handoff, all checks pass:
 
 ```text
-npm test          → 117 tests passed in 33 files, plus 1 remote smoke test skipped locally without secrets
+npm test          → 120 tests passed in 35 files, plus 1 remote smoke test skipped locally without secrets
 npm run typecheck → passed
 npm run lint      → passed
 npm run build     → passed

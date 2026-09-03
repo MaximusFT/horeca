@@ -79,6 +79,8 @@ Seven captured tools change state: cart creation, cart add/update/remove/clear, 
 
 Server-side MCP calls are recorded in a sanitized trace containing only operation name, argument-key names, completion status, duration, and a structural result summary. Raw arguments/results, tokens, addresses, profile data, and cart contents are not persisted. The trace is displayed by `/debug/mcp` and uses Turso in deployed mode.
 
+The normal Procurement Agent also displays a per-request execution timeline. It combines protected application tools with the sanitized official Silpo MCP calls and updates after supplier preview/write actions. Because MCP transport runs from the Vercel backend, browser DevTools shows calls to the application's Next.js routes rather than direct `mcp.silpo.ua` traffic.
+
 `POST /api/silpo/stage9/read` and the **Run Stage 9 reads** button execute the complete safe read sequence: cart reference, cart details, mandatory timeslot validation, and a three-query product search for eggs, tomatoes, and salmon. The sequence stops before any write when no cart exists or the active timeslot is unavailable. See `STAGE9_SILPO_RUNBOOK.md` for deployed setup, expected reports, browser/GitHub trace inspection, and error diagnostics.
 
 ## Development

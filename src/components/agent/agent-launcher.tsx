@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
 import type { AgentApprovalApplyResult } from '@/application/agent-runtime';
 import type { SupplierOrderSession } from '@/domain/supplier';
-import type { AgentApprovalView, AgentToolTrace, AgentTurn } from '@/domain/agent';
+import type { AgentApprovalView, AgentMcpTrace, AgentToolTrace, AgentTurn } from '@/domain/agent';
 import { demoIngredients } from '@/data/demo/ingredients';
 import { formatLocalizedQuantity } from '@/i18n/format';
 import { getDictionary } from '@/i18n/get-dictionary';
@@ -17,9 +17,11 @@ interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   text: string;
+  startedAt?: string;
   mode?: AgentTurn['mode'];
   model?: string;
   trace?: AgentToolTrace[];
+  mcpTrace?: AgentMcpTrace[];
   approval?: AgentApprovalView;
   supplierOrder?: SupplierOrderSession;
 }
@@ -43,6 +45,7 @@ export function AgentLauncher({ locale }: { locale: Locale }) {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const [activeRun, setActiveRun] = useState<{ startedAt: string; mcpTrace: AgentMcpTrace[] }>();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -59,6 +62,20 @@ export function AgentLauncher({ locale }: { locale: Locale }) {
     setInput('');
     setError(undefined);
     setBusy(true);
+    const startedAt = new Date().toISOString();
+    setActiveRun({ startedAt, mcpTrace: [] });
+    const refreshLiveTrace = async () => {
+      try {
+        const response = await fetch('/api/silpo/trace');
+        const payload = (await response.json()) as { entries?: AgentMcpTrace[] };
+        if (!response.ok || !payload.entries) return;
+        const mcpTrace = payload.entries.filter((entry) => entry.createdAt >= startedAt).reverse();
+        setActiveRun((current) => (current?.startedAt === startedAt ? { ...current, mcpTrace } : current));
+      } catch {
+        // Live observability is optional; the agent request remains authoritative.
+      }
+    };
+    const traceInterval = window.setInterval(() => void refreshLiveTrace(), 750);
     setMessages((current) => [...current, { id: crypto.randomUUID(), role: 'user', text: message }]);
     try {
       const response = await fetch('/api/agent/messages', {
@@ -76,9 +93,11 @@ export function AgentLauncher({ locale }: { locale: Locale }) {
           id: result.id,
           role: 'assistant',
           text: result.message,
+          startedAt: result.startedAt,
           mode: result.mode,
           model: result.model,
           trace: result.trace,
+          mcpTrace: result.mcpTrace,
           approval: result.approval,
           supplierOrder: result.supplierOrder,
         },
@@ -86,6 +105,8 @@ export function AgentLauncher({ locale }: { locale: Locale }) {
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Agent request failed');
     } finally {
+      window.clearInterval(traceInterval);
+      setActiveRun(undefined);
       setBusy(false);
     }
   }
@@ -196,18 +217,37 @@ export function AgentLauncher({ locale }: { locale: Locale }) {
                         />
                       )}
                       {message.supplierOrder && (
-                        <SupplierOrderCard dictionary={dictionary} initialSession={message.supplierOrder} />
+                        <SupplierOrderCard
+                          dictionary={dictionary}
+                          initialSession={message.supplierOrder}
+                          runStartedAt={message.startedAt}
+                          onSessionChange={(supplierOrder) =>
+                            setMessages((current) =>
+                              current.map((candidate) =>
+                                candidate.id === message.id ? { ...candidate, supplierOrder } : candidate,
+                              ),
+                            )
+                          }
+                          onMcpTraceChange={(mcpTrace) =>
+                            setMessages((current) =>
+                              current.map((candidate) =>
+                                candidate.id === message.id ? { ...candidate, mcpTrace } : candidate,
+                              ),
+                            )
+                          }
+                        />
                       )}
                       {message.trace && message.trace.length > 0 && (
-                        <AgentTrace dictionary={dictionary} trace={message.trace} />
+                        <AgentRunTimeline
+                          dictionary={dictionary}
+                          applicationTrace={message.trace}
+                          mcpTrace={message.mcpTrace ?? []}
+                        />
                       )}
                     </article>
                   ))}
                   {busy && (
-                    <div className="flex items-center gap-2 text-xs text-[#77837b]">
-                      <span className="size-4 animate-spin rounded-full border-2 border-[#bdc9c0] border-t-[#3b7950]" />
-                      {dictionary.agent.usingTools}
-                    </div>
+                    <LiveAgentProgress dictionary={dictionary} mcpTrace={activeRun?.mcpTrace ?? []} />
                   )}
                   {error && (
                     <>
@@ -275,12 +315,47 @@ export function AgentLauncher({ locale }: { locale: Locale }) {
   );
 }
 
+function LiveAgentProgress({ dictionary, mcpTrace }: { dictionary: Dictionary; mcpTrace: AgentMcpTrace[] }) {
+  const labels = runTimelineLabels[dictionary.locale];
+  return (
+    <section className="rounded-xl border border-[#d7ded8] bg-white p-3">
+      <div className="flex items-center gap-2 text-xs font-semibold text-[#53675a]">
+        <span className="size-4 animate-spin rounded-full border-2 border-[#bdc9c0] border-t-[#3b7950]" />
+        {labels.running}
+      </div>
+      <div className="mt-3 space-y-2">
+        <div className="flex items-center gap-2 text-[10px] text-[#748078]">
+          <span className="grid size-5 place-items-center rounded-full bg-[#4e8761] font-bold text-white">1</span>
+          <span>{labels.planning}</span>
+        </div>
+        {mcpTrace.map((entry, index) => (
+          <div key={entry.id} className="flex items-start gap-2 text-[10px]">
+            <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[#356b9a] font-bold text-white">
+              {index + 2}
+            </span>
+            <div>
+              <p className="font-semibold text-[#4d5d53]">{mcpToolLabel(entry.operation)}</p>
+              <p className="mt-0.5 text-[#839087]">Silpo MCP · {entry.durationMs} ms</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function SupplierOrderCard({
   dictionary,
   initialSession,
+  runStartedAt,
+  onSessionChange,
+  onMcpTraceChange,
 }: {
   dictionary: Dictionary;
   initialSession: SupplierOrderSession;
+  runStartedAt?: string;
+  onSessionChange: (session: SupplierOrderSession) => void;
+  onMcpTraceChange: (trace: AgentMcpTrace[]) => void;
 }) {
   const [session, setSession] = useState(initialSession);
   const [busy, setBusy] = useState(false);
@@ -303,6 +378,16 @@ function SupplierOrderCard({
         throw new Error('error' in result && result.error ? result.error : 'Supplier workflow failed');
       }
       setSession(result);
+      onSessionChange(result);
+      if (runStartedAt) {
+        const traceResponse = await fetch('/api/silpo/trace');
+        const tracePayload = (await traceResponse.json()) as { entries?: AgentMcpTrace[] };
+        if (traceResponse.ok && tracePayload.entries) {
+          onMcpTraceChange(
+            tracePayload.entries.filter((entry) => entry.createdAt >= runStartedAt).reverse(),
+          );
+        }
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Supplier workflow failed');
     } finally {
@@ -536,23 +621,67 @@ function EventApprovalCard({
   );
 }
 
-function AgentTrace({ dictionary, trace }: { dictionary: Dictionary; trace: AgentToolTrace[] }) {
+function AgentRunTimeline({
+  dictionary,
+  applicationTrace,
+  mcpTrace,
+}: {
+  dictionary: Dictionary;
+  applicationTrace: AgentToolTrace[];
+  mcpTrace: AgentMcpTrace[];
+}) {
+  const labels = runTimelineLabels[dictionary.locale];
+  const supplierTrace = applicationTrace.filter((item) => item.group === 'SUPPLIER');
+  const entries = [
+    ...applicationTrace.filter((item) => item.group !== 'SUPPLIER').map((item) => ({
+      id: item.id,
+      source: 'application' as const,
+      title: applicationToolLabel(item.name, dictionary.locale),
+      detail: item.summary,
+      status: item.status,
+      durationMs: item.durationMs,
+    })),
+    ...mcpTrace.map((item) => ({
+      id: item.id,
+      source: 'mcp' as const,
+      title: mcpToolLabel(item.operation),
+      detail: item.resultSummary,
+      status: item.status,
+      durationMs: item.durationMs,
+    })),
+    ...supplierTrace.map((item) => ({
+      id: item.id,
+      source: 'application' as const,
+      title: applicationToolLabel(item.name, dictionary.locale),
+      detail: item.summary,
+      status: item.status,
+      durationMs: item.durationMs,
+    })),
+  ];
   return (
-    <details className="mt-2 rounded-xl border border-[#dfe3dc] bg-white">
-      <summary className="cursor-pointer px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-[#748178]">
-        {dictionary.agent.activityTrace(trace.length)}
+    <details open className="mt-3 overflow-hidden rounded-xl border border-[#d7ded8] bg-white">
+      <summary className="cursor-pointer bg-[#f5f8f5] px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wide text-[#53675a]">
+        {labels.title} · {entries.length} {labels.steps}
       </summary>
-      <div className="border-t border-[#edf0ec] px-3 py-2">
-        {trace.map((item) => (
-          <div key={item.id} className="flex gap-2 py-1.5">
+      <div className="border-t border-[#e5eae5] px-3 py-2">
+        {entries.map((item, index) => (
+          <div key={item.id} className="grid grid-cols-[22px_1fr] gap-2 py-2">
             <span
-              className={`mt-1.5 size-1.5 shrink-0 rounded-full ${item.status === 'completed' ? 'bg-[#4e9265]' : 'bg-[#c17658]'}`}
-            />
-            <div>
-              <p className="text-[9px] font-bold uppercase tracking-wide text-[#718078]">
-                {item.group} · {item.name} · {item.durationMs} ms
-              </p>
-              <p className="mt-0.5 text-[10px] leading-4 text-[#7b867f]">{item.summary}</p>
+              className={`grid size-[22px] place-items-center rounded-full text-[9px] font-bold text-white ${item.status === 'completed' ? (item.source === 'mcp' ? 'bg-[#356b9a]' : 'bg-[#4e8761]') : 'bg-[#b56d4f]'}`}
+            >
+              {index + 1}
+            </span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span
+                  className={`rounded px-1.5 py-0.5 text-[8px] font-bold uppercase ${item.source === 'mcp' ? 'bg-[#e8f1f8] text-[#356b9a]' : 'bg-[#edf3ef] text-[#4e765a]'}`}
+                >
+                  {item.source === 'mcp' ? labels.officialMcp : labels.application}
+                </span>
+                <p className="text-[10px] font-semibold text-[#4d5d53]">{item.title}</p>
+                <span className="text-[9px] tabular-nums text-[#929b95]">{item.durationMs} ms</span>
+              </div>
+              <p className="mt-1 text-[10px] leading-4 text-[#748078]">{item.detail}</p>
             </div>
           </div>
         ))}
@@ -560,6 +689,51 @@ function AgentTrace({ dictionary, trace }: { dictionary: Dictionary; trace: Agen
     </details>
   );
 }
+
+function applicationToolLabel(name: AgentToolTrace['name'], locale: Locale): string {
+  const labels: Record<AgentToolTrace['name'], { uk: string; en: string }> = {
+    get_event: { uk: 'Прочитати подію', en: 'Read event' },
+    get_procurement_plan: { uk: 'Прочитати план закупівель', en: 'Read procurement plan' },
+    explain_requirement: { uk: 'Пояснити потребу', en: 'Explain requirement' },
+    preview_event_change: { uk: 'Підготувати зміни плану', en: 'Preview plan change' },
+    apply_event_change: { uk: 'Застосувати підтверджену зміну', en: 'Apply approved change' },
+    prepare_supplier_order: { uk: 'Сформувати замовлення постачальнику', en: 'Prepare supplier order' },
+  };
+  return labels[name][locale];
+}
+
+function mcpToolLabel(operation: string): string {
+  const labels: Record<string, string> = {
+    'tools/list': 'Discover Silpo tools',
+    silpo_get_my_shopping_cart: 'Read active Silpo cart',
+    silpo_get_shopping_cart_by_id: 'Read and verify Silpo cart',
+    silpo_get_time_slots: 'Validate Silpo delivery slot',
+    silpo_find_products_batch: 'Search Silpo products',
+    silpo_get_replacements: 'Check Silpo replacement risk',
+    silpo_update_shopping_cart: 'Update Silpo delivery settings',
+    silpo_add_or_update_cart_products: 'Write approved products to Silpo cart',
+  };
+  return labels[operation] ?? operation;
+}
+
+const runTimelineLabels = {
+  uk: {
+    title: 'Виконання запиту агента',
+    steps: 'кроків',
+    officialMcp: 'Silpo MCP',
+    application: 'Застосунок',
+    running: 'Агент виконує запит',
+    planning: 'Аналіз запиту та контексту закупівель',
+  },
+  en: {
+    title: 'Agent request execution',
+    steps: 'steps',
+    officialMcp: 'Silpo MCP',
+    application: 'Application',
+    running: 'Agent is executing the request',
+    planning: 'Analyze request and procurement context',
+  },
+} as const;
 
 function Suggestion({ children, onClick }: { children: string; onClick: (value: string) => void }) {
   return (
