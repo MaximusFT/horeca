@@ -11,6 +11,7 @@ import { formatLocalizedQuantity } from '@/i18n/format';
 import { getDictionary } from '@/i18n/get-dictionary';
 import { localizedIngredientName } from '@/i18n/demo-names';
 import type { Dictionary, Locale } from '@/i18n';
+import { isSupplierSlotError, SilpoTimeslotRecovery } from '@/components/procurement/silpo-timeslot-recovery';
 
 interface ChatMessage {
   id: string;
@@ -209,12 +210,20 @@ export function AgentLauncher({ locale }: { locale: Locale }) {
                     </div>
                   )}
                   {error && (
-                    <div
-                      role="alert"
-                      className="rounded-xl border border-[#efc9bb] bg-[#fff4ef] px-4 py-3 text-sm text-[#9c5138]"
-                    >
-                      {error}
-                    </div>
+                    <>
+                      <div
+                        role="alert"
+                        className="rounded-xl border border-[#efc9bb] bg-[#fff4ef] px-4 py-3 text-sm text-[#9c5138]"
+                      >
+                        {error}
+                      </div>
+                      {isSupplierSlotError(error) && (
+                        <SilpoTimeslotRecovery
+                          locale={locale}
+                          onUpdated={() => submit(undefined, dictionary.agent.suggestions.prepareSupplierOrder)}
+                        />
+                      )}
+                    </>
                   )}
                 </div>
               </div>

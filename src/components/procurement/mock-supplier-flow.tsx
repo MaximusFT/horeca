@@ -5,6 +5,7 @@ import type { SupplierOrderSession } from '@/domain/supplier';
 import { formatLocalizedQuantity } from '@/i18n/format';
 import { getDictionary } from '@/i18n/get-dictionary';
 import type { Locale } from '@/i18n';
+import { isSupplierSlotError, SilpoTimeslotRecovery } from './silpo-timeslot-recovery';
 
 export function SupplierOrderFlow({ batchId, locale }: { batchId: string; locale: Locale }) {
   const dictionary = getDictionary(locale);
@@ -103,12 +104,20 @@ export function SupplierOrderFlow({ batchId, locale }: { batchId: string; locale
               )}
 
               {error && (
-                <div
-                  role="alert"
-                  className="mb-4 rounded-xl border border-[#efc9bb] bg-[#fff4ef] px-4 py-3 text-sm text-[#9c5138]"
-                >
-                  {error}
-                </div>
+                <>
+                  <div
+                    role="alert"
+                    className="mb-4 rounded-xl border border-[#efc9bb] bg-[#fff4ef] px-4 py-3 text-sm text-[#9c5138]"
+                  >
+                    {error}
+                  </div>
+                  {isSupplierSlotError(error) && (
+                    <SilpoTimeslotRecovery
+                      locale={locale}
+                      onUpdated={() => call(`/api/suppliers/batches/${batchId}/prepare`)}
+                    />
+                  )}
+                </>
               )}
 
               {session && (

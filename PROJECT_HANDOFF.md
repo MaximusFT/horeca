@@ -35,6 +35,8 @@ The one-click Stage 9 read orchestrator is implemented at `POST /api/silpo/stage
 
 The `timeslot_update_required` branch now has a guarded vertical slice. `POST /api/silpo/stage9/timeslot/preview` rereads the cart, fetches available slots, and stores an encrypted 15-minute approval containing cart-owned address/shipments and the offered slots. `POST /api/silpo/stage9/timeslot/apply` atomically claims that approval, permits only `silpo_update_shopping_cart`, and immediately rereads the cart to verify the exact approved slot. The generic tool runner remains read-only. In deployed mode approvals are durable in Turso; raw cart context is AES-256-GCM encrypted and never returned to the browser.
 
+Expired current-cart slots are now recoverable inside the normal Procurement Agent and supplier drawer. The error renders a localized **Find available slots** action, displays only currently available alternatives, requires explicit human approval, uses the existing encrypted one-time approval routes, verifies the updated cart through reread, and automatically retries supplier preparation. If Silpo returns no alternatives, the card remains retryable without page reload. Procurement batch dates are not presented as the cause of real-time Silpo slot capacity.
+
 The bounded Stage 9 product-write spike is implemented behind separate preview/apply routes. Preview validates the active cart and slot, searches only `яйця`, excludes products already present in the cart, and stores one eligible in-stock candidate in an encrypted 15-minute approval. The browser receives only its name, display ratio, price, and proposed step quantity. Apply atomically claims the approval, permits one additive `silpo_add_or_update_cart_products` call, then immediately rereads the cart and requires both the approved product ID and `cart.calculation.validations[]`. Existing cart lines are never cleared or replaced. Error-level validations produce a warning state rather than a false verified result.
 
 Production verification completed on 2026-09-02. The user approved one bounded candidate (quail eggs); sanitized durable trace confirmed `silpo_add_or_update_cart_products` completed in 1221 ms and was immediately followed by a completed `silpo_get_shopping_cart_by_id` in 1471 ms. The UI reported successful verification. No raw cart values, product identifiers, address data, or tokens were persisted in trace. Stage 9 OAuth, live schema discovery, cart context, approved timeslot update, product search, one approved additive write, and cart reread are now proven end to end.
@@ -201,7 +203,7 @@ Use a dedicated `/debug/mcp` route or server-side script. The first spike should
 At handoff, all checks pass:
 
 ```text
-npm test          → 114 tests passed in 32 files, plus 1 remote smoke test skipped locally without secrets
+npm test          → 116 tests passed in 33 files, plus 1 remote smoke test skipped locally without secrets
 npm run typecheck → passed
 npm run lint      → passed
 npm run build     → passed
