@@ -16,7 +16,7 @@ describe('mock supplier order approvals', () => {
       ingredients: demoIngredients,
       preferredProductByIngredient: preferredMockProductByIngredient,
     });
-    const batch = planning.repository.getState().activePlan.batches[0];
+    const batch = (await planning.repository.getState()).activePlan.batches[0];
 
     await expect(service.prepareBatch(batch.id)).rejects.toThrow(
       'The current supplier cart delivery slot is no longer available',
@@ -34,8 +34,8 @@ describe('mock supplier order approvals', () => {
       preferredProductByIngredient: preferredMockProductByIngredient,
       generateId: idSequence(),
     });
-    const batch = planning.repository
-      .getState()
+    const batch = (await planning.repository
+      .getState())
       .activePlan.batches.find((candidate) => candidate.lines.some((line) => line.ingredientId === 'salmon'));
     expect(batch).toBeDefined();
 
@@ -82,12 +82,12 @@ describe('mock supplier order approvals', () => {
       preferredProductByIngredient: preferredMockProductByIngredient,
       generateId: idSequence(),
     });
-    const batch = planning.repository
-      .getState()
+    const batch = (await planning.repository
+      .getState())
       .activePlan.batches.find((candidate) => candidate.lines.some((line) => line.ingredientId === 'salmon'))!;
     const prepared = await service.prepareBatch(batch.id);
-    const eventPreview = planning.service.previewEventChange('wedding', 200);
-    planning.service.applyEventChange(eventPreview.id);
+    const eventPreview = await planning.service.previewEventChange('wedding', 200);
+    await planning.service.applyEventChange(eventPreview.id);
 
     await expect(service.approveSubstitution(prepared.id, 'salmon', 'mock-salmon-fillet-400')).rejects.toThrow(/stale/);
   });
@@ -104,10 +104,10 @@ describe('mock supplier order approvals', () => {
       generateId: ids,
     });
 
-    const wedding = planning.service.previewEventChange('wedding', 200);
-    planning.service.applyEventChange(wedding.id);
-    const batch = planning.repository
-      .getState()
+    const wedding = await planning.service.previewEventChange('wedding', 200);
+    await planning.service.applyEventChange(wedding.id);
+    const batch = (await planning.repository
+      .getState())
       .activePlan.batches.find((candidate) => candidate.lines.some((line) => line.ingredientId === 'salmon'))!;
     const prepared = await service.prepareBatch(batch.id);
     const replacement = prepared.lines.find((line) => line.ingredientId === 'salmon')!.replacements[0];
@@ -133,8 +133,8 @@ describe('mock supplier order approvals', () => {
       ingredients: demoIngredients,
       preferredProductByIngredient: preferredMockProductByIngredient,
     });
-    const batch = planning.repository
-      .getState()
+    const batch = (await planning.repository
+      .getState())
       .activePlan.batches.find((candidate) => candidate.lines.some((line) => line.ingredientId === 'salmon'))!;
     const prepared = await service.prepareBatch(batch.id);
     const salmon = prepared.lines.find((line) => line.ingredientId === 'salmon')!;

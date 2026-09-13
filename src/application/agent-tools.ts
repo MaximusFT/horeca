@@ -119,16 +119,22 @@ export class AgentToolService {
     return this.dependencies.approvals.require(approvalId);
   }
 
-  private getEvent({ eventId }: z.infer<typeof getEventSchema>, locale: Locale): AgentToolResult {
-    const event = this.dependencies.repository.getState().events.find((item) => item.id === eventId);
+  private async getEvent(
+    { eventId }: z.infer<typeof getEventSchema>,
+    locale: Locale,
+  ): Promise<AgentToolResult> {
+    const event = (await this.dependencies.repository.getState()).events.find((item) => item.id === eventId);
     if (!event) throw new Error(`Unknown event ${eventId}`);
     const dictionary = getDictionary(locale);
     const eventName = localizedEventName(event.id, event.name, locale);
     return { output: event, summary: dictionary.agentTools.readEvent(eventName, event.guestCount) };
   }
 
-  private getProcurementPlan({ batchId }: z.infer<typeof getPlanSchema>, locale: Locale): AgentToolResult {
-    const plan = this.dependencies.repository.getState().activePlan;
+  private async getProcurementPlan(
+    { batchId }: z.infer<typeof getPlanSchema>,
+    locale: Locale,
+  ): Promise<AgentToolResult> {
+    const plan = (await this.dependencies.repository.getState()).activePlan;
     const ingredientNames = this.ingredientById;
     const dictionary = getDictionary(locale);
     if (batchId) {
@@ -173,11 +179,11 @@ export class AgentToolService {
     };
   }
 
-  private explainRequirement(
+  private async explainRequirement(
     { ingredientId, batchId }: z.infer<typeof explainSchema>,
     locale: Locale,
-  ): AgentToolResult {
-    const plan = this.dependencies.repository.getState().activePlan;
+  ): Promise<AgentToolResult> {
+    const plan = (await this.dependencies.repository.getState()).activePlan;
     const ingredient = this.ingredientById.get(ingredientId);
     if (!ingredient) throw new Error(`Unknown ingredient ${ingredientId}`);
     const candidates = batchId
@@ -197,8 +203,11 @@ export class AgentToolService {
     };
   }
 
-  private previewEventChange({ eventId, guestCount }: z.infer<typeof previewSchema>, locale: Locale): AgentToolResult {
-    const preview = this.dependencies.planningService.previewEventChange(eventId, guestCount);
+  private async previewEventChange(
+    { eventId, guestCount }: z.infer<typeof previewSchema>,
+    locale: Locale,
+  ): Promise<AgentToolResult> {
+    const preview = await this.dependencies.planningService.previewEventChange(eventId, guestCount);
     const dto = toEventChangePreviewDto(preview);
     const approval = this.dependencies.approvals.save({
       id: this.generateId(),
@@ -224,13 +233,16 @@ export class AgentToolService {
     };
   }
 
-  private applyEventChange({ approvalId }: z.infer<typeof applySchema>, locale: Locale): AgentToolResult {
+  private async applyEventChange(
+    { approvalId }: z.infer<typeof applySchema>,
+    locale: Locale,
+  ): Promise<AgentToolResult> {
     const approval = this.dependencies.approvals.require(approvalId);
     if (approval.status !== 'approved') {
       throw new Error(`Mutation blocked: approval ${approvalId} is ${approval.status}`);
     }
     try {
-      const result = this.dependencies.planningService.applyEventChange(approval.preview.id);
+      const result = await this.dependencies.planningService.applyEventChange(approval.preview.id);
       this.dependencies.approvals.setStatus(approvalId, 'applied');
       const dictionary = getDictionary(locale);
       const eventName = localizedEventName(result.event.id, result.event.name, locale);
@@ -252,7 +264,7 @@ export class AgentToolService {
     { batchId }: z.infer<typeof getPlanSchema>,
     locale: Locale,
   ): Promise<AgentToolResult> {
-    const plan = this.dependencies.repository.getState().activePlan;
+    const plan = (await this.dependencies.repository.getState()).activePlan;
     const batch = batchId ? plan.batches.find((item) => item.id === batchId) : plan.batches[0];
     if (!batch) throw new Error(batchId ? `Unknown procurement batch ${batchId}` : 'No procurement batch available');
     const supplierOrder = await this.dependencies.supplierOrders.prepareBatch(batch.id, locale);

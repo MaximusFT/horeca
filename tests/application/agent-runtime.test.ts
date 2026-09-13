@@ -21,13 +21,13 @@ describe('single procurement agent', () => {
     expect(turn.trace.map((item) => item.name)).toEqual(['get_event', 'preview_event_change']);
     expect(turn.approval?.status).toBe('pending');
     expect(turn.approval?.preview.afterGuestCount).toBe(220);
-    expect(planning.repository.getState().events.find((event) => event.id === 'wedding')?.guestCount).toBe(180);
-    expect(planning.repository.getState().activePlan.version).toBe(1);
+    expect((await planning.repository.getState()).events.find((event) => event.id === 'wedding')?.guestCount).toBe(180);
+    expect((await planning.repository.getState()).activePlan.version).toBe(1);
 
     await expect(tools.execute('apply_event_change', { approvalId: turn.approval!.id })).rejects.toThrow(
       /Mutation blocked/,
     );
-    expect(planning.repository.getState().activePlan.version).toBe(1);
+    expect((await planning.repository.getState()).activePlan.version).toBe(1);
   });
 
   it('applies the stored candidate only through the explicit approval endpoint use case', async () => {
@@ -38,21 +38,21 @@ describe('single procurement agent', () => {
     expect(result.approval.status).toBe('applied');
     expect(result.trace.name).toBe('apply_event_change');
     expect(result.trace.group).toBe('MUTATE');
-    expect(planning.repository.getState().events.find((event) => event.id === 'wedding')?.guestCount).toBe(220);
-    expect(planning.repository.getState().activePlan.version).toBe(2);
+    expect((await planning.repository.getState()).events.find((event) => event.id === 'wedding')?.guestCount).toBe(220);
+    expect((await planning.repository.getState()).activePlan.version).toBe(2);
     await expect(agent.approveAndApply(turn.approval!.id)).rejects.toThrow(/already applied/);
   });
 
   it('explains chicken only from deterministic provenance', async () => {
     const { planning, agent } = createAgent();
-    const before = planning.repository.getState();
+    const before = await planning.repository.getState();
     const turn = await agent.run('Why do we need so much chicken?', 'en');
 
     expect(turn.trace.map((item) => item.name)).toEqual(['explain_requirement']);
     expect(turn.message).toContain('Chicken breast');
     expect(turn.message).toContain('gross covered demand');
     expect(turn.approval).toBeUndefined();
-    expect(planning.repository.getState()).toEqual(before);
+    await expect(planning.repository.getState()).resolves.toEqual(before);
   });
 
   it('exposes the guarded application tools with strict schemas', () => {

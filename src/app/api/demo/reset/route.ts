@@ -10,7 +10,7 @@ export async function POST() {
       const sessionId = (await cookies()).get(SILPO_OAUTH_SESSION_COOKIE)?.value;
       if (sessionId) await getSupplierOrderSessionStore().clearScope(sessionId);
     }
-    resetDemoPlanningRuntime();
+    await resetDemoPlanningRuntime();
     return Response.json({ ok: true });
   } catch (error) {
     return Response.json(

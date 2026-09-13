@@ -16,7 +16,7 @@ export default async function ProcurementBatchPage({ params }: { params: Promise
   const locale = await getServerLocale();
   const dictionary = getDictionary(locale);
   const supplierStatus = getSupplierRuntimeStatus();
-  const { activePlan } = getDemoPlanningRuntime().repository.getState();
+  const { activePlan } = await getDemoPlanningRuntime().repository.getState();
   const batch = activePlan.batches.find((item) => item.id === batchId);
   if (!batch) notFound();
   const ingredientById = new Map(demoIngredients.map((item) => [item.id, item]));

@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export default async function EventsPage() {
   const locale = await getServerLocale();
   const dictionary = getDictionary(locale);
-  const { events, activePlan } = getDemoPlanningRuntime().repository.getState();
+  const { events, activePlan } = await getDemoPlanningRuntime().repository.getState();
 
   return (
     <AppShell activeKey="events">

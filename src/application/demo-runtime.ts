@@ -1,4 +1,4 @@
-import { createDemoPlanning } from './demo-planning';
+import { createDemoPlanning, createDemoPlanningState } from './demo-planning';
 import { SupplierOrderService } from './supplier-order-service';
 import { createSupplierGateway } from '@/infrastructure/supplier-runtime';
 import { demoIngredients } from '@/data/demo/ingredients';
@@ -8,9 +8,11 @@ import { AgentToolService } from './agent-tools';
 import { AgentRuntime } from './agent-runtime';
 import { LocalAgentModel } from './local-agent-model';
 import { OpenAIResponsesAgentModel } from '@/infrastructure/openai-responses-agent-model';
+import { createPlanningRepository } from '@/infrastructure/create-planning-repository';
 
 function createDemoRuntime() {
-  const planning = createDemoPlanning();
+  const initialState = createDemoPlanningState();
+  const planning = createDemoPlanning(undefined, undefined, createPlanningRepository(initialState));
   const supplierGateway = createSupplierGateway();
   const supplierOrders = new SupplierOrderService({
     repository: planning.repository,
@@ -49,7 +51,8 @@ export function getDemoPlanningRuntime(): DemoPlanningRuntime {
 }
 
 // Rebuilds the shared demo runtime from scratch so a public demo link can always return to Wedding 180 / Plan v1.
-export function resetDemoPlanningRuntime(): DemoPlanningRuntime {
+export async function resetDemoPlanningRuntime(): Promise<DemoPlanningRuntime> {
+  await getDemoPlanningRuntime().repository.reset(createDemoPlanningState());
   globalThis.__mistoPlanningRuntime = createDemoRuntime();
   return globalThis.__mistoPlanningRuntime;
 }

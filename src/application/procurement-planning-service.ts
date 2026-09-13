@@ -21,16 +21,16 @@ export class ProcurementPlanningService {
     this.generateId = dependencies.generateId ?? randomUUID;
   }
 
-  getCurrentProcurementPlan() {
-    return this.dependencies.repository.getState().activePlan;
+  async getCurrentProcurementPlan() {
+    return (await this.dependencies.repository.getState()).activePlan;
   }
 
-  previewEventChange(eventId: string, guestCount: number): EventChangePreview {
+  async previewEventChange(eventId: string, guestCount: number): Promise<EventChangePreview> {
     if (!Number.isInteger(guestCount) || guestCount < 0) {
       throw new Error('Guest count must be a non-negative integer');
     }
 
-    const state = this.dependencies.repository.getState();
+    const state = await this.dependencies.repository.getState();
     const event = state.events.find((item) => item.id === eventId);
     if (!event) throw new Error(`Unknown event ${eventId}`);
     if (event.guestCount === guestCount) throw new Error(`Event ${eventId} already has ${guestCount} guests`);
@@ -63,29 +63,29 @@ export class ProcurementPlanningService {
       status: 'pending',
     };
 
-    this.dependencies.repository.savePreview(preview);
+    await this.dependencies.repository.savePreview(preview);
     return preview;
   }
 
-  applyEventChange(previewId: string) {
-    const preview = this.dependencies.repository.getPreview(previewId);
+  async applyEventChange(previewId: string) {
+    const preview = await this.dependencies.repository.getPreview(previewId);
     if (!preview) throw new Error(`Unknown event change preview ${previewId}`);
     if (preview.status !== 'pending') throw new Error(`Preview ${previewId} is ${preview.status}`);
 
     const now = this.dependencies.clock.now();
     if (now.getTime() > new Date(preview.expiresAt).getTime()) {
-      this.dependencies.repository.savePreviewStatus(previewId, 'expired');
+      await this.dependencies.repository.savePreviewStatus(previewId, 'expired');
       throw new Error(`Preview ${previewId} has expired`);
     }
 
-    const state = this.dependencies.repository.getState();
+    const state = await this.dependencies.repository.getState();
     const currentEvent = state.events.find((event) => event.id === preview.eventId);
     if (
       state.activePlan.version !== preview.basePlanVersion ||
       !currentEvent ||
       currentEvent.guestCount !== preview.beforeGuestCount
     ) {
-      this.dependencies.repository.savePreviewStatus(previewId, 'stale');
+      await this.dependencies.repository.savePreviewStatus(previewId, 'stale');
       throw new Error(`Preview ${previewId} is stale`);
     }
 
@@ -102,13 +102,13 @@ export class ProcurementPlanningService {
       planVersion: preview.candidatePlan.version,
     };
 
-    this.dependencies.repository.saveState({
+    await this.dependencies.repository.saveState({
       events,
       activePlan: preview.candidatePlan,
       planHistory: [...state.planHistory, preview.candidatePlan],
       recentChanges: [change, ...state.recentChanges],
     });
-    this.dependencies.repository.savePreviewStatus(previewId, 'applied');
+    await this.dependencies.repository.savePreviewStatus(previewId, 'applied');
 
     return {
       event: events.find((event) => event.id === preview.eventId)!,

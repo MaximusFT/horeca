@@ -54,6 +54,8 @@ To opt into the OpenAI Responses API, copy `.env.example` to `.env.local`, set `
 
 When `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and a base64-encoded 32-byte `SILPO_OAUTH_ENCRYPTION_KEY` are configured, OAuth DCR information, PKCE state, discovery metadata, access tokens, and refresh tokens are stored in Turso using AES-256-GCM. With none of these variables configured, local development uses process memory. Partial durable configuration fails explicitly rather than silently storing secrets in memory.
 
+Planning state and event-change previews also use Turso whenever `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` are configured. Production requires this durable repository so an approved Wedding change remains visible when the next request runs on a different serverless instance. Local development retains the in-memory repository.
+
 Cloud-provider setup and CLI commands are never run from the corporate development machine. `PERSONAL_MACHINE_ACTIONS.md` is the authoritative queue for database creation, token rotation, deployment secrets, and publishing actions that the project owner executes from a personal computer.
 
 The manual GitHub Actions workflow `.github/workflows/turso-storage-smoke.yml` verifies the real encrypted Turso adapter outside the corporate network. It requires the three repository secrets above, writes a unique temporary OAuth record, validates encrypted persistence, and removes the record in `finally`. This provides the same `Node.js → Turso` check that corporate TLS interception prevents locally, without requiring Windows WSL or a personal server.
@@ -125,7 +127,7 @@ The primary installed libraries are MIT-licensed: Next.js 16.3.3, React/React DO
 
 ## Known limitations
 
-The live Silpo MCP spike and adapter are implemented in later locked stages described by the project specification. Agent conversations remain client-local, while approvals, mutable planning state, supplier sessions, and the mock cart are intentionally held in server memory at this milestone. Mock products and prices are synthetic and are labeled as such in the UI.
+The live Silpo MCP spike and adapter are implemented in later locked stages described by the project specification. Agent conversations remain client-local, and agent approval records plus the mock cart remain process-local. Deployed planning state, event-change previews, and supplier sessions use Turso. Mock products and prices are synthetic and are labeled as such in the UI.
 
 ## Implementation assumptions
 

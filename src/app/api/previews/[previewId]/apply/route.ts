@@ -3,7 +3,7 @@ import { getDemoPlanningRuntime } from "@/application/demo-runtime";
 export async function POST(_request: Request, context: { params: Promise<{ previewId: string }> }) {
   try {
     const { previewId } = await context.params;
-    const result = getDemoPlanningRuntime().service.applyEventChange(previewId);
+    const result = await getDemoPlanningRuntime().service.applyEventChange(previewId);
     return Response.json({
       event: result.event,
       planVersion: result.plan.version,

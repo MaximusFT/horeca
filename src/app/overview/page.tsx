@@ -20,7 +20,7 @@ const loadStyleClass = {
 export default async function OverviewPage() {
   const locale = await getServerLocale();
   const dictionary = getDictionary(locale);
-  const state = getDemoPlanningRuntime().repository.getState();
+  const state = await getDemoPlanningRuntime().repository.getState();
   const activeDataset = { ...demoDataset, events: state.events };
   const summary = buildOverviewSummary(activeDataset, state.activePlan, state.recentChanges, locale);
 

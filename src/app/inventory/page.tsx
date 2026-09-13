@@ -29,7 +29,7 @@ export default async function InventoryPage() {
   const locale = await getServerLocale();
   const dictionary = getDictionary(locale);
   const runtime = getDemoPlanningRuntime();
-  const { activePlan } = runtime.repository.getState();
+  const { activePlan } = await runtime.repository.getState();
   const rows = buildInventorySummary(
     demoDataset.ingredients,
     demoDataset.inventoryLots,

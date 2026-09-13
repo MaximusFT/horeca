@@ -8,7 +8,7 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
   try {
     const { eventId } = await context.params;
     const body = requestSchema.parse(await request.json());
-    const preview = getDemoPlanningRuntime().service.previewEventChange(eventId, body.guestCount);
+    const preview = await getDemoPlanningRuntime().service.previewEventChange(eventId, body.guestCount);
     return Response.json(toEventChangePreviewDto(preview));
   } catch (error) {
     return Response.json(

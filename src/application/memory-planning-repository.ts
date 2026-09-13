@@ -12,26 +12,31 @@ export class MemoryPlanningRepository implements PlanningRepository {
     this.state = structuredClone(initialState);
   }
 
-  getState(): PlanningState {
+  async getState(): Promise<PlanningState> {
     return structuredClone(this.state);
   }
 
-  saveState(state: PlanningState): void {
+  async saveState(state: PlanningState): Promise<void> {
     this.state = structuredClone(state);
   }
 
-  savePreview(preview: EventChangePreview): void {
+  async savePreview(preview: EventChangePreview): Promise<void> {
     this.previews.set(preview.id, structuredClone(preview));
   }
 
-  getPreview(id: string): EventChangePreview | undefined {
+  async getPreview(id: string): Promise<EventChangePreview | undefined> {
     const preview = this.previews.get(id);
     return preview ? structuredClone(preview) : undefined;
   }
 
-  savePreviewStatus(id: string, status: EventChangePreview["status"]): void {
+  async savePreviewStatus(id: string, status: EventChangePreview["status"]): Promise<void> {
     const preview = this.previews.get(id);
     if (!preview) throw new Error(`Unknown event change preview ${id}`);
     this.previews.set(id, { ...preview, status });
+  }
+
+  async reset(state: PlanningState): Promise<void> {
+    this.state = structuredClone(state);
+    this.previews.clear();
   }
 }

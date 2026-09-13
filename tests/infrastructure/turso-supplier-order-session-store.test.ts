@@ -23,7 +23,7 @@ describe('Turso supplier order session store', () => {
       ingredients: demoIngredients,
       preferredProductByIngredient: preferredMockProductByIngredient,
     });
-    const session = await service.prepareBatch(planning.repository.getState().activePlan.batches[0].id);
+    const session = await service.prepareBatch((await planning.repository.getState()).activePlan.batches[0].id);
 
     await store.set('oauth-a', session);
 
@@ -41,7 +41,7 @@ describe('Turso supplier order session store', () => {
       ingredients: demoIngredients,
       preferredProductByIngredient: preferredMockProductByIngredient,
     });
-    const session = await service.prepareBatch(planning.repository.getState().activePlan.batches[0].id);
+    const session = await service.prepareBatch((await planning.repository.getState()).activePlan.batches[0].id);
     const cartPreviewSession = { ...session, status: 'cart_preview' as const };
     await store.set('oauth-a', cartPreviewSession);
 
@@ -62,7 +62,7 @@ describe('Turso supplier order session store', () => {
       ingredients: demoIngredients,
       preferredProductByIngredient: preferredMockProductByIngredient,
     });
-    const session = await service.prepareBatch(planning.repository.getState().activePlan.batches[0].id);
+    const session = await service.prepareBatch((await planning.repository.getState()).activePlan.batches[0].id);
     await store.set('oauth-a', session);
     await store.set('oauth-b', session);
 

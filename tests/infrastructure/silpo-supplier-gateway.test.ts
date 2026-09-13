@@ -106,7 +106,7 @@ describe('Silpo supplier gateway', () => {
         demoIngredients.map((ingredient) => [ingredient.id, `silpo-search:${ingredient.id}`]),
       ),
     });
-    const batch = planning.repository.getState().activePlan.batches[0];
+    const batch = (await planning.repository.getState()).activePlan.batches[0];
 
     const prepared = await service.prepareBatch(batch.id);
     expect(prepared.supplier.mode).toBe('live');
@@ -135,7 +135,7 @@ describe('Silpo supplier gateway', () => {
       planning,
       sessions,
     );
-    const batch = planning.repository.getState().activePlan.batches[0];
+    const batch = (await planning.repository.getState()).activePlan.batches[0];
     const prepared = await firstService.prepareBatch(batch.id);
 
     const secondService = createService(

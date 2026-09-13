@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 export default async function EventDetailPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params;
   const locale = await getServerLocale();
-  const state = getDemoPlanningRuntime().repository.getState();
+  const state = await getDemoPlanningRuntime().repository.getState();
   const event = state.events.find((item) => item.id === eventId);
   if (!event) notFound();
   const menuNames = new Map(demoMenuItems.map((item) => [item.id, localizedMenuItemName(item.id, item.name, locale)]));

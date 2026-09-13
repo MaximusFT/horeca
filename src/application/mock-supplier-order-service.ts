@@ -42,7 +42,7 @@ export class SupplierOrderService {
   }
 
   async prepareBatch(batchId: string, locale: Locale = 'uk'): Promise<SupplierOrderSession> {
-    const state = this.dependencies.repository.getState();
+    const state = await this.dependencies.repository.getState();
     const batch = state.activePlan.batches.find((item) => item.id === batchId);
     if (!batch) throw new Error(`Unknown procurement batch ${batchId}`);
 
@@ -138,7 +138,7 @@ export class SupplierOrderService {
     locale: Locale = 'uk',
   ): Promise<SupplierOrderSession> {
     const session = await this.getSession(sessionId);
-    this.assertCurrentPlan(session);
+    await this.assertCurrentPlan(session);
     if (session.status !== 'needs_substitution') throw new Error('Supplier order does not need a substitution');
     const line = session.lines.find((item) => item.ingredientId === ingredientId && !item.selectedProduct);
     if (!line) throw new Error(`No unresolved supplier line for ${ingredientId}`);
@@ -163,7 +163,7 @@ export class SupplierOrderService {
 
   async previewCart(sessionId: string, locale: Locale = 'uk'): Promise<SupplierOrderSession> {
     const session = await this.getSession(sessionId);
-    this.assertCurrentPlan(session);
+    await this.assertCurrentPlan(session);
     if (session.status !== 'ready_for_cart') throw new Error('Resolve substitutions before reviewing the cart');
     const preview = await this.dependencies.gateway.prepareCart({
       cartId: session.supplier.cartId,
@@ -201,7 +201,7 @@ export class SupplierOrderService {
   async applyCart(sessionId: string, locale: Locale = 'uk'): Promise<SupplierOrderSession> {
     const session = await this.sessionStore.claimCartApply(this.sessionScope, sessionId);
     if (!session) throw new Error('A reviewed cart preview is required before cart apply');
-    this.assertCurrentPlan(session);
+    await this.assertCurrentPlan(session);
     if (!session.cartPreview) {
       throw new Error('A reviewed cart preview is required before cart apply');
     }
@@ -235,8 +235,8 @@ export class SupplierOrderService {
     return this.save(session);
   }
 
-  private assertCurrentPlan(session: SupplierOrderSession): void {
-    if (this.dependencies.repository.getState().activePlan.version !== session.planVersion) {
+  private async assertCurrentPlan(session: SupplierOrderSession): Promise<void> {
+    if ((await this.dependencies.repository.getState()).activePlan.version !== session.planVersion) {
       throw new Error('Supplier order session is stale because the procurement plan changed');
     }
   }

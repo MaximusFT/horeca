@@ -33,9 +33,10 @@ export interface EventChangePreview {
 }
 
 export interface PlanningRepository {
-  getState(): PlanningState;
-  saveState(state: PlanningState): void;
-  savePreview(preview: EventChangePreview): void;
-  getPreview(id: string): EventChangePreview | undefined;
-  savePreviewStatus(id: string, status: EventChangePreview['status']): void;
+  getState(): Promise<PlanningState>;
+  saveState(state: PlanningState): Promise<void>;
+  savePreview(preview: EventChangePreview): Promise<void>;
+  getPreview(id: string): Promise<EventChangePreview | undefined>;
+  savePreviewStatus(id: string, status: EventChangePreview['status']): Promise<void>;
+  reset(state: PlanningState): Promise<void>;
 }

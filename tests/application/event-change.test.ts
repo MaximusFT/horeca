@@ -3,12 +3,12 @@ import type { Clock } from '@/lib/clock';
 import { createDemoPlanning } from '@/application/demo-planning';
 
 describe('Wedding event change', () => {
-  it('previews 180→200 without mutating state, then applies the stored candidate as plan v2', () => {
+  it('previews 180→200 without mutating state, then applies the stored candidate as plan v2', async () => {
     const ids = idSequence();
     const { repository, service } = createDemoPlanning(undefined, ids);
 
-    const preview = service.previewEventChange('wedding', 200);
-    const stateBeforeApproval = repository.getState();
+    const preview = await service.previewEventChange('wedding', 200);
+    const stateBeforeApproval = await repository.getState();
 
     expect(preview.beforeGuestCount).toBe(180);
     expect(preview.afterGuestCount).toBe(200);
@@ -21,8 +21,8 @@ describe('Wedding event change', () => {
     expect(stateBeforeApproval.events.find((event) => event.id === 'wedding')?.guestCount).toBe(180);
     expect(stateBeforeApproval.activePlan.version).toBe(1);
 
-    const applied = service.applyEventChange(preview.id);
-    const stateAfterApproval = repository.getState();
+    const applied = await service.applyEventChange(preview.id);
+    const stateAfterApproval = await repository.getState();
 
     expect(applied.event.guestCount).toBe(200);
     expect(applied.plan.version).toBe(2);
@@ -31,39 +31,39 @@ describe('Wedding event change', () => {
     expect(stateAfterApproval.planHistory).toHaveLength(2);
     expect(stateAfterApproval.recentChanges[0].beforeGuestCount).toBe(180);
     expect(stateAfterApproval.recentChanges[0].afterGuestCount).toBe(200);
-    expect(repository.getPreview(preview.id)?.status).toBe('applied');
+    expect((await repository.getPreview(preview.id))?.status).toBe('applied');
   });
 
-  it('rejects a preview made stale by another approved change', () => {
+  it('rejects a preview made stale by another approved change', async () => {
     const { repository, service } = createDemoPlanning(undefined, idSequence());
-    const first = service.previewEventChange('wedding', 200);
-    const second = service.previewEventChange('wedding', 220);
+    const first = await service.previewEventChange('wedding', 200);
+    const second = await service.previewEventChange('wedding', 220);
 
-    service.applyEventChange(first.id);
+    await service.applyEventChange(first.id);
 
-    expect(() => service.applyEventChange(second.id)).toThrow(/stale/);
-    expect(repository.getPreview(second.id)?.status).toBe('stale');
-    expect(repository.getState().events.find((event) => event.id === 'wedding')?.guestCount).toBe(200);
+    await expect(service.applyEventChange(second.id)).rejects.toThrow(/stale/);
+    expect((await repository.getPreview(second.id))?.status).toBe('stale');
+    expect((await repository.getState()).events.find((event) => event.id === 'wedding')?.guestCount).toBe(200);
   });
 
-  it('rejects an expired preview', () => {
+  it('rejects an expired preview', async () => {
     const clock = new MutableClock('2026-09-01T08:00:00+03:00');
     const { repository, service } = createDemoPlanning(clock, idSequence());
-    const preview = service.previewEventChange('wedding', 200);
+    const preview = await service.previewEventChange('wedding', 200);
 
     clock.set('2026-09-01T08:16:00+03:00');
 
-    expect(() => service.applyEventChange(preview.id)).toThrow(/expired/);
-    expect(repository.getPreview(preview.id)?.status).toBe('expired');
-    expect(repository.getState().activePlan.version).toBe(1);
+    await expect(service.applyEventChange(preview.id)).rejects.toThrow(/expired/);
+    expect((await repository.getPreview(preview.id))?.status).toBe('expired');
+    expect((await repository.getState()).activePlan.version).toBe(1);
   });
 
-  it('does not allow applying the same preview twice', () => {
+  it('does not allow applying the same preview twice', async () => {
     const { service } = createDemoPlanning(undefined, idSequence());
-    const preview = service.previewEventChange('wedding', 200);
-    service.applyEventChange(preview.id);
+    const preview = await service.previewEventChange('wedding', 200);
+    await service.applyEventChange(preview.id);
 
-    expect(() => service.applyEventChange(preview.id)).toThrow(/applied/);
+    await expect(service.applyEventChange(preview.id)).rejects.toThrow(/applied/);
   });
 });
 

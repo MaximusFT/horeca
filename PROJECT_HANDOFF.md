@@ -1,6 +1,6 @@
 # HoReCa Procurement Agent — Project Handoff
 
-Last updated: 2026-09-02. This file is the starting point for the next coding agent.
+Last updated: 2026-09-13. This file is the starting point for the next coding agent.
 
 ## Read first
 
@@ -85,7 +85,7 @@ Procurement pages show a configuration-derived supplier mode without network pro
 - Deterministic “Why this quantity?” drawer with demand, coverage, timing, shelf-life rationale, and supplier-enrichment state.
 - Active plan, guest totals, recent changes, and procurement pages update after approval.
 - The global trigger is secondary and named Procurement Agent; its initial suggestions follow the current page and expose only supported Stage 8 commands.
-- Visible Reset demo control rebuilds the in-memory runtime to Wedding 180 / Plan v1.
+- Visible Reset demo control restores Wedding 180 / Plan v1 in durable deployment storage and in local memory.
 
 ### Procurement schedule audit
 
@@ -163,7 +163,7 @@ Never commit `.env.local`, OAuth tokens, MCP tokens, cart identifiers containing
 - Reread and reconcile cart state after every write.
 - Never automatically clear an existing cart.
 - Keep the mock supplier permanently as the offline fallback.
-- Mutable demo state is intentionally in server memory at the current milestone.
+- Planning state and event-change previews use Turso in production so mutations survive serverless instance changes; local development uses the in-memory repository.
 
 ## Stage 9 execution order
 
@@ -202,14 +202,15 @@ Use a dedicated `/debug/mcp` route or server-side script. The first spike should
 - `STAGE9_SILPO_RUNBOOK.md` — personal-browser verification and debugging instructions.
 - `src/components/debug/silpo-oauth-panel.tsx` — OAuth, schema capture, and read-only spike UI.
 - `src/components/agent/agent-launcher.tsx` — Ask Misto UI.
-- `src/application/demo-runtime.ts` — shared in-memory demo composition root.
+- `src/application/demo-runtime.ts` — shared demo composition root with environment-specific planning storage.
+- `src/infrastructure/turso-planning-repository.ts` — durable production planning state and event-change previews.
 
 ## Verification baseline
 
 At handoff, all checks pass:
 
 ```text
-npm test          → 120 tests passed in 35 files, plus 1 remote smoke test skipped locally without secrets
+npm test          → 122 tests passed in 36 files, plus 1 remote smoke test skipped locally without secrets
 npm run typecheck → passed
 npm run lint      → passed
 npm run build     → passed

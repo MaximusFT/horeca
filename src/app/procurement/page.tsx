@@ -16,7 +16,7 @@ export default async function ProcurementPage() {
   const locale = await getServerLocale();
   const dictionary = getDictionary(locale);
   const supplierStatus = getSupplierRuntimeStatus();
-  const state = getDemoPlanningRuntime().repository.getState();
+  const state = await getDemoPlanningRuntime().repository.getState();
   const { activePlan } = state;
   const summary = buildOverviewSummary(
     { ...demoDataset, events: state.events },

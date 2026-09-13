@@ -2,9 +2,9 @@ import { createDemoPlanning } from "@/application/demo-planning";
 import { demoIngredients } from "@/data/demo/ingredients";
 import { formatQuantity } from "@/engine/units";
 
-export default function HeroDebugPage() {
+export default async function HeroDebugPage() {
   const { service } = createDemoPlanning();
-  const preview = service.previewEventChange("wedding", 200);
+  const preview = await service.previewEventChange("wedding", 200);
   const ingredientNames = new Map(demoIngredients.map((ingredient) => [ingredient.id, ingredient.name]));
 
   return (
