@@ -47,7 +47,7 @@ export async function AppShell({
               const selected = item.key === activeKey;
               const className = `flex h-11 items-center gap-3 rounded-xl px-3 text-sm transition ${selected ? 'bg-white/10 font-semibold text-white' : 'text-white/55'}`;
               return item.href ? (
-                <Link key={item.key} href={item.href} className={className}>
+                <Link key={item.key} href={item.href} prefetch={false} className={className}>
                   <Icon name={item.icon} className={selected ? 'text-[#a9e9bf]' : 'text-white/45'} />
                   {item.label}
                 </Link>
@@ -106,6 +106,7 @@ export async function AppShell({
               <Link
                 key={item.key}
                 href={item.href!}
+                prefetch={false}
                 aria-current={selected ? 'page' : undefined}
                 className={`flex h-14 min-w-0 flex-col items-center justify-center gap-1 px-1 text-[9px] font-semibold ${selected ? 'bg-[#edf4ef] text-[#275b3a]' : 'text-[#708076]'}`}
               >

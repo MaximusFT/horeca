@@ -82,7 +82,7 @@ export function WeddingEventClient({ locale, event, activePlanVersion, menuLines
   return (
     <main className="px-5 py-7 md:px-8 md:py-9 lg:px-10 xl:px-12">
       <div className="mx-auto max-w-[1240px]">
-        <Link href="/events" className="text-xs font-semibold text-[#5d7565]">
+        <Link href="/events" prefetch={false} className="text-xs font-semibold text-[#5d7565]">
           {dictionary.wedding.backToEvents}
         </Link>
         <div className="mt-6 flex flex-col justify-between gap-5 md:flex-row md:items-start">
@@ -198,6 +198,7 @@ export function WeddingEventClient({ locale, event, activePlanVersion, menuLines
               </div>
               <Link
                 href="/procurement"
+                prefetch={false}
                 className="mt-5 flex h-10 items-center justify-center rounded-xl border border-[#d7ddd7] text-xs font-semibold text-[#456b53]"
               >
                 {dictionary.wedding.impact.viewFullProcurement}
