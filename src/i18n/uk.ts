@@ -172,7 +172,7 @@ export const uk: Dictionary = {
       title: 'Останні зміни',
       subtitle: 'Підтверджені бізнес-зміни та версії плану',
       guestChangeSummary: (eventName, before, after) =>
-        `${eventName}: ${before} → ${after} ${pluralUk(after, 'гость', 'гості', 'гостей')}`,
+        `${eventName}: ${before} → ${after} ${pluralUk(after, 'гість', 'гості', 'гостей')}`,
       activated: (version) => `План v${version} активовано · підтверджена зміна`,
       emptyTitle: 'План v1 — активна базова версія',
       emptyBody: 'Підтверджених змін подій ще немає. Весілля наразі заплановане на 180 гостей.',

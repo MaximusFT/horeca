@@ -1,6 +1,6 @@
-# Silpo Stage 9: checklist для личного компьютера
+# Silpo Stage 9: Personal Computer Checklist
 
-Этот файл описывает полный ручной проход deployed Silpo MCP integration. Локальный Node.js, Vercel CLI, Turso CLI и перенос скриншотов не нужны.
+This file describes the complete manual walkthrough for the deployed Silpo MCP integration. Local Node.js, Vercel CLI, Turso CLI, and screenshot transfers are not required.
 
 Production page:
 
@@ -8,111 +8,111 @@ Production page:
 https://horeca-nine-alpha.vercel.app/debug/mcp
 ```
 
-## Текущее подтверждённое состояние
+## Currently Verified State
 
-На 1 сентября 2026 года уже подтверждено через sanitized server trace:
+As of September 1, 2026, the sanitized server trace has already confirmed that:
 
-- OAuth работает;
-- `tools/list` возвращает 40 tools;
-- `silpo_get_my_shopping_cart` выполняется успешно;
-- активная корзина и delivery context читаются;
-- approved timeslot mutation и обязательный reread подтверждены;
-- batch search возвращает реальные результаты для `яйця`, `помідори`, `лосось`.
+- OAuth works;
+- `tools/list` returns 40 tools;
+- `silpo_get_my_shopping_cart` completes successfully;
+- the active cart and delivery context can be read;
+- the approved timeslot mutation and mandatory reread are verified;
+- batch search returns real results for `яйця`, `помідори`, and `лосось`.
 
-## Что нужно пройти
+## Required Walkthrough
 
-Обязательные сценарии:
+Required scenarios:
 
-- [x] A. OAuth и загрузка 40 tools.
-- [x] B. Read при отсутствии активной корзины: `cart_creation_required`.
-- [x] C. Ручное создание активной корзины в официальном интерфейсе Silpo.
-- [x] D. Полный Stage 9 read sequence с корзиной, доступным слотом и поиском продуктов.
-- [x] E. Preview, approval и verified write одного тестового товара.
-- [x] J. Финальный sanitized trace и короткий текстовый отчёт.
+- [x] A. OAuth and loading 40 tools.
+- [x] B. Read without an active cart: `cart_creation_required`.
+- [x] C. Manual creation of an active cart in the official Silpo interface.
+- [x] D. Complete Stage 9 read sequence with a cart, an available slot, and product search.
+- [x] E. Preview, approval, and verified write of one test product.
+- [x] J. Final sanitized trace and short text report.
 
-Условные сценарии выполняются только если соответствующая ошибка появилась сама:
+Run conditional scenarios only when the corresponding error occurs naturally:
 
-- [ ] F. Недоступный timeslot.
-- [ ] G. Потерянная OAuth session, HTTP 401.
-- [ ] H. Неизвестная форма live response, HTTP 422.
-- [ ] I. Ошибка Silpo MCP или deployment, HTTP 502.
+- [ ] F. Unavailable timeslot.
+- [ ] G. Lost OAuth session, HTTP 401.
+- [ ] H. Unknown live response shape, HTTP 422.
+- [ ] I. Silpo MCP or deployment error, HTTP 502.
 
-Не нужно искусственно вызывать F-I.
+Do not trigger F-I artificially.
 
-## Правила безопасности
+## Safety Rules
 
-1. Используй личный компьютер и один browser profile на протяжении всего прохода.
-2. Всегда открывай production alias выше. Не переходи на URL отдельного Vercel deployment.
-3. Входи в Silpo под тем же аккаунтом, в котором создаёшь корзину.
-4. Не отправляй в чат телефон, пароль, OTP, cookies, token, адрес, checkout URL или raw JSON корзины.
-5. Не оформляй заказ и не переходи к оплате.
-6. Не запускай вручную tools, названия которых создают, обновляют, очищают или удаляют данные.
-7. Кнопка **Run Stage 9 reads** выполняет только чтение.
+1. Use a personal computer and one browser profile throughout the walkthrough.
+2. Always open the production alias above. Do not switch to an individual Vercel deployment URL.
+3. Sign in to the same Silpo account in which you create the cart.
+4. Do not send a phone number, password, OTP, cookies, token, address, checkout URL, or raw cart JSON to the chat.
+5. Do not place the order or proceed to payment.
+6. Do not manually run tools whose names indicate that they create, update, clear, or delete data.
+7. The **Run Stage 9 reads** button performs read-only operations.
 
-## A. Проверка OAuth
+## A. Verify OAuth
 
-Этот сценарий уже пройден, но повтори его, если browser session потеряна.
+This scenario has already passed, but repeat it if the browser session is lost.
 
-1. Открой production page.
-2. Нажми **Connect Silpo**.
-3. Заверши вход и OTP в браузере.
-4. Дождись возврата на тот же адрес `/debug/mcp`.
-5. Проверь зелёную плашку `OAuth completed`.
+1. Open the production page.
+2. Click **Connect Silpo**.
+3. Complete sign-in and OTP in the browser.
+4. Wait for the redirect back to the same `/debug/mcp` address.
+5. Confirm the green `OAuth completed` status.
 
-Успех:
+Success:
 
 ```text
 OAuth completed
 ```
 
-Если появилась ошибка, перейди к G, H или I ниже по HTTP status.
+If an error appears, continue to G, H, or I below based on the HTTP status.
 
-## B. Проверка live tools
+## B. Verify Live Tools
 
-1. Нажми **Load live tools**.
-2. Дождись списка tools.
-3. Проверь строку над списком.
+1. Click **Load live tools**.
+2. Wait for the tool list.
+3. Check the line above the list.
 
-Успех:
+Success:
 
 ```text
 40 live tools returned
 ```
 
-Не раскрывай schemas и не запускай отдельные tool runners, если это не попросит агент.
+Do not expose schemas or run individual tool runners unless the agent asks you to do so.
 
-## C. Создание активной корзины
+## C. Create an Active Cart
 
-Корзину нужно создать вручную в официальном потребительском интерфейсе Silpo. Это осознанное действие пользователя, а не скрытая MCP mutation.
+Create the cart manually in the official consumer-facing Silpo interface. This is an intentional user action, not a hidden MCP mutation.
 
-1. Не закрывая `/debug/mcp`, открой Silpo в соседней вкладке или в официальном приложении.
-2. Убедись, что используется тот же Silpo account.
-3. Выбери доступный способ получения заказа:
-   - доставка по адресу; или
-   - самовывоз из магазина.
-4. Если интерфейс просит адрес, магазин или branch, выбери реальные данные только внутри Silpo. Не присылай их агенту.
-5. Добавь в корзину ровно один недорогой обычный продукт. Конкретный товар не важен.
-6. Открой корзину и выбери ближайший доступный timeslot, если Silpo предлагает такой выбор.
-7. Проверь внутри Silpo:
-   - корзина существует;
-   - один продукт отображается в корзине;
-   - способ получения выбран;
-   - address или pickup branch выбран;
-   - доступный timeslot выбран, если это требуется интерфейсом.
-8. Не нажимай оформление заказа, подтверждение покупки или оплату.
-9. Оставь корзину активной и вернись на `/debug/mcp` в том же browser profile.
+1. Keep `/debug/mcp` open and open Silpo in another tab or in the official app.
+2. Confirm that you are using the same Silpo account.
+3. Select an available fulfillment method:
+   - delivery to an address; or
+   - store pickup.
+4. If the interface requests an address, store, or branch, choose real values only inside Silpo. Do not send them to the agent.
+5. Add exactly one inexpensive ordinary product to the cart. The specific product does not matter.
+6. Open the cart and select the nearest available timeslot if Silpo offers this choice.
+7. Verify inside Silpo that:
+   - the cart exists;
+   - one product appears in the cart;
+   - a fulfillment method is selected;
+   - an address or pickup branch is selected;
+   - an available timeslot is selected if the interface requires one.
+8. Do not click checkout, confirm purchase, or payment.
+9. Leave the cart active and return to `/debug/mcp` in the same browser profile.
 
-Названия кнопок в Silpo могут отличаться. Критерий готовности: в аккаунте видна активная, но не оформленная корзина с одним продуктом и доступным способом получения.
+Silpo button labels may differ. The readiness criterion is an active but unsubmitted cart containing one product and an available fulfillment method.
 
-## D. Полный Stage 9 read sequence
+## D. Run the Complete Stage 9 Read Sequence
 
-1. На `/debug/mcp` сначала нажми **Load live tools**.
-2. Убедись, что всё ещё показано `40 live tools returned`.
-3. Нажми **Run Stage 9 reads** один раз.
-4. Дождись синей плашки **Stage 9 read-only report**.
-5. Не нажимай кнопку повторно, пока первый вызов не завершился.
+1. On `/debug/mcp`, first click **Load live tools**.
+2. Confirm that `40 live tools returned` is still displayed.
+3. Click **Run Stage 9 reads** once.
+4. Wait for the blue **Stage 9 read-only report** panel.
+5. Do not click the button again while the first call is still running.
 
-Ожидаемый успешный report сообщает:
+The expected successful report states:
 
 ```text
 Cart context read
@@ -122,16 +122,16 @@ searched яйця, помідори, лосось
 No cart mutation was executed
 ```
 
-Число найденных продуктов может отличаться. Обязательные признаки успеха:
+The number of products found may vary. Required success indicators:
 
-- report имеет status `complete`;
-- проверен delivery slot;
-- выполнены три product queries;
-- последняя строка говорит `No cart mutation was executed`.
+- the report status is `complete`;
+- the delivery slot was validated;
+- all three product queries ran;
+- the final line says `No cart mutation was executed`.
 
-После успешного report нажми **Refresh trace** один раз.
+After a successful report, click **Refresh trace** once.
 
-Ожидаемая последовательность новых trace entries:
+Expected sequence of new trace entries:
 
 ```text
 silpo_get_my_shopping_cart
@@ -140,23 +140,23 @@ silpo_get_time_slots
 silpo_find_products_batch
 ```
 
-Все четыре entries должны иметь зелёную точку или status `completed`.
+All four entries must have a green dot or `completed` status.
 
-## E. Один approved product write
+## E. Perform One Approved Product Write
 
-Этот шаг выполняй только после успешного status `complete` в D.
+Run this step only after scenario D finishes with status `complete`.
 
-1. Нажми **Prepare one-product cart preview**.
-2. Проверь название товара, упаковку, цену и quantity в amber-карточке.
-3. Если товар подходит для теста, нажми **Approve and add this product** один раз.
-4. Дождись результата reread.
-5. Успех: зелёная карточка **Product write verified**, `0 errors`.
-6. Если показано **Product added with cart errors**, не повторяй write и запиши только counts errors/warnings/other.
-7. Не удаляй и не очищай остальные товары через MCP.
+1. Click **Prepare one-product cart preview**.
+2. Check the product name, package, price, and quantity in the amber panel.
+3. If the product is suitable for the test, click **Approve and add this product** once.
+4. Wait for the reread result.
+5. Success: a green **Product write verified** panel with `0 errors`.
+6. If **Product added with cart errors** appears, do not repeat the write. Record only the error/warning/other counts.
+7. Do not remove or clear other products through MCP.
 
-## J. Финальный отчёт агенту
+## J. Send the Final Report to the Agent
 
-Скриншот не нужен. Пришли этот заполненный текст:
+A screenshot is not required. Send the following completed text:
 
 ```text
 Stage 9 personal run complete
@@ -173,20 +173,20 @@ HTTP status: <only if an error occurred>
 Error type: <only the short error name, without raw response>
 ```
 
-Не переписывай product names, address, branch ID, shopping cart ID или другие значения из raw response.
+Do not transcribe product names, address, branch ID, shopping cart ID, or any other values from a raw response.
 
-После сообщения агент запустит GitHub workflow **Inspect Silpo MCP trace** и проверит server-side sequence с корпоративного компьютера.
+After receiving the report, the agent will run the **Inspect Silpo MCP trace** GitHub workflow and verify the server-side sequence from the corporate computer.
 
-## F. Если показано `timeslot_update_required`
+## F. If `timeslot_update_required` Appears
 
-Это штатная безопасная остановка. Product search и mutations не выполнялись.
+This is a normal safe stop. Product search and mutations did not run.
 
-1. Нажми **Find available slots**.
-2. Если появилась approval-карточка, выбери один из показанных slots.
-3. Проверь локальное время и нажми **Approve and update cart timeslot**.
-4. Дождись зелёной карточки **Timeslot update verified**. Приложение уже перечитало корзину после mutation.
-5. Нажми **Continue Stage 9 reads**.
-6. Если показано **No available delivery slots**, остановись и пришли:
+1. Click **Find available slots**.
+2. If an approval panel appears, select one of the displayed slots.
+3. Check the local time and click **Approve and update cart timeslot**.
+4. Wait for the green **Timeslot update verified** panel. The application has already reread the cart after the mutation.
+5. Click **Continue Stage 9 reads**.
+6. If **No available delivery slots** appears, stop and send:
 
 ```text
 Report status: timeslot_update_required
@@ -194,19 +194,19 @@ Delivery type: <type>
 Available slots: 0
 ```
 
-Не меняй slot вручную и не запускай `silpo_update_shopping_cart` через отдельный MCP runner.
+Do not change the slot manually or run `silpo_update_shopping_cart` through a separate MCP runner.
 
-## G. Если появился HTTP 401
+## G. If HTTP 401 Appears
 
-Причина: deployed app не нашёл OAuth tokens для текущей browser session.
+Cause: the deployed application did not find OAuth tokens for the current browser session.
 
-1. Не очищай cookies между OAuth start и callback.
-2. Убедись, что открыт production alias, а не deployment URL.
-3. Нажми **Connect Silpo** и снова заверши OAuth в том же browser profile.
-4. Нажми **Load live tools**.
-5. После `40 live tools returned` повтори D.
+1. Do not clear cookies between OAuth start and callback.
+2. Confirm that the production alias is open, not a deployment URL.
+3. Click **Connect Silpo** and complete OAuth again in the same browser profile.
+4. Click **Load live tools**.
+5. After `40 live tools returned`, repeat scenario D.
 
-Если 401 повторился, пришли только:
+If 401 occurs again, send only:
 
 ```text
 HTTP status: 401
@@ -215,11 +215,11 @@ Production alias used: yes
 Same browser profile used: yes
 ```
 
-## H. Если появился HTTP 422
+## H. If HTTP 422 Appears
 
-Причина: реальная форма ответа Silpo отличается от paths, которые сейчас понимает parser.
+Cause: the real Silpo response shape differs from the paths currently understood by the parser.
 
-Ошибка уже должна содержать безопасную структурную диагностику. Пришли только:
+The error should already contain safe structural diagnostics. Send only:
 
 ```text
 HTTP status: 422
@@ -229,15 +229,15 @@ observedKeys: <value>
 observedShape: <value>
 ```
 
-`observedShape` содержит paths и types, но не значения. Не присылай raw result из отдельного tool runner.
+`observedShape` contains paths and types but no values. Do not send the raw result from a separate tool runner.
 
-После этого остановись. Агент обновит parser и выполнит новый deployment.
+Stop after this. The agent will update the parser and create a new deployment.
 
-## I. Если появился HTTP 502
+## I. If HTTP 502 Appears
 
-1. Нажми **Refresh trace**.
-2. Найди последнюю красную entry.
-3. Пришли только:
+1. Click **Refresh trace**.
+2. Find the latest red entry.
+3. Send only:
 
 ```text
 HTTP status: 502
@@ -246,16 +246,16 @@ Status: failed
 Result summary: <sanitized summary shown in trace>
 ```
 
-Не повторяй запрос больше двух раз подряд. Агент проверит GitHub trace workflow и deployment logs.
+Do not repeat the request more than twice in succession. The agent will inspect the GitHub trace workflow and deployment logs.
 
-## После успешной проверки
+## After Successful Verification
 
-1. Не оформляй тестовый заказ.
-2. Тестовый продукт можно удалить вручную в официальном Silpo UI.
-3. Не используй MCP write tools для очистки.
-4. Browser tab можно закрыть после отправки финального отчёта.
+1. Do not submit the test order.
+2. You may remove the test product manually in the official Silpo UI.
+3. Do not use MCP write tools for cleanup.
+4. You may close the browser tab after sending the final report.
 
-## MCP writes, которые запрещено запускать вручную
+## MCP Writes That Must Not Be Run Manually
 
 ```text
 silpo_create_shopping_cart
@@ -267,4 +267,4 @@ silpo_add_or_update_favorite_products
 silpo_add_or_update_certificates
 ```
 
-Следующий write будет реализован отдельно как preview, явное human approval, одна mutation и обязательное перечитывание корзины.
+Each subsequent write must be implemented separately with a preview, explicit human approval, one mutation, and a mandatory cart reread.

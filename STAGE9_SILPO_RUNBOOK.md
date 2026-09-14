@@ -1,24 +1,24 @@
 # Stage 9 Silpo MCP Runbook
 
-Эта инструкция предназначена для проверки deployed-приложения с личного компьютера. WSL, локальный Node.js, Turso CLI и Vercel CLI не требуются.
+This runbook is for verifying the deployed application from a personal computer. WSL, local Node.js, Turso CLI, and Vercel CLI are not required.
 
-Для пошагового прохода с активной корзиной, ожидаемыми результатами и готовым шаблоном отчёта используй [PERSONAL_MACHINE_SILPO_STAGE9_CHECKLIST.md](PERSONAL_MACHINE_SILPO_STAGE9_CHECKLIST.md).
+For a step-by-step walkthrough with an active cart, expected results, and a ready-to-use report template, see [PERSONAL_MACHINE_SILPO_STAGE9_CHECKLIST.md](PERSONAL_MACHINE_SILPO_STAGE9_CHECKLIST.md).
 
-## 1. Одноразовая настройка Vercel
+## 1. One-Time Vercel Setup
 
-В Vercel создай access token в **Account Settings → Tokens**. Затем в GitHub открой:
+In Vercel, create an access token under **Account Settings → Tokens**. Then open the following page in GitHub:
 
 ```text
 MaximusFT/horeca → Settings → Secrets and variables → Actions
 ```
 
-Добавь token как:
+Add the token as:
 
 ```text
 VERCEL_TOKEN
 ```
 
-Другие GitHub secrets уже настроены:
+The other GitHub secrets are already configured:
 
 ```text
 TURSO_DATABASE_URL
@@ -26,37 +26,37 @@ TURSO_AUTH_TOKEN
 SILPO_OAUTH_ENCRYPTION_KEY
 ```
 
-Запусти:
+Run:
 
 ```text
 Actions → Sync Vercel environment → Run workflow
 ```
 
-Ожидаемый результат: workflow зелёный. Он добавляет Turso secrets в Vercel Production/Preview и выполняет production deployment.
+Expected result: the workflow is green. It adds the Turso secrets to Vercel Production and Preview, then performs a production deployment.
 
-## 2. Авторизация Silpo
+## 2. Silpo Authorization
 
-На личном компьютере открой deployed URL с маршрутом:
+On a personal computer, open the deployed URL with this route:
 
 ```text
 /debug/mcp
 ```
 
-Нажми **Connect Silpo** и заверши вход в браузере. Телефон, пароль, OTP, cookies, access token и refresh token не отправляй в чат и не сохраняй в screenshot.
+Click **Connect Silpo** and complete sign-in in the browser. Do not send a phone number, password, OTP, cookies, access token, or refresh token to the chat or save them in a screenshot.
 
-После redirect обратно на `/debug/mcp` ожидается зелёный OAuth status. Нажми **Load live tools**.
+After the redirect back to `/debug/mcp`, expect a green OAuth status. Click **Load live tools**.
 
-Ожидаемый результат:
+Expected result:
 
 ```text
 40 live tools returned
 ```
 
-Capture от 1 сентября уже находится в `silpo-tools-2026-09-01.json`. Новый сороковой tool — `silpo_create_shopping_cart`.
+The September 1 capture is already stored in `silpo-tools-2026-09-01.json`. The new fortieth tool is `silpo_create_shopping_cart`.
 
-## 3. Автоматическая read-only проверка
+## 3. Automated Read-Only Verification
 
-Нажми **Run Stage 9 reads**. Приложение выполняет только allowlisted reads:
+Click **Run Stage 9 reads**. The application performs only allowlisted reads:
 
 ```text
 silpo_get_my_shopping_cart
@@ -65,11 +65,11 @@ silpo_get_my_shopping_cart
 → silpo_find_products_batch (яйця, помідори, лосось)
 ```
 
-Никакой cart mutation эта кнопка не выполняет.
+This button does not perform any cart mutation.
 
-### Результат A: complete
+### Result A: complete
 
-Ожидаемый report:
+Expected report:
 
 ```text
 Cart context read
@@ -79,11 +79,11 @@ Searched: яйця, помідори, лосось
 No cart mutation was executed
 ```
 
-После этого Stage 9 read spike выполнен.
+The Stage 9 read spike is complete after this result.
 
-Для bounded write spike нажми **Prepare one-product cart preview**. Приложение выберет один новый доступный результат поиска `яйця`, покажет название, упаковку, цену и минимальный шаг. Только после нажатия **Approve and add this product** выполняется additive cart mutation. Затем приложение немедленно перечитывает корзину, проверяет присутствие выбранного product и `cart.calculation.validations[]`.
+For the bounded write spike, click **Prepare one-product cart preview**. The application selects one new available result from the `яйця` search and shows its name, package, price, and minimum increment. An additive cart mutation runs only after you click **Approve and add this product**. The application then immediately rereads the cart and checks for the selected product and `cart.calculation.validations[]`.
 
-Успешный результат:
+Successful result:
 
 ```text
 Product write verified
@@ -91,13 +91,13 @@ cart reread found the added product
 0 errors
 ```
 
-Если показано **Product added with cart errors**, товар был записан и найден при reread, но корзина содержит error-level validations. Не повторяй write и передай агенту только counts из карточки и sanitized trace.
+If **Product added with cart errors** appears, the product was written and found during the reread, but the cart contains error-level validations. Do not repeat the write. Send the agent only the counts from the panel and the sanitized trace.
 
-### Результат B: cart_creation_required
+### Result B: cart_creation_required
 
-`silpo_get_my_shopping_cart` вернул `exists=false`. Workflow правильно остановился до write.
+`silpo_get_my_shopping_cart` returned `exists=false`. The workflow correctly stopped before the write.
 
-Следующая ветка требует:
+The next branch requires:
 
 ```text
 silpo_find_address
@@ -108,37 +108,37 @@ silpo_find_address
 → silpo_get_shopping_cart_by_id
 ```
 
-Не вызывай `silpo_create_shopping_cart` вручную. Передай агенту статус `cart_creation_required`; он реализует отдельную preview/approval карточку.
+Do not call `silpo_create_shopping_cart` manually. Send the `cart_creation_required` status to the agent; a separate preview/approval panel must be implemented for it.
 
-### Результат C: timeslot_update_required
+### Result C: timeslot_update_required
 
-Текущий cart timeslot отсутствует среди доступных `slots[]` или `available=false`. Workflow правильно остановился до product search.
+The current cart timeslot is missing from the available `slots[]` or has `available=false`. The workflow correctly stopped before product search.
 
-Нажми **Find available slots**. Если Silpo вернул варианты, выбери один в approval-карточке и нажми **Approve and update cart timeslot**. Приложение выполнит ровно один `silpo_update_shopping_cart`, немедленно перечитает корзину и подтвердит выбранный slot. Затем нажми **Continue Stage 9 reads**.
+Click **Find available slots**. If Silpo returns options, select one in the approval panel and click **Approve and update cart timeslot**. The application performs exactly one `silpo_update_shopping_cart`, immediately rereads the cart, and verifies the selected slot. Then click **Continue Stage 9 reads**.
 
-Если показано **No available delivery slots**, mutation не выполнялась. Для этого branch/delivery type Silpo не предложил безопасного варианта; остановись до отдельной preview/approval ветки смены способа доставки.
+If **No available delivery slots** appears, no mutation was performed. Silpo did not offer a safe option for this branch and delivery type; stop until a separate preview/approval flow for changing the fulfillment method is available.
 
-## 4. Ручная schema-driven диагностика
+## 4. Manual Schema-Driven Diagnostics
 
-Каждый разрешённый read tool имеет блок **Read-only spike runner**. Аргументы вводятся JSON-объектом и проверяются по captured JSON Schema до MCP-вызова.
+Each permitted read tool has a **Read-only spike runner** section. Enter arguments as a JSON object; they are validated against the captured JSON Schema before the MCP call.
 
-Начальный вызов не требует аргументов:
+The initial call requires no arguments:
 
 ```json
 {}
 ```
 
-для:
+for:
 
 ```text
 silpo_get_my_shopping_cart
 ```
 
-Следующие аргументы бери только из предыдущего ответа. Не придумывай UUID, slug, branchId, deliveryType или timeslot.
+Take subsequent arguments only from the preceding response. Do not invent a UUID, slug, branchId, deliveryType, or timeslot.
 
-## 5. Что видно в Chrome DevTools
+## 5. What Chrome DevTools Shows
 
-Chrome Network показывает browser → Next.js requests:
+Chrome Network shows browser → Next.js requests:
 
 ```text
 POST /api/silpo/oauth/start
@@ -149,9 +149,9 @@ POST /api/silpo/tools/call
 GET  /api/silpo/trace
 ```
 
-Внутренние server → `mcp.silpo.ua` requests в Chrome не видны. Их показывает секция **Safe server-side MCP trace** на `/debug/mcp`.
+Internal server → `mcp.silpo.ua` requests are not visible in Chrome. The **Safe server-side MCP trace** section on `/debug/mcp` shows them.
 
-Trace содержит только:
+The trace contains only:
 
 - operation name;
 - argument-key names;
@@ -159,47 +159,47 @@ Trace содержит только:
 - duration;
 - structural result summary.
 
-Trace не содержит token, raw arguments, address, phone, profile или cart contents.
+The trace does not contain tokens, raw arguments, addresses, phone numbers, profiles, or cart contents.
 
-## 6. Проверка trace с корпоративного ноутбука
+## 6. Verify the Trace from the Corporate Laptop
 
-После кликов на личном компьютере сообщи агенту, что последовательность завершена. Агент запускает:
+After completing the actions on the personal computer, tell the agent that the sequence is complete. The agent runs:
 
 ```text
 Actions → Inspect Silpo MCP trace
 ```
 
-или GitHub CLI workflow с тем же именем. Так server-side MCP sequence проверяется без открытия заблокированного Vercel runtime.
+or the GitHub CLI workflow with the same name. This verifies the server-side MCP sequence without opening the blocked Vercel runtime.
 
-## 7. Диагностика ошибок
+## 7. Troubleshooting
 
 ### OAuth start: 502
 
-Проверить:
+Check that:
 
-1. `Sync Vercel environment` завершился успешно.
-2. В Vercel есть все три Turso env variables.
-3. Deployment был выполнен после добавления env.
-4. OAuth callback URL использует тот же deployed host.
+1. `Sync Vercel environment` completed successfully.
+2. All three Turso environment variables exist in Vercel.
+3. The deployment ran after the environment variables were added.
+4. The OAuth callback URL uses the same deployed host.
 
 ### OAuth callback: invalid_callback
 
-Причины:
+Possible causes:
 
-- callback открыт в другом browser/profile;
-- потеряна HttpOnly session cookie;
-- OAuth начат на одном deployment host, callback пришёл на другой;
-- callback повторно открыт после завершения.
+- the callback opened in a different browser or profile;
+- the HttpOnly session cookie was lost;
+- OAuth started on one deployment host, but the callback arrived at another;
+- the callback was opened again after completion.
 
-Начни **Connect Silpo** заново в одном browser profile.
+Restart **Connect Silpo** in one browser profile.
 
 ### Load live tools: 401
 
-OAuth tokens отсутствуют для текущей session cookie. Повтори **Connect Silpo**.
+OAuth tokens are missing for the current session cookie. Repeat **Connect Silpo**.
 
 ### Stage 9 reads: 422
 
-Live response не совпал с документированным path. Сообщи агенту только:
+The live response does not match the documented path. Send the agent only:
 
 ```text
 phase
@@ -208,40 +208,40 @@ observedKeys
 observedShape
 ```
 
-`observedShape` содержит только JSON paths и типы, без значений. Не отправляй raw response.
+`observedShape` contains only JSON paths and types, without values. Do not send the raw response.
 
 ### Stage 9 reads: 502
 
-Открой **Refresh trace** и передай агенту operation/status/result summary. Дополнительно запусти **Inspect Silpo MCP trace**.
+Click **Refresh trace** and send the operation, status, and result summary to the agent. Also run **Inspect Silpo MCP trace**.
 
 ### GitHub Turso smoke failed
 
-Открой failed step **Run remote encrypted-storage smoke test**. Не копируй secret values. Сообщи только exception type и message.
+Open the failed **Run remote encrypted-storage smoke test** step. Do not copy secret values. Report only the exception type and message.
 
-## 8. Безопасный набор артефактов
+## 8. Safe Artifacts
 
-Можно передавать агенту:
+You may send the agent:
 
-- screenshot status/report без персональных данных;
-- число tools;
-- tool names и input schemas;
-- Stage 9 report;
-- sanitized trace;
-- parser diagnostic `phase/expectedPaths/observedKeys`;
-- HTTP status и error type.
+- a status or report screenshot without personal data;
+- the number of tools;
+- tool names and input schemas;
+- the Stage 9 report;
+- the sanitized trace;
+- parser diagnostics: `phase/expectedPaths/observedKeys`;
+- the HTTP status and error type.
 
-Нельзя передавать:
+Do not send:
 
-- OTP, пароль, телефон;
-- access/refresh token;
+- OTP, password, or phone number;
+- access or refresh tokens;
 - cookies;
-- raw profile/address response;
-- полный cart response;
-- checkout links из личной корзины.
+- raw profile or address responses;
+- the complete cart response;
+- checkout links from a personal cart.
 
-## 9. Write gate
+## 9. Write Gate
 
-До отдельной реализации и проверки запрещены:
+The following tools remain forbidden until each has a dedicated implementation and verification:
 
 ```text
 silpo_create_shopping_cart
@@ -251,4 +251,4 @@ silpo_add_or_update_favorite_products
 silpo_add_or_update_certificates
 ```
 
-`silpo_update_shopping_cart` и `silpo_add_or_update_cart_products` разрешены только через отдельные server-stored preview/approval flows. Generic read-only runner по-прежнему блокирует их. Product flow добавляет ровно один явно подтверждённый тестовый товар, после чего обязательно перечитывает корзину и проверяет `validations[]`.
+`silpo_update_shopping_cart` and `silpo_add_or_update_cart_products` are permitted only through dedicated server-stored preview/approval flows. The generic read-only runner continues to block them. The product flow adds exactly one explicitly approved test product, then must reread the cart and check `validations[]`.
