@@ -37,6 +37,59 @@ describe('Silpo supplier gateway', () => {
     ).resolves.toHaveLength(3);
   });
 
+  it('skips an oversized mass line before creating the live rollout', async () => {
+    const gateway = new SilpoSupplierGateway(
+      createReadCaller({ stock: 1_000, dynamicRatios: true }),
+      vi.fn(),
+      demoIngredients,
+    );
+    await gateway.initializeContext();
+
+    const results = await gateway.searchProducts([
+      request('banana', 'g', 98_000),
+      request('blueberry', 'g', 4_000),
+      request('butter', 'g', 6_000),
+      request('cheddar', 'g', 8_000),
+    ]);
+
+    expect(results).toHaveLength(3);
+    expect(results.map((result) => result.request.ingredientId)).toEqual(['blueberry', 'butter', 'cheddar']);
+  });
+
+  it('blocks an oversized preview before the Silpo write', async () => {
+    const write = vi.fn();
+    const gateway = new SilpoSupplierGateway(
+      createReadCaller({ stock: 1_000, dynamicRatios: true }),
+      write,
+      demoIngredients,
+    );
+    await gateway.initializeContext();
+    const [result] = await gateway.searchProducts([request('banana', 'g', 98_000)]);
+    if (!result.product) throw new Error('Expected mapped banana product');
+    const unsafeDraft = draft(result.product);
+    unsafeDraft.lines[0] = {
+      ...unsafeDraft.lines[0],
+      ingredientId: 'banana',
+      requiredQuantity: 98_000,
+      unit: 'g',
+      packageCount: 98,
+      suppliedQuantity: 98_000,
+    };
+
+    await expect(gateway.prepareCart(unsafeDraft)).rejects.toThrow(/20 kg live rollout safety limit/);
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  it('stops before search or write when the existing cart already has an error validation', async () => {
+    const read = createReadCaller({ cartValidations: [{ level: 'Error' }] });
+    const write = vi.fn();
+    const gateway = new SilpoSupplierGateway(read, write, demoIngredients);
+
+    await expect(gateway.initializeContext()).rejects.toThrow(/already contains error-level validations/);
+    expect(read).toHaveBeenCalledTimes(2);
+    expect(write).not.toHaveBeenCalled();
+  });
+
   it('previews, applies additively, and verifies expected product IDs on reread', async () => {
     const read = createReadCaller({ verifiedProductIds: [productId] });
     const write = vi.fn().mockResolvedValue({ structuredContent: { success: true } });
@@ -106,6 +159,8 @@ describe('Silpo supplier gateway', () => {
         demoIngredients.map((ingredient) => [ingredient.id, `silpo-search:${ingredient.id}`]),
       ),
     });
+    const wedding = await planning.service.previewEventChange('wedding', 200);
+    await planning.service.applyEventChange(wedding.id);
     const batch = (await planning.repository.getState()).activePlan.batches[0];
 
     const prepared = await service.prepareBatch(batch.id);
@@ -113,6 +168,13 @@ describe('Silpo supplier gateway', () => {
     expect(prepared.lines).toHaveLength(3);
     expect(prepared.sourceLineCount).toBe(batch.lines.length);
     expect(prepared.status).toBe('ready_for_cart');
+    expect(prepared.lines.some((line) => line.ingredientId === 'banana')).toBe(false);
+    expect(
+      prepared.lines.reduce(
+        (total, line) => total + (line.unit === 'g' || line.unit === 'ml' ? (line.suppliedQuantity ?? 0) : 0),
+        0,
+      ),
+    ).toBeLessThanOrEqual(20_000);
     expect(write).not.toHaveBeenCalled();
 
     const reviewed = await service.previewCart(prepared.id);
@@ -181,11 +243,11 @@ function createService(
   });
 }
 
-function request(ingredientId: string, unit: 'g' | 'ml' | 'pcs') {
+function request(ingredientId: string, unit: 'g' | 'ml' | 'pcs', requiredQuantity?: number) {
   return {
     lineId: `line-${ingredientId}`,
     ingredientId,
-    requiredQuantity: unit === 'pcs' ? 20 : 1_000,
+    requiredQuantity: requiredQuantity ?? (unit === 'pcs' ? 20 : 1_000),
     unit,
     preferredProductId: `ignored-${ingredientId}`,
   };
@@ -222,6 +284,7 @@ function createReadCaller({
   dynamicRatios = false,
   verifiedOnFirstCartRead = false,
   candidateStocks,
+  cartValidations = [],
 }: {
   verifiedProductIds?: string[];
   existingProductIds?: string[];
@@ -229,6 +292,7 @@ function createReadCaller({
   dynamicRatios?: boolean;
   verifiedOnFirstCartRead?: boolean;
   candidateStocks?: number[];
+  cartValidations?: unknown[];
 } = {}) {
   let cartReads = 0;
   return vi.fn(async (name: SilpoReadToolName, args: Record<string, unknown>): Promise<unknown> => {
@@ -250,7 +314,7 @@ function createReadCaller({
                 ).map((id) => ({ productId: id })),
               },
             ],
-            calculation: { validations: [] },
+            calculation: { validations: cartValidations },
           },
         },
       };

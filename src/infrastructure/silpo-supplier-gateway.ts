@@ -31,6 +31,7 @@ import {
 const SEARCH_WINDOW_LINES = 10;
 const TARGET_ROLLOUT_LINES = 3;
 const MAX_BLOCKED_ROLLOUT_LINES = 5;
+const LIVE_ROLLOUT_MASS_BUDGET_G = 20_000;
 
 export type SilpoSupplierWriteCaller = (
   name: 'silpo_add_or_update_cart_products',
@@ -58,6 +59,9 @@ export class SilpoSupplierGateway implements SupplierGateway {
     const detail = await this.callRead('silpo_get_shopping_cart_by_id', {
       shoppingCartId: cartReference.shoppingCartId,
     });
+    if (cartValidationErrorCount(detail) > 0) {
+      throw new Error('Silpo cart already contains error-level validations. Resolve them before preparing an order.');
+    }
     this.context = parseCartContext(detail, cartReference.shoppingCartId);
     this.existingCartProductIds = new Set(parseCartProductIds(detail));
     return {
@@ -89,11 +93,6 @@ export class SilpoSupplierGateway implements SupplierGateway {
         .filter((candidate): candidate is SilpoMappedProduct => Boolean(candidate));
       const match = mapped.find((candidate) => canFulfillRequest(candidate, request));
       if (match) {
-        if (this.existingCartProductIds.has(match.product.id)) {
-          throw new Error(
-            'A selected Silpo product is already in the cart. The repeat run was blocked to avoid increasing its quantity.',
-          );
-        }
         this.products.set(match.product.id, match);
         return { request, status: 'matched', product: structuredClone(match.product) };
       }
@@ -102,11 +101,20 @@ export class SilpoSupplierGateway implements SupplierGateway {
       this.products.set(unavailable.product.id, unavailable);
       return { request, status: 'unavailable', product: structuredClone(unavailable.product) };
     });
-    const matchedResults = results.filter((result) => result.status === 'matched');
+    const matchedResults = selectSafeRolloutMatches(results);
     const rolloutResults =
       matchedResults.length >= TARGET_ROLLOUT_LINES
         ? matchedResults.slice(0, TARGET_ROLLOUT_LINES)
-        : results.slice(0, MAX_BLOCKED_ROLLOUT_LINES);
+        : buildBlockedRollout(results, matchedResults);
+    if (
+      rolloutResults.some(
+        (result) => result.status === 'matched' && result.product && this.existingCartProductIds.has(result.product.id),
+      )
+    ) {
+      throw new Error(
+        'A selected Silpo product is already in the cart. The repeat run was blocked to avoid increasing its quantity.',
+      );
+    }
     const selectedCandidates = rolloutResults.flatMap((result) => {
       if (result.status !== 'matched' || !result.product) return [];
       return [this.products.get(result.product.id)!.candidate];
@@ -165,6 +173,7 @@ export class SilpoSupplierGateway implements SupplierGateway {
         totalMinor: line.unitPriceMinor * line.packageCount,
       };
     });
+    assertLiveRolloutMass(lines);
     const subtotalMinor = lines.reduce((total, line) => total + line.totalMinor, 0);
     const preview: SupplierCartPreview = {
       cartId: draft.cartId ?? this.requireContext().shoppingCartId,
@@ -187,6 +196,7 @@ export class SilpoSupplierGateway implements SupplierGateway {
   }
 
   async applyCart(preview: SupplierCartPreview): Promise<SupplierCart> {
+    assertLiveRolloutMass(preview.lines);
     const products = preview.lines.map((line) => {
       const metadata = parseSupplierMetadata(line.supplierMetadata);
       return {
@@ -245,6 +255,54 @@ function canFulfillRequest(candidate: SilpoMappedProduct, request: SupplierSearc
   ).packageCount;
   const metadata = parseSupplierMetadata(candidate.product.supplierMetadata);
   return packageCount * metadata.quantityStep <= metadata.stock;
+}
+
+function selectSafeRolloutMatches(results: SupplierSearchResult[]): SupplierSearchResult[] {
+  const matched = results
+    .filter((result) => result.status === 'matched' && result.product)
+    .sort((left, right) => rolloutMass(left) - rolloutMass(right));
+  const selected: SupplierSearchResult[] = [];
+  let totalMass = 0;
+  for (const result of matched) {
+    const mass = rolloutMass(result);
+    if (totalMass + mass > LIVE_ROLLOUT_MASS_BUDGET_G) continue;
+    selected.push(result);
+    totalMass += mass;
+    if (selected.length === TARGET_ROLLOUT_LINES) break;
+  }
+  return selected;
+}
+
+function buildBlockedRollout(
+  results: SupplierSearchResult[],
+  selected: SupplierSearchResult[],
+): SupplierSearchResult[] {
+  const selectedLineIds = new Set(selected.map((result) => result.request.lineId));
+  const blocked = results
+    .filter((result) => !selectedLineIds.has(result.request.lineId))
+    .map((result): SupplierSearchResult =>
+      result.status === 'matched' ? { ...result, status: 'unavailable' } : result,
+    );
+  return [...selected, ...blocked].slice(0, MAX_BLOCKED_ROLLOUT_LINES);
+}
+
+function rolloutMass(result: SupplierSearchResult): number {
+  if ((result.request.unit !== 'g' && result.request.unit !== 'ml') || !result.product) return 0;
+  return roundToPackages(
+    result.request.requiredQuantity,
+    result.product.packageSize,
+    result.product.priceMinor,
+  ).suppliedQuantity;
+}
+
+function assertLiveRolloutMass(lines: SupplierCartLine[]): void {
+  const totalMass = lines.reduce(
+    (total, line) => total + (line.unit === 'g' || line.unit === 'ml' ? line.suppliedQuantity : 0),
+    0,
+  );
+  if (totalMass > LIVE_ROLLOUT_MASS_BUDGET_G) {
+    throw new Error('Silpo cart preview exceeds the 20 kg live rollout safety limit');
+  }
 }
 
 function parseSupplierMetadata(value: SupplierCartLine['supplierMetadata']) {
